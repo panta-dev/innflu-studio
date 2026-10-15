@@ -315,6 +315,8 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id;
   }
 
+  let localBotCache = null;
+
   async function getState() {
     return new Promise(resolve => {
       const fallback = {
@@ -322,7 +324,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           isRunning: false,
           activeMode: null,
           miningSource: 'similar',
-          miningTarget: 'marialuizazamoner',
+          miningTarget: 'anaclaralopes',
           minFollowers: 10000,
           requireContact: 'all',
           queue: [],
@@ -339,6 +341,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       };
 
       if (!isExtensionContextValid()) {
+        localBotCache = fallback.bot;
         resolve(fallback);
         return;
       }
@@ -346,17 +349,26 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       try {
         chrome.storage.local.get(['innfluBot', 'apiBaseUrl', 'activeTemplate', 'savedLeadsCache'], res => {
           if (chrome.runtime.lastError) {
+            localBotCache = fallback.bot;
             resolve(fallback);
             return;
           }
+          const bot = res?.innfluBot || fallback.bot;
+          if (!bot.queue) bot.queue = [];
+          if (!bot.visited) bot.visited = [];
+          if (!bot.visitedPosts) bot.visitedPosts = [];
+
+          localBotCache = { ...bot };
+
           resolve({
-            bot: res?.innfluBot || fallback.bot,
+            bot,
             apiBaseUrl: res?.apiBaseUrl || fallback.apiBaseUrl,
             activeTemplate: res?.activeTemplate || fallback.activeTemplate,
             savedLeads: res?.savedLeadsCache || []
           });
         });
       } catch (err) {
+        localBotCache = fallback.bot;
         resolve(fallback);
       }
     });
@@ -364,8 +376,14 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
   async function saveBot(partial) {
     if (!isExtensionContextValid()) return;
-    const { bot } = await getState();
-    const updated = { ...bot, ...partial };
+    if (!localBotCache) {
+      const s = await getState();
+      localBotCache = s.bot;
+    }
+    // Atualiza imediatamente a cópia em memória para eliminar qualquer race condition
+    localBotCache = { ...localBotCache, ...partial };
+    const updated = { ...localBotCache };
+
     return new Promise(resolve => {
       try {
         chrome.storage.local.set({ innfluBot: updated }, () => resolve(updated));
@@ -575,10 +593,12 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     const rawInput = (inputMiningTarget.value || '').trim();
     let currentSource = bot.miningSource || 'keyword';
 
-    // Auto-detecção inteligente de prefixos sem sobrescrever a escolha deliberada do usuário
+    // Se o usuário já selecionou "following" ou "hashtag", respeita!
     if (rawInput.startsWith('@')) {
-      currentSource = 'similar';
-      selectSourceUI('similar');
+      if (currentSource !== 'following' && currentSource !== 'followers') {
+        currentSource = 'similar';
+        selectSourceUI('similar');
+      }
     } else if (rawInput.startsWith('#')) {
       currentSource = 'hashtag';
       selectSourceUI('hashtag');
@@ -591,7 +611,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       return;
     }
 
-    // Ao iniciar uma nova mineração, SEMPRE limpa a fila antiga para não navegar para resquícios anteriores
+    // Ao iniciar uma nova mineração, limpa a fila e histórico de posts inspecionados para a nova rodada
     await saveBot({
       isRunning: true,
       activeMode: 'miner',
@@ -683,9 +703,9 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         await analyzeAndMineProfile(bot, apiBaseUrl);
         const updatedVisited = [...visited, currentProfileUser].slice(-400);
         const updatedQueue = (bot.queue || []).filter(u => u !== currentProfileUser);
-        await saveBot({ visited: updatedVisited, queue: updatedQueue });
         bot.visited = updatedVisited;
         bot.queue = updatedQueue;
+        await saveBot({ visited: updatedVisited, queue: updatedQueue });
         hudQueueCount.innerText = updatedQueue.length;
         scheduleNext(window.InnfluCrawler.randomDelay(2000, 3500));
         return;
@@ -782,8 +802,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       }
 
       // D) FONTE: 🔍 Palavra-chave ou #️⃣ Hashtag
-      // Já analisamos este perfil atual. Se ainda há criadores na fila, abre a próxima!
-      const remainingQueue = (bot.queue || []).filter(u => u !== currentProfileUser);
+      const remainingQueue = (bot.queue || []).filter(u => u !== currentProfileUser && !(bot.visited || []).includes(u));
       if (remainingQueue.length > 0) {
         const nextTarget = remainingQueue[0];
         hudCurrentAction.innerText = `Abrindo próxima criadora da fila: @${nextTarget}...`;
@@ -791,8 +810,8 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         return;
       }
 
-      // Fila de criadores esgotada -> volta para a grade de publicações para minerar mais posts!
-      hudCurrentAction.innerText = `Fila concluída! Voltando para busca (${target}) para minerar novas publicações...`;
+      // Fila concluída -> volta para a pesquisa / hashtag para avançar para as próximas publicações!
+      hudCurrentAction.innerText = `Voltando para busca (${target}) para minerar novas publicações...`;
       await window.InnfluCrawler.sleep(1500);
       window.InnfluCrawler.navigateToSource(source, target);
       return;
@@ -821,84 +840,85 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     }
 
     // ========================================================
-    // 4. ESTAMOS NA PÁGINA DE BUSCA / EXPLORE / HASHTAG (pageType === 'search')
+    // 4. ESTAMOS NUM POST DIRETO (/p/ ou /reel/)
     // ========================================================
-    if (pageType === 'search') {
-      hudCurrentAction.innerText = `Varrendo influenciadoras de "${target}"...`;
-      await window.InnfluCrawler.sleep(2000);
-
-      const visitedUsers = new Set(bot.visited || []);
+    if (pageType === 'post') {
+      hudCurrentAction.innerText = 'Inspecionando publicação aberta...';
+      const normPath = window.InnfluCrawler.normalizePostHref(window.location.pathname);
       const visitedPosts = new Set(bot.visitedPosts || []);
-      const candidateSet = new Set();
-
-      // Estratégia A: Sugestões de contas no dropdown de busca
-      if (window.InnfluCrawler.extractFromSearchDropdown) {
-        const fromDropdown = window.InnfluCrawler.extractFromSearchDropdown();
-        fromDropdown.forEach(u => {
-          if (!visitedUsers.has(u)) candidateSet.add(u);
-        });
+      if (normPath) {
+        visitedPosts.add(normPath);
+        await saveBot({ visitedPosts: Array.from(visitedPosts).slice(-600) });
       }
 
-      // Estratégia B: Usernames via Alt-text nas imagens da grade
-      const fromPage = window.InnfluCrawler.extractUsernamesFromPage();
-      fromPage.forEach(u => {
-        if (!visitedUsers.has(u)) candidateSet.add(u);
-      });
+      const author = window.InnfluCrawler.extractPostAuthor();
+      const visitedUsers = new Set(bot.visited || []);
 
-      // Estratégia C (Principal do Usuário): Clicar nas publicações/reels AINDA NÃO INSPECIONADAS
-      hudCurrentAction.innerText = `Inspecionando novos vídeos/posts para extrair criadores de "${target}"...`;
-      const { authors, inspectedHrefs } = await window.InnfluCrawler.clickPostsAndExtractAuthors(6, Array.from(visitedPosts));
-      (authors || []).forEach(u => {
-        if (!visitedUsers.has(u)) candidateSet.add(u);
-      });
-
-      // Atualiza lista de posts inspecionados para NUNCA clicar nos mesmos posts novamente
-      const updatedVisitedPosts = Array.from(new Set([...visitedPosts, ...(inspectedHrefs || [])])).slice(-600);
-
-      let newCandidates = Array.from(candidateSet).filter(u => !visitedUsers.has(u));
-
-      // Se ainda nenhum candidato novo, rola a página para carregar novas publicações
-      if (newCandidates.length === 0) {
-        hudCurrentAction.innerText = 'Rolando feed para carregar novas publicações...';
-        await window.InnfluCrawler.scrollDown();
-        await window.InnfluCrawler.sleep(2200);
-
-        const retry = await window.InnfluCrawler.clickPostsAndExtractAuthors(5, updatedVisitedPosts);
-        (retry.authors || []).forEach(u => {
-          if (!visitedUsers.has(u)) candidateSet.add(u);
-        });
-        (retry.inspectedHrefs || []).forEach(h => updatedVisitedPosts.push(h));
-        newCandidates = Array.from(candidateSet).filter(u => !visitedUsers.has(u));
+      if (author && !visitedUsers.has(author)) {
+        hudCurrentAction.innerText = `Criadora identificada: @${author}. Abrindo perfil...`;
+        await window.InnfluCrawler.sleep(1200);
+        window.InnfluCrawler.openProfile(author);
+        return;
       }
 
-      // Salva posts inspecionados no storage
-      await saveBot({ visitedPosts: updatedVisitedPosts });
-
-      if (newCandidates.length > 0) {
-        await saveBot({ queue: newCandidates.slice(0, 50) });
-        hudQueueCount.innerText = Math.min(newCandidates.length, 50);
-        showToast({
-          type: 'success',
-          title: `${newCandidates.length} Novas Criadoras Encontradas!`,
-          message: newCandidates.slice(0, 4).map(u => `@${u}`).join(', ') + '...'
-        });
-        scheduleNext(1500);
-      } else {
-        hudCurrentAction.innerText = 'Nenhuma criadora nova nesta rolagem. Rolando mais o feed...';
-        await window.InnfluCrawler.scrollDown();
-        scheduleNext(3500);
-      }
+      // Se já foi visitada ou autor não identificado, volta para a busca/hashtag
+      hudCurrentAction.innerText = 'Publicação já avaliada. Retornando para busca...';
+      await window.InnfluCrawler.sleep(1200);
+      window.InnfluCrawler.navigateToSource(source, target);
       return;
     }
 
     // ========================================================
-    // 5. SE ESTAMOS NUM POST DIRETO
+    // 5. ESTAMOS NA PÁGINA DE BUSCA / EXPLORE / HASHTAG (pageType === 'search')
     // ========================================================
-    if (pageType === 'post') {
-      hudCurrentAction.innerText = 'Retornando para feed de publicações...';
-      window.history.back();
-      scheduleNext(2000);
-      return;
+    if (pageType === 'search') {
+      hudCurrentAction.innerText = `Varrendo publicações de "${target}"...`;
+      await window.InnfluCrawler.sleep(1800);
+
+      const visitedUsers = new Set(bot.visited || []);
+      const visitedPosts = new Set((bot.visitedPosts || []).map(h => window.InnfluCrawler.normalizePostHref(h)));
+
+      // PASSO 1: Extrai criadoras diretamente das imagens da grade (alt-text)
+      const { creators, postHrefs } = window.InnfluCrawler.extractCreatorsFromVisibleGrid(Array.from(visitedUsers));
+      (postHrefs || []).forEach(h => visitedPosts.add(h));
+
+      if (creators && creators.length > 0) {
+        const newQueue = creators.slice(0, 40);
+        await saveBot({
+          queue: newQueue,
+          visitedPosts: Array.from(visitedPosts).slice(-600)
+        });
+        hudQueueCount.innerText = newQueue.length;
+        showToast({
+          type: 'success',
+          title: `${newQueue.length} Criadoras Encontradas!`,
+          message: newQueue.slice(0, 4).map(u => `@${u}`).join(', ') + '...'
+        });
+        hudCurrentAction.innerText = `Abrindo primeira criadora: @${newQueue[0]}...`;
+        scheduleNext(1200);
+        return;
+      }
+
+      // PASSO 2: Se não pegou criadoras novas no alt-text, seleciona a PRÓXIMA publicação ainda não inspecionada
+      const nextPost = window.InnfluCrawler.getNextUnvisitedPost(Array.from(visitedPosts));
+
+      if (!nextPost) {
+        // Todos os posts visíveis foram inspecionados! Rola para carregar novos posts
+        hudCurrentAction.innerText = 'Rolando feed para carregar novas publicações...';
+        await window.InnfluCrawler.scrollDown();
+        await window.InnfluCrawler.sleep(2500);
+
+        const retryPost = window.InnfluCrawler.getNextUnvisitedPost(Array.from(visitedPosts));
+        if (!retryPost) {
+          hudCurrentAction.innerText = 'Carregando mais conteúdo do feed...';
+          await window.InnfluCrawler.scrollDown();
+          scheduleNext(3000);
+          return;
+        }
+        return handleInspectPostElement(retryPost, visitedPosts, visitedUsers, source, target);
+      }
+
+      return handleInspectPostElement(nextPost, visitedPosts, visitedUsers, source, target);
     }
 
     // ========================================================
@@ -906,6 +926,60 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     // ========================================================
     hudCurrentAction.innerText = `Navegando para ${source}: "${target}"...`;
     window.InnfluCrawler.navigateToSource(source, target);
+  }
+
+  /**
+   * Inspeciona uma publicação específica na grade e avança sequencialmente
+   */
+  async function handleInspectPostElement(postInfo, visitedPostsSet, visitedUsersSet, source, target) {
+    const { element, href } = postInfo;
+    
+    // IMPORTANTE: Salva o post no storage ANTES de clicar para garantir que nunca será repetido
+    visitedPostsSet.add(href);
+    await saveBot({ visitedPosts: Array.from(visitedPostsSet).slice(-600) });
+
+    hudCurrentAction.innerText = `Inspecionando publicação (${href})...`;
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    await window.InnfluCrawler.sleep(500);
+
+    // Clica na publicação
+    element.click();
+    await window.InnfluCrawler.sleep(2200);
+
+    // Verifica se mudou a rota ou abriu modal
+    const curPath = window.location.pathname.toLowerCase();
+    if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
+      const directNorm = window.InnfluCrawler.normalizePostHref(curPath);
+      visitedPostsSet.add(directNorm);
+      await saveBot({ visitedPosts: Array.from(visitedPostsSet).slice(-600) });
+    }
+
+    // Extrai o autor da publicação aberta
+    const author = window.InnfluCrawler.extractPostAuthor();
+
+    if (author) {
+      if (!visitedUsersSet.has(author)) {
+        hudCurrentAction.innerText = `Criadora descoberta: @${author}! Abrindo perfil...`;
+        await window.InnfluCrawler.sleep(1000);
+        window.InnfluCrawler.openProfile(author);
+        return;
+      } else {
+        hudCurrentAction.innerText = `@${author} já foi analisada anteriormente. Próxima publicação...`;
+      }
+    } else {
+      hudCurrentAction.innerText = 'Não foi possível identificar o autor desta publicação.';
+    }
+
+    // Fecha modal ou volta se navegou
+    if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
+      window.history.back();
+      await window.InnfluCrawler.sleep(1800);
+    } else {
+      await window.InnfluCrawler._closeModal();
+      await window.InnfluCrawler.sleep(1000);
+    }
+
+    scheduleNext(1500);
   }
 
   // ==========================================
@@ -920,7 +994,8 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
     const minFollowersRequired = bot.minFollowers !== undefined ? bot.minFollowers : 10000;
     const requireContactFilter = bot.requireContact || 'all';
-    const currentNiche = (bot.miningTarget || 'Geral').trim();
+    const rawTarget = (bot.miningTarget || 'Geral').trim();
+    const currentNiche = bot.miningSource === 'hashtag' ? ('#' + rawTarget.replace(/^#/, '')) : rawTarget;
 
     let fDisplay = '?';
     if (profile.followersCount > 0) {

@@ -563,25 +563,140 @@ window.InnfluCrawler = {
   },
 
   /**
-   * Clica em posts NÃO INSPECIONADOS na grid para descobrir autores com precisão cirúrgica
-   * @param {number} maxPosts Quantos posts clicar sequencialmente (padrão 5)
-   * @param {string[]} alreadyVisitedPosts Hrefs já inspecionados
-   * @returns {Promise<{ authors: string[], inspectedHrefs: string[] }>}
+   * Normaliza links de posts/reels para evitar inconsistências com parâmetros ou barras
+   * Exemplo: /reel/C12345/?utm_source=... -> /reel/C12345/
+   */
+  normalizePostHref(href) {
+    if (!href) return '';
+    try {
+      const clean = href.split('?')[0].split('#')[0].trim().replace(/\/+$/, '');
+      return clean ? clean + '/' : '';
+    } catch (e) {
+      return href;
+    }
+  },
+
+  /**
+   * Extrai criadores diretamente da grade visível (alt-text de Reels/Posts)
+   * Sem precisar clicar ou abrir modais!
+   * @param {string[]} visitedUsers Lista de usernames já visitados
+   * @returns {{ creators: string[], postHrefs: string[] }}
+   */
+  extractCreatorsFromVisibleGrid(visitedUsers = []) {
+    const visitedSet = new Set((visitedUsers || []).map(u => u.toLowerCase()));
+    const discovered = [];
+    const discoveredPosts = [];
+
+    const postLinks = document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]');
+    for (const a of postLinks) {
+      const rawHref = a.getAttribute('href');
+      const href = this.normalizePostHref(rawHref);
+      const img = a.querySelector('img[alt]');
+      if (!img) continue;
+
+      const alt = img.getAttribute('alt') || '';
+      let author = null;
+
+      // Padrão 1: @username
+      const atMatch = alt.match(/@([a-zA-Z0-9._]{3,30})/);
+      if (atMatch && this.isValidUsername(atMatch[1])) {
+        author = atMatch[1].toLowerCase();
+      } else {
+        // Padrão 2: "Reel de Fulana (@fulana)" ou "Foto de/por Fulana"
+        const byMatch = alt.match(/(?:foto\s+(?:de|por)|photo\s+(?:by|shared\s+by)|v[íi]deo\s+(?:de|por)|reel\s+(?:de|por))\s+([a-zA-Z0-9._]{3,30})/i);
+        if (byMatch && this.isValidUsername(byMatch[1])) {
+          author = byMatch[1].toLowerCase();
+        }
+      }
+
+      if (author && !visitedSet.has(author)) {
+        if (!discovered.includes(author)) {
+          discovered.push(author);
+        }
+        if (href && !discoveredPosts.includes(href)) {
+          discoveredPosts.push(href);
+        }
+      }
+    }
+
+    console.log(`[Innflu] Grade visível → ${discovered.length} criadoras novas descobertas:`, discovered);
+    return { creators: discovered, postHrefs: discoveredPosts };
+  },
+
+  /**
+   * Encontra a PRÓXIMA publicação ainda não inspecionada na página
+   * @param {string[]} visitedPosts Lista de hrefs já inspecionados
+   * @returns {{ element: HTMLElement, href: string, rawHref: string } | null}
+   */
+  getNextUnvisitedPost(visitedPosts = []) {
+    const visitedSet = new Set((visitedPosts || []).map(h => this.normalizePostHref(h)));
+    const postLinks = Array.from(document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]'));
+
+    for (const a of postLinks) {
+      const rawHref = a.getAttribute('href');
+      const normHref = this.normalizePostHref(rawHref);
+      if (normHref && !visitedSet.has(normHref)) {
+        return { element: a, href: normHref, rawHref };
+      }
+    }
+    return null;
+  },
+
+  /**
+   * Extrai o autor do post/reel atual (no modal ou na página direta /p/ ou /reel/)
+   * @returns {string | null}
+   */
+  extractPostAuthor() {
+    const authorSelectors = [
+      'div[role="dialog"] header a[href^="/"]',
+      'div[role="dialog"] a[role="link"][href^="/"]',
+      'article header a[href^="/"]',
+      'article a[role="link"][href^="/"]',
+      'header a[href^="/"]',
+      'main header a[href^="/"]',
+      'h2 a[href^="/"]'
+    ];
+
+    for (const sel of authorSelectors) {
+      const links = document.querySelectorAll(sel);
+      for (const a of links) {
+        const hrefAttr = a.getAttribute('href') || '';
+        const parts = hrefAttr.split('/').filter(Boolean);
+        if (parts.length === 1) {
+          const u = parts[0].toLowerCase();
+          if (this.isValidUsername(u)) {
+            return u;
+          }
+        }
+      }
+    }
+
+    // Fallback: alt-text no modal/página
+    const altUsers = Array.from(this._extractFromAltText());
+    if (altUsers.length > 0) {
+      return altUsers[0];
+    }
+
+    return null;
+  },
+
+  /**
+   * Clica em posts NÃO INSPECIONADOS na grid (retrocompatibilidade robusta)
+   * @param {number} maxPosts
+   * @param {string[]} alreadyVisitedPosts
    */
   async clickPostsAndExtractAuthors(maxPosts = 5, alreadyVisitedPosts = []) {
-    const visitedSet = new Set(alreadyVisitedPosts);
+    const visitedSet = new Set((alreadyVisitedPosts || []).map(h => this.normalizePostHref(h)));
     const postLinks = Array.from(
       document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]')
     );
     
-    // Filtra apenas posts cujo link ainda não foi inspecionado
     const uninspected = postLinks.filter(a => {
-      const href = a.getAttribute('href');
-      return href && !visitedSet.has(href);
+      const norm = this.normalizePostHref(a.getAttribute('href'));
+      return norm && !visitedSet.has(norm);
     });
 
     if (uninspected.length === 0) {
-      console.log('[Innflu] Todos os posts visíveis já foram inspecionados. Necessário rolar feed.');
       return { authors: [], inspectedHrefs: [] };
     }
 
@@ -594,13 +709,13 @@ window.InnfluCrawler = {
         const postEl = uninspected[idx];
         if (!postEl) continue;
 
-        const href = postEl.getAttribute('href');
-        if (href) {
-          visitedSet.add(href);
-          newlyInspectedHrefs.push(href);
+        const normHref = this.normalizePostHref(postEl.getAttribute('href'));
+        if (normHref) {
+          visitedSet.add(normHref);
+          newlyInspectedHrefs.push(normHref);
         }
 
-        // 1. Tenta extrair antes de clicar via alt text da imagem interna
+        // Tenta extrair antes de clicar via alt text
         let fastAuthor = null;
         const innerImg = postEl.querySelector('img[alt]');
         if (innerImg) {
@@ -608,84 +723,38 @@ window.InnfluCrawler = {
           const atMatch = alt.match(/@([a-zA-Z0-9._]{3,30})/);
           if (atMatch && this.isValidUsername(atMatch[1])) {
             fastAuthor = atMatch[1].toLowerCase();
-          } else {
-            const byMatch = alt.match(/(?:foto\s+(?:de|por)|photo\s+(?:by|shared\s+by)|v[íi]deo\s+(?:de|por))\s+([a-zA-Z0-9._]{3,30})/i);
-            if (byMatch && this.isValidUsername(byMatch[1])) {
-              fastAuthor = byMatch[1].toLowerCase();
-            }
           }
         }
 
         if (fastAuthor) {
           usernames.add(fastAuthor);
-          console.log(`[Innflu] Autor extraído via alt-text do post (${href}): @${fastAuthor}`);
-          continue; // Já identificou sem precisar abrir modal!
+          continue;
         }
 
-        // 2. Se não pegou no alt, clica no post para abrir e inspecionar cabeçalho
-        console.log(`[Innflu] Inspecionando novo post/vídeo ${idx + 1}/${count} (${href})...`);
+        // Clica no post
         postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         await this.sleep(400);
-
-        // Dispara clique no elemento do post
         postEl.click();
-        await this.sleep(this.randomDelay(2200, 3200));
+        await this.sleep(this.randomDelay(2000, 3000));
 
-        // Procura o autor do post no cabeçalho
-        const authorSelectors = [
-          'div[role="dialog"] header a[href^="/"]',
-          'div[role="dialog"] a[role="link"][href^="/"]',
-          'article header a[href^="/"]',
-          'article a[role="link"][href^="/"]',
-          'header a[href^="/"]'
-        ];
+        const author = this.extractPostAuthor();
+        if (author) usernames.add(author);
 
-        let found = false;
-        for (const sel of authorSelectors) {
-          const authorLinks = document.querySelectorAll(sel);
-          for (const a of authorLinks) {
-            const hrefAttr = a.getAttribute('href') || '';
-            const parts = hrefAttr.split('/').filter(Boolean);
-            if (parts.length === 1) {
-              const u = parts[0].toLowerCase();
-              if (this.isValidUsername(u)) {
-                usernames.add(u);
-                console.log(`[Innflu] Criador(a) identificado(a): @${u}`);
-                found = true;
-                break;
-              }
-            }
-          }
-          if (found) break;
-        }
-
-        // Se não encontrou no header, tenta via alt text no modal
-        if (!found) {
-          this._extractFromAltText().forEach(u => usernames.add(u));
-        }
-
-        // Se a navegação mudou a URL inteira para /p/ ou /reel/, volta no histórico
         const curPath = window.location.pathname.toLowerCase();
         if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
-          console.log('[Innflu] Retornando da visualização direta do post...');
           window.history.back();
           await this.sleep(1800);
         } else {
-          // Fecha modal aberto
           await this._closeModal();
-          await this.sleep(this.randomDelay(700, 1200));
+          await this.sleep(this.randomDelay(600, 1000));
         }
 
       } catch (err) {
-        console.warn('[Innflu] Erro ao inspecionar post:', err);
         await this._closeModal();
-        await this.sleep(500);
       }
     }
     
-    const authors = Array.from(usernames);
-    console.log(`[Innflu] Click-into-posts concluído → ${authors.length} autores descobertos em ${newlyInspectedHrefs.length} novos posts.`);
-    return { authors, inspectedHrefs: newlyInspectedHrefs };
+    return { authors: Array.from(usernames), inspectedHrefs: newlyInspectedHrefs };
   },
 
   /**
