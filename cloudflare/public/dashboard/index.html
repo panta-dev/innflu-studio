@@ -763,86 +763,202 @@
       </section>
 
       <!-- ====================================================
-           VIEW 5: TEMPLATES & SPINTAX
+           VIEW 5: TEMPLATES & SPINTAX MULTI-MODELOS
       ==================================================== -->
       <section id="view-templates" class="space-y-6 hidden">
-        <div>
-          <h2 class="text-xl font-extrabold text-white">Editor de Templates com Spintax</h2>
-          <p class="text-xs text-slate-400">Crie mensagens dinâmicas para evitar que o Instagram detecte textos repetidos.</p>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">Editor de Templates com Spintax Multi-Modelos</h2>
+            <p class="text-xs text-slate-400">Monte até 5 modelos de abordagens diferentes. O sistema alterna automaticamente entre eles para evitar padrões repetitivos e bloqueios no Instagram.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-xl font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-halved"></i> Rotação Anti-Ban Ativa (5 Slots)
+            </span>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- COLUNA ESQUERDA: EDITOR DOS 5 MODELOS -->
           <div class="glass-panel p-6 rounded-2xl space-y-4">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-code text-purple-400"></i> Mensagem da Campanha
-            </h3>
-            
-            <div class="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs">
-              <p class="font-semibold mb-1">Como usar Spintax:</p>
-              <p class="text-[11px] text-purple-200/80">Use <code>{Olá|Oi|Oie}</code> para variações aleatórias e <code>{nome}</code> para puxar o primeiro nome da influenciadora.</p>
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-purple-400"></i>
+                Modelos de Abordagem (5 Variações Prontas)
+              </h3>
+              <span id="activeSlotBadge" class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono font-bold px-2 py-0.5 rounded">
+                Editando: Modelo 1
+              </span>
             </div>
 
-            <form id="templateForm" onsubmit="saveTemplateWeb(event)" class="space-y-3">
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Título do Modelo</label>
-                <input type="text" id="tmplTitle" required value="Campanha Padrão Parceria" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+            <!-- Seletor de Abas dos 5 Modelos -->
+            <div class="grid grid-cols-5 gap-1.5 p-1 bg-surface-card/90 rounded-xl border border-surface-border">
+              <button type="button" onclick="selectTemplateSlot(0)" id="tabSlot0" class="py-2 text-center text-xs font-bold rounded-lg transition bg-purple-600 text-white shadow">
+                <span>Mod. 1</span>
+              </button>
+              <button type="button" onclick="selectTemplateSlot(1)" id="tabSlot1" class="py-2 text-center text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">
+                <span>Mod. 2</span>
+              </button>
+              <button type="button" onclick="selectTemplateSlot(2)" id="tabSlot2" class="py-2 text-center text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">
+                <span>Mod. 3</span>
+              </button>
+              <button type="button" onclick="selectTemplateSlot(3)" id="tabSlot3" class="py-2 text-center text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">
+                <span>Mod. 4</span>
+              </button>
+              <button type="button" onclick="selectTemplateSlot(4)" id="tabSlot4" class="py-2 text-center text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">
+                <span>Mod. 5</span>
+              </button>
+            </div>
+
+            <!-- Ajuda de Spintax & Variáveis Rápidas -->
+            <div class="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-purple-300 font-semibold flex items-center gap-1.5">
+                  <i class="fa-solid fa-wand-magic-sparkles text-xs"></i> Como funciona o Spintax:
+                </span>
+                <span class="text-[10px] text-purple-300/70">Atalhos rápidos para inserir:</span>
               </div>
-
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Conteúdo com Spintax</label>
-                <textarea id="tmplContent" rows="7" required class="w-full bg-surface-card border border-surface-border rounded-xl p-3.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 leading-relaxed">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?}
-
-Adorei seu conteúdo e a forma leve como você compartilha a maternidade real por aqui!
-
-Somos uma marca e gostaríamos de te presentear com nossos produtos sem nenhum custo em troca de você conhecer nossa proposta. Teria interesse?</textarea>
-              </div>
-
-              <div class="flex gap-2">
-                <button type="button" onclick="testSpintaxWeb()" class="w-1/2 bg-surface-card hover:bg-surface-hover border border-surface-border text-slate-200 py-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
-                  <i class="fa-solid fa-shuffle text-purple-400"></i> Testar Variação
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <button type="button" onclick="insertVariableAtCursor('{nome}')" class="px-2 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30 text-[11px] font-mono transition">
+                  + {nome}
                 </button>
-                <button type="submit" class="w-1/2 gradient-btn text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-                  <i class="fa-solid fa-save"></i> Salvar no D1
+                <button type="button" onclick="insertVariableAtCursor('{username}')" class="px-2 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30 text-[11px] font-mono transition">
+                  + {username}
+                </button>
+                <button type="button" onclick="insertVariableAtCursor('{Olá|Oi|Oie}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-surface-border text-[11px] font-mono transition">
+                  + {Olá|Oi|Oie}
+                </button>
+                <button type="button" onclick="insertVariableAtCursor('{Tudo bem com você?|Como você está?|Espero que esteja bem!}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-surface-border text-[11px] font-mono transition">
+                  + {Quebra-gelo}
+                </button>
+                <button type="button" onclick="insertVariableAtCursor('{Adorei|Achei incrível|Muito bacana}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-surface-border text-[11px] font-mono transition">
+                  + {Elogio}
+                </button>
+                <button type="button" onclick="insertVariableAtCursor('{Teria interesse em receber esse presente?|Podemos te enviar essa caixinha?|Toparia conhecer nossa proposta?}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-surface-border text-[11px] font-mono transition">
+                  + {CTA / Convite}
+                </button>
+              </div>
+            </div>
+
+            <!-- Formulário de Edição do Slot Selecionado -->
+            <form id="templateForm" onsubmit="saveAllTemplatesWeb(event)" class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Título / Identificador deste Modelo</label>
+                <input type="text" id="tmplTitle" oninput="handleTemplateInput()" required class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+              </div>
+
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <label class="block text-[11px] font-semibold text-slate-300">Mensagem com Spintax</label>
+                  <span id="editorCharCount" class="text-[10px] text-slate-500 font-mono">0 caracteres</span>
+                </div>
+                <textarea id="tmplContent" oninput="handleTemplateInput()" rows="8" required class="w-full bg-surface-card border border-surface-border rounded-xl p-3.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 leading-relaxed transition"></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <button type="button" onclick="testSpintaxWeb()" class="bg-surface-card hover:bg-surface-hover border border-surface-border text-slate-200 py-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-shuffle text-purple-400"></i> Testar Variação deste Modelo
+                </button>
+                <button type="submit" id="btnSaveTemplates" class="gradient-btn text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Salvar Todos os 5 Modelos no D1
                 </button>
               </div>
             </form>
           </div>
 
+          <!-- COLUNA DIREITA: SIMULADOR DE ENVIO REAL (ROTAÇÃO E TESTES) -->
           <div class="glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <h3 class="text-sm font-bold text-white">Simulador de Envio Real</h3>
-                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">Anti-Spam Ativo</span>
-              </div>
-              <p class="text-[11px] text-slate-400">Veja exatamente como cada influenciadora receberá o texto no Direct:</p>
-            </div>
-
-            <!-- Bubble de DM do Instagram -->
-            <div class="bg-surface-card/90 border border-surface-border rounded-2xl p-4 my-auto space-y-3">
-              <div class="flex items-center gap-2.5 pb-2 border-b border-surface-border">
-                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white">
-                  MF
-                </div>
+            <div class="space-y-3">
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
-                  <p class="text-xs font-bold text-white">Marina Ferrari</p>
-                  <p class="text-[10px] text-slate-400 font-mono">@marinaferrarig • 4,8 mi seguidores</p>
+                  <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-brands fa-instagram text-pink-400"></i> Simulador de Envio Real no Direct
+                  </h3>
+                  <p class="text-[11px] text-slate-400">Veja como cada mensagem chega para perfis reais minerados no Instagram</p>
                 </div>
+                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-mono font-bold flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Anti-Ban Ativo
+                </span>
               </div>
 
-              <div class="bg-purple-600/20 border border-purple-500/20 rounded-2xl rounded-tl-sm p-3.5 text-xs text-slate-200 leading-relaxed whitespace-pre-line" id="spintaxPreviewOutput">
-                Clique em "Testar Variação" para simular o resultado do spintax.
+              <!-- Seletor de Influenciadora para Teste -->
+              <div class="flex items-center gap-2 p-2 rounded-xl bg-surface-card/60 border border-surface-border">
+                <span class="text-[11px] text-slate-400 shrink-0 font-medium pl-1">Testar com:</span>
+                <select id="simInfluencerSelect" onchange="changeSimInfluencer(this.value)" class="flex-1 bg-surface-base border border-surface-border text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-purple-500">
+                  <option value="0">👩 Marina Ferrari (@marinaferrarig • 4,8 mi)</option>
+                  <option value="1">👩‍👧 Ana Clara Lopes (@anaclaralopes • 24,2 mil)</option>
+                  <option value="2">👩‍🍼 Sarah Tribuzy (@stribuzy • 54,0 mil)</option>
+                  <option value="3">👗 Andressa Grana (@andressagrana • 256,0 mil)</option>
+                  <option value="4">💄 Catherine Gasperis (@catherinegasperis • 379,0 mil)</option>
+                </select>
               </div>
 
-              <div class="flex justify-between text-[10px] text-slate-500 pt-1">
-                <span>Direct Message</span>
-                <span id="charCount" class="font-mono text-purple-400">0 caracteres</span>
+              <!-- Controles Rápidos do Simulador -->
+              <div class="flex flex-wrap items-center gap-2 pt-1">
+                <button type="button" onclick="simulateNextDispatch()" class="gradient-btn text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow">
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                  <span>Simular Próximo Envio (Alternar)</span>
+                </button>
+                <button type="button" onclick="testSpintaxWeb()" class="bg-surface-card hover:bg-surface-hover border border-surface-border text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition">
+                  <i class="fa-solid fa-dice text-purple-400"></i>
+                  <span>Sortear Spintax</span>
+                </button>
+                <div class="flex items-center gap-1 ml-auto">
+                  <span class="text-[10px] text-slate-500 mr-1">Ver:</span>
+                  <button type="button" onclick="previewSpecificModel(0)" class="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:bg-purple-600 hover:text-white text-[11px] font-bold font-mono">1</button>
+                  <button type="button" onclick="previewSpecificModel(1)" class="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:bg-purple-600 hover:text-white text-[11px] font-bold font-mono">2</button>
+                  <button type="button" onclick="previewSpecificModel(2)" class="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:bg-purple-600 hover:text-white text-[11px] font-bold font-mono">3</button>
+                  <button type="button" onclick="previewSpecificModel(3)" class="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:bg-purple-600 hover:text-white text-[11px] font-bold font-mono">4</button>
+                  <button type="button" onclick="previewSpecificModel(4)" class="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:bg-purple-600 hover:text-white text-[11px] font-bold font-mono">5</button>
+                </div>
               </div>
             </div>
 
-            <div class="text-[11px] text-slate-400 text-center">
-              Cada influenciadora recebe uma combinação única de palavras, reduzindo a chance de bloqueio para quase zero.
+            <!-- Mockup do Direct do Instagram -->
+            <div class="bg-surface-card/90 border border-surface-border rounded-2xl p-4 my-auto space-y-3 shadow-xl">
+              <div class="flex items-center justify-between pb-3 border-b border-surface-border/70">
+                <div class="flex items-center gap-3">
+                  <div class="story-ring">
+                    <div id="simAvatar" class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-xs font-bold text-purple-300">
+                      MF
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <p id="simName" class="text-xs font-bold text-white">Marina Ferrari</p>
+                      <i class="fa-solid fa-circle-check text-sky-400 text-[10px]"></i>
+                    </div>
+                    <p id="simHandleFollowers" class="text-[10px] text-slate-400 font-mono">@marinaferrarig • 4,8 mi seguidores</p>
+                  </div>
+                </div>
+                <span id="simModelBadge" class="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/25 px-2 py-0.5 rounded-full font-mono font-semibold">
+                  Modelo 1
+                </span>
+              </div>
+
+              <!-- Balão da DM do Instagram -->
+              <div class="flex flex-col items-end">
+                <div class="bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm p-4 text-xs leading-relaxed whitespace-pre-line shadow-lg max-w-[95%]" id="spintaxPreviewOutput">
+                  Carregando visualização da mensagem...
+                </div>
+                <div class="flex items-center gap-2 text-[10px] text-slate-400 pt-1.5 pr-1">
+                  <span id="charCount" class="font-mono text-purple-300">0 caracteres</span>
+                  <span>•</span>
+                  <span class="flex items-center gap-1 text-slate-400"><i class="fa-solid fa-check-double text-[9px] text-purple-400"></i> Enviada agora</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Caixa Informativa de Rotação Anti-Ban -->
+            <div class="p-3 rounded-xl bg-surface-card/60 border border-surface-border text-[11px] text-slate-400 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-nodes text-purple-400 text-sm"></i>
+                <span>Cada influenciadora recebe uma variação de um modelo diferente, tornando o envio 100% humanizado e imune aos filtros de spam.</span>
+              </div>
             </div>
           </div>
+
         </div>
       </section>
 
@@ -1311,6 +1427,8 @@ Parcerias: assessoria@marialuiza.com.br
         fetchAuditLogs();
       } else if (viewId === 'view-blacklist') {
         fetchBlacklist();
+      } else if (viewId === 'view-templates') {
+        syncTemplateEditorFields();
       }
     }
 
@@ -1341,7 +1459,8 @@ Parcerias: assessoria@marialuiza.com.br
       await Promise.allSettled([
         fetchStats(),
         fetchLeads(),
-        fetchCampaigns()
+        fetchCampaigns(),
+        fetchTemplates()
       ]);
     }
 
@@ -1940,47 +2059,245 @@ Parcerias: assessoria@marialuiza.com.br
     }
 
     // ----------------------------------------------------
-    // 5. TEMPLATES & SPINTAX
+    // 5. TEMPLATES & SPINTAX MULTI-MODELOS (5 SLOTS & SIMULADOR)
     // ----------------------------------------------------
+    let currentTemplateIndex = 0; // Slot em edição (0 a 4)
+    let previewModelIndex = 0;    // Modelo sendo exibido no simulador (0 a 4)
+    let currentSimInfluencerIndex = 0; // Influenciadora selecionada no simulador
+
+    const sampleInfluencers = [
+      { name: 'Marina Ferrari', username: 'marinaferrarig', followers: '4,8 mi', avatar: 'MF', niche: 'Moda & Família' },
+      { name: 'Ana Clara Lopes', username: 'anaclaralopes', followers: '24,2 mil', avatar: 'AC', niche: 'Maternidade' },
+      { name: 'Sarah Tribuzy', username: 'stribuzy', followers: '54,0 mil', avatar: 'ST', niche: 'Maternidade' },
+      { name: 'Andressa Grana', username: 'andressagrana', followers: '256,0 mil', avatar: 'AG', niche: 'Maternidade & Dicas' },
+      { name: 'Catherine Gasperis', username: 'catherinegasperis', followers: '379,0 mil', avatar: 'CG', niche: 'Beleza & Família' }
+    ];
+
+    let templatesList = [
+      {
+        id: 'tmpl_slot_01',
+        title: 'Modelo 1: Apresentação & Presente de Boas-Vindas',
+        content: '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Espero que esteja tendo uma ótima semana!}\n\n{Adorei|Achei incrível|Muito bacana} seu conteúdo e a forma {leve|autêntica|dedicada} como você compartilha {sua rotina e maternidade|seu dia a dia|suas dicas} por aqui!\n\nSomos da {nossa marca|nossa equipe} e adoraríamos te presentear com alguns dos nossos produtos {exclusivos|mais pedidos}, sem custo nenhum, para você conhecer. {Teria interesse em receber esse mimo?|Podemos te enviar essa caixinha?|Toparia conhecer nossa proposta?}'
+      },
+      {
+        id: 'tmpl_slot_02',
+        title: 'Modelo 2: Elogio Específico & Convite de Parceria',
+        content: '{Oi|Olá} {nome}, {tudo bem?|como vai?|tudo certinho por aí?}\n\nPassando para dizer que {sou fã do seu perfil|acompanho seus posts e adoro a sua energia|seu perfil tem tudo a ver com o nosso propósito}!\n\nEstamos selecionando algumas criadoras de conteúdo do nicho para uma {ação especial|parceria exclusiva|campanha incrível} este mês. {Gostaria de saber se você aceita propostas de parceria?|Você teria interesse em conversar sobre uma parceria com envio de produtos?|Podemos te apresentar nossa ideia?}'
+      },
+      {
+        id: 'tmpl_slot_03',
+        title: 'Modelo 3: Direto ao Ponto & Mimo Especial',
+        content: '{Oie|Oi|Olá} {nome}! {Tudo bem?|Tudo joia?}\n\n{Vimos o seu perfil|Conhecemos seu trabalho} e achamos {maravilhoso|impecável|muito lindo}!\n\nPreparamos uma {cortesia especial|seleção de produtos incrível|caixinha personalizada} e pensamos imediatamente em você. {Você nos autoriza a te enviar essa proposta de parceria?|Para onde podemos enviar os detalhes da ação?|Teria interesse em saber mais?}'
+      },
+      {
+        id: 'tmpl_slot_04',
+        title: 'Modelo 4: Pergunta de Engajamento & Proposta',
+        content: '{Olá|Oi} {nome}! {Como estão as coisas por aí?|Espero que tudo ótimo por aí!}\n\nEstávamos analisando alguns perfis {relevantes|inspiradores} e o seu se destacou muito pela {conexão genuína com seus seguidores|qualidade das suas postagens|forma leve de se comunicar}.\n\nEstamos com uma {campanha aberta de parcerias|oportunidade de colaboração} e queremos saber: {você costuma fechar parcerias com marcas para conhecer produtos?|está aberta a receber mimos de marcas que têm sinergia com você?|teria interesse em conhecer a nossa proposta de collab?}'
+      },
+      {
+        id: 'tmpl_slot_05',
+        title: 'Modelo 5: Exclusividade VIP & Contato WhatsApp',
+        content: '{Oi|Olá|Oie} {nome}, {tudo bem com você?|como você está?}\n\n{Que perfil incrível você tem!|Admiramos muito a forma como você cria conteúdo por aqui!}\n\nNossa equipe quer te convidar para ser uma das nossas embaixadoras {desta coleção|deste lançamento|deste mês}. {Se você tiver interesse, podemos te mandar os detalhes por aqui ou pelo WhatsApp, o que preferir!|Teria interesse em conhecer a proposta? Podemos enviar por aqui ou conversar pelo WhatsApp!|Se topar, me dá um alô por aqui!}'
+      }
+    ];
+
+    async function fetchTemplates() {
+      try {
+        const res = await fetch(`${API_BASE}/api/templates`, { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
+          data.templates.forEach((t, i) => {
+            if (i < 5) {
+              templatesList[i] = {
+                id: t.id || `tmpl_slot_0${i + 1}`,
+                title: t.title || `Modelo ${i + 1}`,
+                content: t.content || templatesList[i].content
+              };
+            }
+          });
+        }
+        syncTemplateEditorFields();
+      } catch (e) {
+        console.warn('Falha ao obter templates do servidor, usando padrões:', e);
+        syncTemplateEditorFields();
+      }
+    }
+
+    function syncTemplateEditorFields() {
+      const current = templatesList[currentTemplateIndex];
+      const titleInput = document.getElementById('tmplTitle');
+      const contentInput = document.getElementById('tmplContent');
+      const badge = document.getElementById('activeSlotBadge');
+      const charEl = document.getElementById('editorCharCount');
+
+      if (titleInput && current) titleInput.value = current.title;
+      if (contentInput && current) {
+        contentInput.value = current.content;
+        if (charEl) charEl.innerText = `${current.content.length} caracteres`;
+      }
+      if (badge) badge.innerText = `Editando: Modelo ${currentTemplateIndex + 1}`;
+
+      // Atualiza estilo visual das 5 abas
+      for (let i = 0; i < 5; i++) {
+        const tabBtn = document.getElementById(`tabSlot${i}`);
+        if (tabBtn) {
+          if (i === currentTemplateIndex) {
+            tabBtn.className = 'py-2 text-center text-xs font-bold rounded-lg transition bg-purple-600 text-white shadow';
+          } else {
+            tabBtn.className = 'py-2 text-center text-xs font-bold rounded-lg transition text-slate-400 hover:text-white hover:bg-surface-hover';
+          }
+        }
+      }
+
+      testSpintaxWeb();
+    }
+
+    function selectTemplateSlot(index) {
+      // Salva o que estava digitado no slot anterior
+      const titleInput = document.getElementById('tmplTitle');
+      const contentInput = document.getElementById('tmplContent');
+      if (titleInput && contentInput && templatesList[currentTemplateIndex]) {
+        templatesList[currentTemplateIndex].title = titleInput.value;
+        templatesList[currentTemplateIndex].content = contentInput.value;
+      }
+
+      currentTemplateIndex = index;
+      previewModelIndex = index;
+      syncTemplateEditorFields();
+    }
+
+    function handleTemplateInput() {
+      const titleInput = document.getElementById('tmplTitle');
+      const contentInput = document.getElementById('tmplContent');
+      const charEl = document.getElementById('editorCharCount');
+
+      if (templatesList[currentTemplateIndex]) {
+        if (titleInput) templatesList[currentTemplateIndex].title = titleInput.value;
+        if (contentInput) {
+          templatesList[currentTemplateIndex].content = contentInput.value;
+          if (charEl) charEl.innerText = `${contentInput.value.length} caracteres`;
+        }
+      }
+
+      testSpintaxWeb();
+    }
+
+    function insertVariableAtCursor(text) {
+      const textarea = document.getElementById('tmplContent');
+      if (!textarea) return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const value = textarea.value;
+
+      textarea.value = value.substring(0, start) + text + value.substring(end);
+      textarea.selectionStart = textarea.selectionEnd = start + text.length;
+      textarea.focus();
+
+      handleTemplateInput();
+    }
+
     function parseSpintax(str) {
-      let result = str;
+      let result = str || '';
       const regex = /\{([^{}]+)\}/g;
-      while (regex.test(result)) {
+      let safetyCounter = 0;
+      while (regex.test(result) && safetyCounter < 50) {
         result = result.replace(regex, (match, choices) => {
           const parts = choices.split('|');
           return parts[Math.floor(Math.random() * parts.length)];
         });
+        safetyCounter++;
       }
       return result;
     }
 
-    function testSpintaxWeb() {
-      const raw = document.getElementById('tmplContent').value;
-      const replaced = raw
-        .replace(/\{nome\}/gi, 'Marina')
-        .replace(/\{username\}/gi, 'marinaferrarig');
-      
-      const out = parseSpintax(replaced);
-      const outEl = document.getElementById('spintaxPreviewOutput');
-      if (outEl) outEl.innerText = out;
-      const countEl = document.getElementById('charCount');
-      if (countEl) countEl.innerText = `${out.length} caracteres`;
+    function changeSimInfluencer(index) {
+      currentSimInfluencerIndex = parseInt(index, 10) || 0;
+      testSpintaxWeb();
     }
 
-    async function saveTemplateWeb(e) {
-      e.preventDefault();
-      const title = document.getElementById('tmplTitle').value;
-      const content = document.getElementById('tmplContent').value;
+    function previewSpecificModel(index) {
+      previewModelIndex = index;
+      testSpintaxWeb();
+    }
+
+    function simulateNextDispatch() {
+      // Alterna influenciadora e modelo sequencialmente para testar o envio contínuo
+      currentSimInfluencerIndex = (currentSimInfluencerIndex + 1) % sampleInfluencers.length;
+      previewModelIndex = (previewModelIndex + 1) % templatesList.length;
+
+      const select = document.getElementById('simInfluencerSelect');
+      if (select) select.value = currentSimInfluencerIndex;
+
+      testSpintaxWeb();
+
+      const influencer = sampleInfluencers[currentSimInfluencerIndex];
+      showToast(`Alternado: Enviando Modelo ${previewModelIndex + 1} para @${influencer.username}!`, 'info');
+    }
+
+    function testSpintaxWeb() {
+      const influencer = sampleInfluencers[currentSimInfluencerIndex] || sampleInfluencers[0];
+      const template = templatesList[previewModelIndex] || templatesList[0];
+
+      // Atualiza Header do Mockup do Instagram
+      const avatarEl = document.getElementById('simAvatar');
+      const nameEl = document.getElementById('simName');
+      const handleEl = document.getElementById('simHandleFollowers');
+      const badgeEl = document.getElementById('simModelBadge');
+
+      if (avatarEl) avatarEl.innerText = influencer.avatar;
+      if (nameEl) nameEl.innerText = influencer.name;
+      if (handleEl) handleEl.innerText = `@${influencer.username} • ${influencer.followers} seguidores`;
+      if (badgeEl) badgeEl.innerText = `Modelo ${previewModelIndex + 1}`;
+
+      // Extrai primeiro nome
+      const firstName = (influencer.name || 'Amiga').trim().split(' ')[0];
+
+      // Substitui variáveis dinâmicas
+      let evaluated = (template.content || '')
+        .replace(/\{nome\}/gi, firstName)
+        .replace(/\{username\}/gi, influencer.username);
+
+      // Resolve o Spintax
+      const output = parseSpintax(evaluated);
+
+      const previewEl = document.getElementById('spintaxPreviewOutput');
+      const charEl = document.getElementById('charCount');
+
+      if (previewEl) previewEl.innerText = output;
+      if (charEl) charEl.innerText = `${output.length} caracteres`;
+    }
+
+    async function saveAllTemplatesWeb(e) {
+      if (e) e.preventDefault();
+      
+      // Sincroniza o slot atual
+      const titleInput = document.getElementById('tmplTitle');
+      const contentInput = document.getElementById('tmplContent');
+      if (titleInput && contentInput && templatesList[currentTemplateIndex]) {
+        templatesList[currentTemplateIndex].title = titleInput.value;
+        templatesList[currentTemplateIndex].content = contentInput.value;
+      }
+
+      const btn = document.getElementById('btnSaveTemplates');
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando 5 Modelos no D1...';
 
       try {
-        await fetch(`${API_BASE}/api/templates`, {
+        const res = await fetch(`${API_BASE}/api/templates`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, content })
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ templates: templatesList })
         });
-        showToast('Template salvo com sucesso no banco Cloudflare D1!', 'success');
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('Todos os 5 Modelos foram salvos com sucesso no Cloudflare D1!', 'success');
+        } else {
+          showToast(data.error || 'Erro ao salvar modelos.', 'error');
+        }
       } catch (err) {
-        showToast('Erro ao salvar template.', 'error');
+        showToast('Erro ao conectar com o banco Cloudflare D1.', 'error');
+      } finally {
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Salvar Todos os 5 Modelos no D1';
       }
     }
 

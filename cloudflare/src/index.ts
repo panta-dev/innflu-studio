@@ -322,14 +322,14 @@ app.post('/api/campaigns', async (c) => {
 });
 
 // ==========================================
-// 3. TEMPLATES DE MENSAGENS (COM SPINTAX)
+// 3. TEMPLATES DE MENSAGENS (COM SPINTAX MULTI-MODELOS)
 // ==========================================
 app.get('/api/templates', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
   const userId = user?.id || 'usr_admin_01';
-  const { results } = await db.prepare("SELECT * FROM templates WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC").bind(userId).all();
-  return c.json({ templates: results });
+  const { results } = await db.prepare("SELECT * FROM templates WHERE user_id = ? AND is_active = 1 ORDER BY id ASC").bind(userId).all();
+  return c.json({ templates: results, userId });
 });
 
 app.post('/api/templates', async (c) => {
@@ -337,6 +337,23 @@ app.post('/api/templates', async (c) => {
   const user = await getAuthUser(db, c);
   const userId = user?.id || 'usr_admin_01';
   const body = await c.req.json();
+
+  // Suporte a salvar múltiplos templates em lote (ex: os 5 modelos)
+  if (Array.isArray(body.templates)) {
+    for (const t of body.templates) {
+      const id = t.id || 'tmpl_' + Math.random().toString(36).substring(2, 9);
+      const title = t.title || 'Modelo de Mensagem';
+      const content = t.content || '';
+      await db.prepare(`
+        INSERT INTO templates (id, user_id, campaign_id, title, content, is_active)
+        VALUES (?, ?, NULL, ?, ?, 1)
+        ON CONFLICT(id) DO UPDATE SET title = excluded.title, content = excluded.content
+      `).bind(id, userId, title, content).run();
+    }
+    return c.json({ success: true, count: body.templates.length, userId });
+  }
+
+  // Suporte a salvar modelo individual
   const id = body.id || 'tmpl_' + Date.now();
   const campaignId = body.campaign_id || null;
   const title = body.title || 'Novo Modelo';
@@ -348,7 +365,7 @@ app.post('/api/templates', async (c) => {
     ON CONFLICT(id) DO UPDATE SET title = excluded.title, content = excluded.content
   `).bind(id, userId, campaignId, title, content).run();
 
-  return c.json({ success: true, id });
+  return c.json({ success: true, id, userId });
 });
 
 // ==========================================

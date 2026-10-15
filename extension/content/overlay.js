@@ -1249,7 +1249,31 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
   async function dispatchDM(username, apiBaseUrl, template) {
     try {
-      const msg = window.InnfluSpintax.interpolate(template, { username, nome: username });
+      let chosenTemplate = template;
+      try {
+        const { apiKey } = await getState();
+        const headers = apiKey ? { 'X-API-Key': apiKey } : {};
+        const tmplRes = await fetch(`${apiBaseUrl}/api/templates`, { headers });
+        if (tmplRes.ok) {
+          const tmplData = await tmplRes.json();
+          if (tmplData.templates && tmplData.templates.length > 0) {
+            const { bot } = await getState();
+            const idx = (bot.sentCount || 0) % tmplData.templates.length;
+            chosenTemplate = tmplData.templates[idx].content || template;
+          }
+        }
+      } catch (e) {}
+
+      // Busca primeiro nome real do perfil se disponível
+      let influencerName = username;
+      try {
+        if (window.InnfluCrawler && typeof window.InnfluCrawler.getCurrentProfileFullName === 'function') {
+          const profileName = window.InnfluCrawler.getCurrentProfileFullName();
+          if (profileName) influencerName = profileName.split(' ')[0];
+        }
+      } catch (e) {}
+
+      const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username, nome: influencerName });
       hudCurrentAction.innerText = `Digitando DM para @${username}...`;
       await window.InnfluSender.sendDirectMessage(msg);
 
