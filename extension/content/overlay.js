@@ -308,39 +308,68 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   }
 
   // ==========================================
-  // STORAGE PERSISTENTE
+  // STORAGE PERSISTENTE (COM PROTEÇÃO ANTI-INVALIDATED CONTEXT)
   // ==========================================
+  function isExtensionContextValid() {
+    return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id;
+  }
+
   async function getState() {
     return new Promise(resolve => {
-      chrome.storage.local.get(['innfluBot', 'apiBaseUrl', 'activeTemplate', 'savedLeadsCache'], res => {
-        resolve({
-          bot: res.innfluBot || {
-            isRunning: false,
-            activeMode: null, // 'miner' | 'sender'
-            miningSource: 'similar', // 'similar' | 'keyword' | 'hashtag' | 'followers'
-            miningTarget: 'marialuizazamoner',
-            minFollowers: 10000,
-            requireContact: 'all',
-            queue: [],
-            visited: [],
-            minedCount: 0,
-            sentCount: 0,
-            nextActionAt: 0,
-            activityFeed: []
-          },
-          apiBaseUrl: res.apiBaseUrl || 'http://127.0.0.1:8787',
-          activeTemplate: res.activeTemplate || hudTemplateContent.value,
-          savedLeads: res.savedLeadsCache || []
+      const fallback = {
+        bot: {
+          isRunning: false,
+          activeMode: null,
+          miningSource: 'similar',
+          miningTarget: 'marialuizazamoner',
+          minFollowers: 10000,
+          requireContact: 'all',
+          queue: [],
+          visited: [],
+          minedCount: 0,
+          sentCount: 0,
+          nextActionAt: 0,
+          activityFeed: []
+        },
+        apiBaseUrl: 'http://127.0.0.1:8787',
+        activeTemplate: hudTemplateContent ? hudTemplateContent.value : '',
+        savedLeads: []
+      };
+
+      if (!isExtensionContextValid()) {
+        resolve(fallback);
+        return;
+      }
+
+      try {
+        chrome.storage.local.get(['innfluBot', 'apiBaseUrl', 'activeTemplate', 'savedLeadsCache'], res => {
+          if (chrome.runtime.lastError) {
+            resolve(fallback);
+            return;
+          }
+          resolve({
+            bot: res?.innfluBot || fallback.bot,
+            apiBaseUrl: res?.apiBaseUrl || fallback.apiBaseUrl,
+            activeTemplate: res?.activeTemplate || fallback.activeTemplate,
+            savedLeads: res?.savedLeadsCache || []
+          });
         });
-      });
+      } catch (err) {
+        resolve(fallback);
+      }
     });
   }
 
   async function saveBot(partial) {
+    if (!isExtensionContextValid()) return;
     const { bot } = await getState();
     const updated = { ...bot, ...partial };
     return new Promise(resolve => {
-      chrome.storage.local.set({ innfluBot: updated }, () => resolve(updated));
+      try {
+        chrome.storage.local.set({ innfluBot: updated }, () => resolve(updated));
+      } catch (e) {
+        resolve(updated);
+      }
     });
   }
 
