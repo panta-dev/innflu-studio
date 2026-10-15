@@ -235,7 +235,7 @@
 
         <button onclick="navTo('view-blacklist')" id="nav-view-blacklist" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
           <i class="fa-solid fa-ban w-4 text-rose-400"></i>
-          <span>Blacklist & 7 Dias</span>
+          <span>Blacklist</span>
         </button>
       </nav>
     </div>
@@ -543,10 +543,13 @@
 
           <div class="flex flex-wrap items-center gap-2">
             <!-- Filtro de Status -->
-            <select id="filterLeadStatus" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500">
+            <select id="filterLeadStatus" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500 font-medium">
               <option value="all">Todos os Status</option>
-              <option value="minerada">Mineradas (Prontas)</option>
-              <option value="sent">DMs Enviadas</option>
+              <option value="minerada">● Mineradas (Prontas)</option>
+              <option value="partner">🤝 Fechou Parceria</option>
+              <option value="negotiating">💬 Em Negociação</option>
+              <option value="sent">✉️ DMs Enviadas</option>
+              <option value="blacklisted">🚫 Na Blacklist</option>
               <option value="pending">Pendentes</option>
             </select>
 
@@ -588,6 +591,55 @@
           </div>
         </div>
 
+        <!-- Barra de Ações em Lote Multi-Seleção (Sticky Flutuante) -->
+        <div id="crmBulkActionBar" class="hidden glass-panel p-3 rounded-2xl border border-purple-500/40 bg-slate-900/95 shadow-2xl backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 sticky top-3 z-30 transition-all">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 font-bold text-xs border border-purple-500/30">
+              <i class="fa-solid fa-check-double text-purple-400"></i>
+              <span id="bulkSelectedCount">0</span> influenciadora(s) selecionada(s)
+            </span>
+            <button onclick="clearLeadsSelection()" class="text-[11px] text-slate-400 hover:text-white transition underline">
+              Desmarcar todas
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Ações de Status -->
+            <button onclick="bulkSetStatus('partner')" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition" title="Marcar como Fechou Parceria">
+              <i class="fa-solid fa-handshake"></i> Fechou Parceria
+            </button>
+            <button onclick="bulkSetStatus('negotiating')" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition" title="Marcar como Em Negociação">
+              <i class="fa-solid fa-comments"></i> Em Negociação
+            </button>
+            <button onclick="bulkSetStatus('sent')" class="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition" title="Marcar como DM Enviada">
+              <i class="fa-solid fa-check"></i> DM Enviada
+            </button>
+            <button onclick="bulkSetStatus('minerada')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition" title="Voltar para Minerada">
+              <i class="fa-solid fa-rotate-left"></i> Minerada
+            </button>
+
+            <span class="h-5 w-px bg-surface-border mx-1 hidden sm:inline-block"></span>
+
+            <!-- Mover p/ Blacklist -->
+            <button onclick="openBulkBlacklistModal()" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1.5 transition" title="Mover selecionadas para a Blacklist">
+              <i class="fa-solid fa-ban"></i> Mover p/ Blacklist
+            </button>
+
+            <!-- Copiar Contatos das Selecionadas -->
+            <button onclick="copySelectedWhatsApps()" class="px-2.5 py-1.5 rounded-xl bg-surface-card hover:bg-surface-hover text-slate-300 border border-surface-border text-xs flex items-center gap-1 transition" title="Copiar WhatsApps das selecionadas">
+              <i class="fa-brands fa-whatsapp text-emerald-400"></i> WhatsApps
+            </button>
+            <button onclick="copySelectedEmails()" class="px-2.5 py-1.5 rounded-xl bg-surface-card hover:bg-surface-hover text-slate-300 border border-surface-border text-xs flex items-center gap-1 transition" title="Copiar E-mails das selecionadas">
+              <i class="fa-solid fa-envelope text-sky-400"></i> E-mails
+            </button>
+
+            <!-- Excluir Selecionadas -->
+            <button onclick="bulkDeleteLeads()" class="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition" title="Excluir selecionadas do CRM">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+        </div>
+
         <!-- Tabela Completa de Leads -->
         <div class="glass-panel rounded-2xl overflow-hidden border border-surface-border shadow-2xl">
           <!-- Banner Dica de Navegação com botão direito -->
@@ -605,6 +657,9 @@
             <table class="w-full text-left text-xs whitespace-nowrap min-w-max">
               <thead class="text-[10px] uppercase bg-surface-card/90 text-slate-400 border-b border-surface-border sticky top-0 z-10">
                 <tr class="whitespace-nowrap">
+                  <th class="w-10 px-4 py-3.5 text-center whitespace-nowrap font-bold">
+                    <input type="checkbox" id="checkSelectAll" onchange="toggleSelectAllLeads(this.checked)" class="rounded border-surface-border bg-surface-card text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4" title="Selecionar Todos">
+                  </th>
                   <th class="px-5 py-3.5 whitespace-nowrap font-bold">Influenciadora</th>
                   <th class="px-5 py-3.5 whitespace-nowrap font-bold">Nicho</th>
                   <th class="px-5 py-3.5 whitespace-nowrap font-bold">Seguidores</th>
@@ -618,7 +673,7 @@
               </thead>
               <tbody id="fullLeadsTableBody" class="divide-y divide-surface-border whitespace-nowrap">
                 <tr>
-                  <td colspan="9" class="text-center py-8 text-slate-500 whitespace-nowrap">Nenhuma influenciadora minerada encontrada.</td>
+                  <td colspan="10" class="text-center py-8 text-slate-500 whitespace-nowrap">Nenhuma influenciadora minerada encontrada.</td>
                 </tr>
               </tbody>
             </table>
@@ -1092,10 +1147,11 @@ Parcerias: assessoria@marialuiza.com.br
                     <th class="px-4 py-3">Username</th>
                     <th class="px-4 py-3">Motivo</th>
                     <th class="px-4 py-3">Bloqueado em</th>
+                    <th class="px-4 py-3 text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody id="blacklistTableBody" class="divide-y divide-surface-border">
-                  <tr><td colspan="3" class="text-center py-6 text-slate-500">Carregando blacklist...</td></tr>
+                  <tr><td colspan="4" class="text-center py-6 text-slate-500">Carregando blacklist...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1287,6 +1343,66 @@ Parcerias: assessoria@marialuiza.com.br
     </div>
   </div>
 
+  <!-- Modal Confirmação de Blacklist com Motivo Opcional -->
+  <div id="modalBlacklistPrompt" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+    <div class="glass-panel max-w-md w-full p-6 sm:p-7 rounded-3xl space-y-5 relative border border-rose-500/40 shadow-2xl">
+      <div class="flex justify-between items-start">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-rose-600/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+            <i class="fa-solid fa-ban text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Mover para a Blacklist</h3>
+            <p class="text-xs text-slate-400">Bloquear abordagem para <span id="modalBlkCount" class="text-rose-400 font-bold">0</span> influenciadora(s)</p>
+          </div>
+        </div>
+        <button onclick="closeBlacklistModal()" class="text-slate-400 hover:text-white p-2">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">
+            Motivo do Bloqueio <span class="text-slate-500 text-[10px] font-normal">(opcional)</span>
+          </label>
+          <input type="text" id="modalBlkReason" placeholder="ex: não fecha com produto de renda extra" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500">
+        </div>
+
+        <div>
+          <span class="block text-[10px] text-slate-400 uppercase font-semibold mb-1.5">Sugestões rápidas:</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" onclick="setQuickBlkReason('Não fecha com renda extra')" class="text-[10px] px-2.5 py-1 rounded-lg bg-surface-card hover:bg-surface-hover text-slate-300 border border-surface-border transition">
+              Não fecha com renda extra
+            </button>
+            <button type="button" onclick="setQuickBlkReason('Cobrou valor abusivo')" class="text-[10px] px-2.5 py-1 rounded-lg bg-surface-card hover:bg-surface-hover text-slate-300 border border-surface-border transition">
+              Cobrou valor abusivo
+            </button>
+            <button type="button" onclick="setQuickBlkReason('Não respondeu após 3 tentativas')" class="text-[10px] px-2.5 py-1 rounded-lg bg-surface-card hover:bg-surface-hover text-slate-300 border border-surface-border transition">
+              Sem resposta
+            </button>
+            <button type="button" onclick="setQuickBlkReason('Perfil desqualificado')" class="text-[10px] px-2.5 py-1 rounded-lg bg-surface-card hover:bg-surface-hover text-slate-300 border border-surface-border transition">
+              Desqualificado
+            </button>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-400 bg-surface-card/60 p-3 rounded-xl border border-surface-border leading-relaxed">
+          <i class="fa-solid fa-circle-info text-rose-400 mr-1"></i> Contas na Blacklist ficam bloqueadas permanentemente e não receberão novas mensagens nem serão mineradas novamente. O motivo é opcional.
+        </p>
+      </div>
+
+      <div class="flex justify-end gap-2.5 pt-2">
+        <button type="button" onclick="closeBlacklistModal()" class="px-4 py-2.5 rounded-xl border border-surface-border text-xs text-slate-400 hover:text-white transition">
+          Cancelar
+        </button>
+        <button type="button" onclick="confirmBulkBlacklist()" id="btnConfirmBulkBlacklist" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-ban"></i> Confirmar Bloqueio
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Autenticação SaaS (Login, Cadastro & Demo) -->
   <div id="modalAuth" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
     <div class="glass-panel max-w-md w-full p-6 sm:p-8 rounded-3xl space-y-6 relative border border-purple-500/30 shadow-2xl">
@@ -1384,6 +1500,8 @@ Parcerias: assessoria@marialuiza.com.br
   <script>
     const API_BASE = window.location.origin;
     let leadsData = [];
+    let currentFilteredLeads = [];
+    let selectedLeadIds = new Set();
     let currentMiningSource = 'similar';
     let chartActivityInstance = null;
     let chartChannelsInstance = null;
@@ -1577,22 +1695,42 @@ Parcerias: assessoria@marialuiza.com.br
 
     function renderLeadsTable(filtered = null) {
       const list = filtered || leadsData;
+      currentFilteredLeads = list;
       const tbody = document.getElementById('fullLeadsTableBody');
       const countEl = document.getElementById('leadsCountShowing');
       if (countEl) countEl.innerText = list.length;
 
       if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-500 whitespace-nowrap">Nenhuma influenciadora encontrada para os filtros selecionados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-500 whitespace-nowrap">Nenhuma influenciadora encontrada para os filtros selecionados.</td></tr>`;
+        updateSelectionUI();
         return;
       }
 
       tbody.innerHTML = list.map(l => {
+        const isSelected = selectedLeadIds.has(l.id);
         const waClean = (l.whatsapp || '').replace(/[^0-9]/g, '');
         const waLink = waClean ? `https://wa.me/${waClean}` : null;
         const emailLink = l.email ? `mailto:${l.email}` : null;
 
+        // Badges com design rico para cada status
+        let statusBadge = '';
+        if (l.status === 'partner') {
+          statusBadge = `<span class="status-badge bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap inline-flex items-center gap-1 font-bold"><i class="fa-solid fa-handshake text-[10px]"></i> Fechou Parceria</span>`;
+        } else if (l.status === 'negotiating') {
+          statusBadge = `<span class="status-badge bg-amber-500/15 text-amber-300 border border-amber-500/30 whitespace-nowrap inline-flex items-center gap-1 font-bold"><i class="fa-solid fa-comments text-[10px]"></i> Em Negociação</span>`;
+        } else if (l.status === 'sent') {
+          statusBadge = `<span class="status-badge bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap inline-flex items-center gap-1"><i class="fa-solid fa-check text-[9px]"></i> DM Enviada</span>`;
+        } else if (l.status === 'blacklisted') {
+          statusBadge = `<span class="status-badge bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap inline-flex items-center gap-1 font-bold"><i class="fa-solid fa-ban text-[10px]"></i> Blacklist</span>`;
+        } else {
+          statusBadge = `<span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap inline-flex items-center gap-1"><i class="fa-solid fa-circle text-[6px]"></i> Minerada</span>`;
+        }
+
         return `
-          <tr class="hover:bg-surface-hover/50 transition whitespace-nowrap">
+          <tr class="hover:bg-surface-hover/50 transition whitespace-nowrap ${isSelected ? 'bg-purple-900/25' : ''}">
+            <td class="w-10 px-4 py-3.5 text-center whitespace-nowrap">
+              <input type="checkbox" data-lead-id="${l.id}" ${isSelected ? 'checked' : ''} onchange="toggleSelectLead('${l.id}')" class="lead-row-checkbox rounded border-surface-border bg-surface-card text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4">
+            </td>
             <td class="px-5 py-3.5 whitespace-nowrap">
               <div class="flex items-center gap-3 whitespace-nowrap">
                 <div class="story-ring shrink-0">
@@ -1638,15 +1776,7 @@ Parcerias: assessoria@marialuiza.com.br
               ` : '<span class="text-slate-500 text-[11px] whitespace-nowrap">Inativo</span>'}
             </td>
             <td class="px-5 py-3.5 whitespace-nowrap">
-              ${l.status === 'sent' ? `
-                <span class="status-badge bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap inline-flex items-center gap-1">
-                  <i class="fa-solid fa-check text-[9px]"></i> DM Enviada
-                </span>
-              ` : `
-                <span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap inline-flex items-center gap-1">
-                  <i class="fa-solid fa-circle text-[6px]"></i> Minerada
-                </span>
-              `}
+              ${statusBadge}
             </td>
             <td class="px-5 py-3.5 text-slate-400 text-[11px] font-mono whitespace-nowrap">
               ${(l.discovered_at || '').substring(0, 16)}
@@ -1661,6 +1791,232 @@ Parcerias: assessoria@marialuiza.com.br
           </tr>
         `;
       }).join('');
+
+      updateSelectionUI();
+    }
+
+    // ----------------------------------------------------
+    // SELEÇÃO MÚLTIPLA & AÇÕES EM LOTE NO CRM
+    // ----------------------------------------------------
+    function toggleSelectAllLeads(checked) {
+      const currentList = currentFilteredLeads.length > 0 ? currentFilteredLeads : leadsData;
+      if (checked) {
+        currentList.forEach(l => selectedLeadIds.add(l.id));
+      } else {
+        selectedLeadIds.clear();
+      }
+      renderLeadsTable(currentFilteredLeads);
+    }
+
+    function toggleSelectLead(id) {
+      if (selectedLeadIds.has(id)) {
+        selectedLeadIds.delete(id);
+      } else {
+        selectedLeadIds.add(id);
+      }
+      updateSelectionUI();
+      const rowCheckbox = document.querySelector(`input[data-lead-id="${id}"]`);
+      if (rowCheckbox) {
+        const tr = rowCheckbox.closest('tr');
+        if (tr) {
+          if (selectedLeadIds.has(id)) {
+            tr.classList.add('bg-purple-900/25');
+          } else {
+            tr.classList.remove('bg-purple-900/25');
+          }
+        }
+      }
+    }
+
+    function updateSelectionUI() {
+      const count = selectedLeadIds.size;
+      const countEl = document.getElementById('bulkSelectedCount');
+      if (countEl) countEl.innerText = count;
+
+      const bar = document.getElementById('crmBulkActionBar');
+      if (bar) {
+        if (count > 0) {
+          bar.classList.remove('hidden');
+        } else {
+          bar.classList.add('hidden');
+        }
+      }
+
+      const checkAll = document.getElementById('checkSelectAll');
+      const currentList = currentFilteredLeads.length > 0 ? currentFilteredLeads : leadsData;
+      if (checkAll && currentList.length > 0) {
+        const allSelected = currentList.every(l => selectedLeadIds.has(l.id));
+        const someSelected = currentList.some(l => selectedLeadIds.has(l.id));
+        checkAll.checked = allSelected;
+        checkAll.indeterminate = !allSelected && someSelected;
+      }
+    }
+
+    function clearLeadsSelection() {
+      selectedLeadIds.clear();
+      renderLeadsTable(currentFilteredLeads);
+    }
+
+    async function bulkSetStatus(status) {
+      if (selectedLeadIds.size === 0) {
+        showToast('Nenhuma influenciadora selecionada.', 'error');
+        return;
+      }
+
+      const count = selectedLeadIds.size;
+      const statusLabels = {
+        partner: 'Fechou Parceria',
+        negotiating: 'Em Negociação',
+        sent: 'DM Enviada',
+        minerada: 'Minerada'
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/leads/bulk-status`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            ids: Array.from(selectedLeadIds),
+            status: status
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`${count} influenciadora(s) atualizada(s) para "${statusLabels[status] || status}"!`, 'success');
+          leadsData.forEach(l => {
+            if (selectedLeadIds.has(l.id)) {
+              l.status = status;
+            }
+          });
+          clearLeadsSelection();
+          fetchStats();
+        } else {
+          showToast(data.error || 'Erro ao atualizar status em lote.', 'error');
+        }
+      } catch (e) {
+        showToast('Erro de conexão ao atualizar status.', 'error');
+      }
+    }
+
+    function openBulkBlacklistModal() {
+      if (selectedLeadIds.size === 0) {
+        showToast('Nenhuma influenciadora selecionada para a Blacklist.', 'error');
+        return;
+      }
+      document.getElementById('modalBlkCount').innerText = selectedLeadIds.size;
+      document.getElementById('modalBlkReason').value = '';
+      document.getElementById('modalBlacklistPrompt').classList.remove('hidden');
+    }
+
+    function closeBlacklistModal() {
+      document.getElementById('modalBlacklistPrompt').classList.add('hidden');
+    }
+
+    function setQuickBlkReason(text) {
+      document.getElementById('modalBlkReason').value = text;
+    }
+
+    async function confirmBulkBlacklist() {
+      if (selectedLeadIds.size === 0) return;
+      const reason = document.getElementById('modalBlkReason').value.trim() || null;
+      const btn = document.getElementById('btnConfirmBulkBlacklist');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Bloqueando...';
+
+      const selectedUsernames = leadsData
+        .filter(l => selectedLeadIds.has(l.id))
+        .map(l => l.username);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/blacklist/bulk`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            usernames: selectedUsernames,
+            reason: reason
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`${selectedUsernames.length} perfil(is) movido(s) para a Blacklist com sucesso!`, 'success');
+          closeBlacklistModal();
+          leadsData.forEach(l => {
+            if (selectedLeadIds.has(l.id)) {
+              l.status = 'blacklisted';
+            }
+          });
+          clearLeadsSelection();
+          fetchBlacklist();
+          fetchStats();
+        } else {
+          showToast(data.error || 'Erro ao mover perfis para a Blacklist.', 'error');
+        }
+      } catch (e) {
+        showToast('Erro de conexão com o servidor.', 'error');
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-ban"></i> Confirmar Bloqueio';
+      }
+    }
+
+    function copySelectedWhatsApps() {
+      if (selectedLeadIds.size === 0) {
+        showToast('Nenhuma influenciadora selecionada.', 'error');
+        return;
+      }
+      const list = leadsData
+        .filter(l => selectedLeadIds.has(l.id) && l.whatsapp)
+        .map(l => l.whatsapp);
+
+      if (list.length === 0) {
+        showToast('Nenhum WhatsApp cadastrado entre as selecionadas.', 'info');
+        return;
+      }
+      navigator.clipboard.writeText(list.join('\n'));
+      showToast(`${list.length} números de WhatsApp copiados!`, 'success');
+    }
+
+    function copySelectedEmails() {
+      if (selectedLeadIds.size === 0) {
+        showToast('Nenhuma influenciadora selecionada.', 'error');
+        return;
+      }
+      const list = leadsData
+        .filter(l => selectedLeadIds.has(l.id) && l.email)
+        .map(l => l.email);
+
+      if (list.length === 0) {
+        showToast('Nenhum e-mail comercial cadastrado entre as selecionadas.', 'info');
+        return;
+      }
+      navigator.clipboard.writeText(list.join('\n'));
+      showToast(`${list.length} e-mails copiados!`, 'success');
+    }
+
+    async function bulkDeleteLeads() {
+      if (selectedLeadIds.size === 0) {
+        showToast('Nenhuma influenciadora selecionada.', 'error');
+        return;
+      }
+      const count = selectedLeadIds.size;
+      if (!confirm(`Deseja realmente remover as ${count} influenciadoras selecionadas do CRM?`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/leads/bulk-delete`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ ids: Array.from(selectedLeadIds) })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`${count} influenciadora(s) removida(s) com sucesso.`, 'info');
+          leadsData = leadsData.filter(l => !selectedLeadIds.has(l.id));
+          clearLeadsSelection();
+          fetchStats();
+        } else {
+          showToast(data.error || 'Erro ao remover leads.', 'error');
+        }
+      } catch (e) {
+        showToast('Erro de conexão ao remover leads.', 'error');
+      }
     }
 
     function renderOverviewRecentTable() {
@@ -1757,6 +2113,7 @@ Parcerias: assessoria@marialuiza.com.br
       try {
         await fetch(`${API_BASE}/api/leads/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         showToast('Lead removido com sucesso.', 'info');
+        selectedLeadIds.delete(id);
         loadAllData();
       } catch (e) {
         showToast('Erro ao remover lead.', 'error');
@@ -2440,36 +2797,79 @@ Parcerias: assessoria@marialuiza.com.br
         const list = data.blacklist || [];
 
         if (list.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-500">Nenhum perfil bloqueado.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-500">Nenhum perfil bloqueado na Blacklist.</td></tr>`;
           return;
         }
 
         tbody.innerHTML = list.map(b => `
-          <tr>
-            <td class="px-4 py-3 font-bold text-white">@${b.username}</td>
-            <td class="px-4 py-3 text-slate-400">${b.reason || 'Sem motivo'}</td>
-            <td class="px-4 py-3 text-slate-500 font-mono">${b.created_at || '—'}</td>
+          <tr class="hover:bg-surface-hover/40 transition">
+            <td class="px-4 py-3 font-bold text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-ban text-rose-400 text-xs"></i>
+              <a href="https://instagram.com/${b.username}" target="_blank" class="hover:underline">@${b.username}</a>
+            </td>
+            <td class="px-4 py-3 text-slate-300">
+              ${b.reason ? `<span class="bg-rose-500/10 text-rose-300 border border-rose-500/20 px-2 py-0.5 rounded text-[11px] font-medium">${b.reason}</span>` : '<span class="text-slate-500 text-[11px] italic">Sem motivo informado</span>'}
+            </td>
+            <td class="px-4 py-3 text-slate-500 font-mono text-[11px]">${(b.created_at || '—').substring(0, 16)}</td>
+            <td class="px-4 py-3 text-right">
+              <button onclick="removeBlacklistWeb('${b.username}')" class="px-2.5 py-1 rounded-lg bg-surface-card hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-surface-border hover:border-emerald-500/30 text-[11px] font-semibold transition" title="Remover da Blacklist">
+                <i class="fa-solid fa-unlock mr-1"></i> Desbloquear
+              </button>
+            </td>
           </tr>
         `).join('');
-      } catch (e) {}
+      } catch (e) {
+        console.error('Falha ao carregar blacklist:', e);
+      }
     }
 
     async function addToBlacklistWeb(e) {
       e.preventDefault();
-      const username = document.getElementById('blkUsername').value;
-      const reason = document.getElementById('blkReason').value;
+      const usernameInput = document.getElementById('blkUsername');
+      const reasonInput = document.getElementById('blkReason');
+      const username = usernameInput.value.trim().replace('@', '');
+      const reason = reasonInput.value.trim() || null;
 
       try {
-        await fetch(`${API_BASE}/api/blacklist`, {
+        const res = await fetch(`${API_BASE}/api/blacklist`, {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({ username, reason })
         });
-        showToast(`@${username} bloqueado na Blacklist!`, 'success');
-        document.getElementById('blkUsername').value = '';
-        fetchBlacklist();
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`@${username} adicionado à Blacklist com sucesso!`, 'success');
+          usernameInput.value = '';
+          reasonInput.value = '';
+          fetchBlacklist();
+          fetchLeads();
+          fetchStats();
+        } else {
+          showToast(data.error || 'Erro ao adicionar à blacklist.', 'error');
+        }
       } catch (err) {
-        showToast('Erro ao adicionar à blacklist.', 'error');
+        showToast('Erro de conexão ao adicionar à blacklist.', 'error');
+      }
+    }
+
+    async function removeBlacklistWeb(username) {
+      if (!confirm(`Deseja remover @${username} da Blacklist? O perfil poderá voltar a ser minerado e contatado.`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/blacklist/${username}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`@${username} foi removido da Blacklist!`, 'success');
+          fetchBlacklist();
+          fetchLeads();
+          fetchStats();
+        } else {
+          showToast(data.error || 'Erro ao remover da blacklist.', 'error');
+        }
+      } catch (e) {
+        showToast('Erro de conexão ao remover da blacklist.', 'error');
       }
     }
 

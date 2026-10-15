@@ -622,7 +622,7 @@ app.post('/api/log-sent', async (c) => {
 });
 
 // ==========================================
-// 7. BLACKLIST
+// 7. BLACKLIST (BLOQUEIO PERMANENTE COM MOTIVO)
 // ==========================================
 app.get('/api/blacklist', async (c) => {
   const db = c.env.DB;
@@ -630,7 +630,7 @@ app.get('/api/blacklist', async (c) => {
   const userId = user?.id || 'usr_admin_01';
 
   const { results } = await db.prepare("SELECT * FROM blacklist WHERE user_id = ? ORDER BY created_at DESC").bind(userId).all();
-  return c.json({ blacklist: results });
+  return c.json({ blacklist: results, userId });
 });
 
 app.post('/api/blacklist', async (c) => {
@@ -640,18 +640,76 @@ app.post('/api/blacklist', async (c) => {
 
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
-  const reason = body.reason || 'Adicionado manualmente';
+  const reason = body.reason || null;
 
   if (!username) {
     return c.json({ error: 'Username obrigatório' }, 400);
   }
 
-  const id = 'blk_' + Date.now();
+  const id = 'blk_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
   await db.prepare(`
-    INSERT OR IGNORE INTO blacklist (id, user_id, username, reason) VALUES (?, ?, ?, ?)
+    INSERT INTO blacklist (id, user_id, username, reason) VALUES (?, ?, ?, ?)
+    ON CONFLICT(user_id, username) DO UPDATE SET reason = excluded.reason
   `).bind(id, userId, username, reason).run();
 
-  return c.json({ success: true, username });
+  // Marca também no CRM como 'blacklisted'
+  await db.prepare("UPDATE leads SET status = 'blacklisted' WHERE user_id = ? AND username = ?").bind(userId, username).run();
+
+  return c.json({ success: true, username, reason, userId });
+});
+
+// Adicionar múltiplas influenciadoras à Blacklist em lote
+app.post('/api/blacklist/bulk', async (c) => {
+  const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
+  const body = await c.req.json();
+  const usernames: string[] = body.usernames || [];
+  const reason = body.reason || null;
+
+  if (!usernames || !usernames.length) {
+    return c.json({ error: 'Nenhum usuário informado' }, 400);
+  }
+
+  const statements = [];
+  for (const rawUser of usernames) {
+    const username = (rawUser || '').replace('@', '').trim().toLowerCase();
+    if (!username) continue;
+    const id = 'blk_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+    statements.push(
+      db.prepare(`
+        INSERT INTO blacklist (id, user_id, username, reason) VALUES (?, ?, ?, ?)
+        ON CONFLICT(user_id, username) DO UPDATE SET reason = COALESCE(excluded.reason, blacklist.reason)
+      `).bind(id, userId, username, reason)
+    );
+
+    statements.push(
+      db.prepare("UPDATE leads SET status = 'blacklisted' WHERE user_id = ? AND username = ?").bind(userId, username)
+    );
+  }
+
+  if (statements.length > 0) {
+    await db.batch(statements);
+  }
+
+  return c.json({ success: true, count: usernames.length, reason, userId });
+});
+
+// Remover influenciadora da Blacklist
+app.delete('/api/blacklist/:username', async (c) => {
+  const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
+  const username = c.req.param('username').replace('@', '').trim().toLowerCase();
+  await db.prepare("DELETE FROM blacklist WHERE user_id = ? AND username = ?").bind(userId, username).run();
+  
+  // Reverte status no CRM de 'blacklisted' para 'minerada'
+  await db.prepare("UPDATE leads SET status = 'minerada' WHERE user_id = ? AND username = ? AND status = 'blacklisted'").bind(userId, username).run();
+
+  return c.json({ success: true, username, userId });
 });
 
 // ==========================================
@@ -745,6 +803,47 @@ app.post('/api/leads/:id/status', async (c) => {
   const status = body.status || 'minerada';
   await db.prepare("UPDATE leads SET status = ? WHERE user_id = ? AND (id = ? OR username = ?)").bind(status, userId, id, id).run();
   return c.json({ success: true, status });
+});
+
+// Atualizar status de múltiplos leads em lote (ex: 'partner', 'negotiating', 'sent', 'minerada')
+app.post('/api/leads/bulk-status', async (c) => {
+  const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+  const body = await c.req.json();
+  const ids: string[] = body.ids || [];
+  const status: string = body.status || 'partner';
+
+  if (!ids || !ids.length) {
+    return c.json({ error: 'Nenhum lead informado' }, 400);
+  }
+
+  const statements = ids.map(id => 
+    db.prepare("UPDATE leads SET status = ? WHERE user_id = ? AND (id = ? OR username = ?)").bind(status, userId, id, id)
+  );
+
+  await db.batch(statements);
+  return c.json({ success: true, count: ids.length, status, userId });
+});
+
+// Excluir múltiplos leads em lote
+app.post('/api/leads/bulk-delete', async (c) => {
+  const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+  const body = await c.req.json();
+  const ids: string[] = body.ids || [];
+
+  if (!ids || !ids.length) {
+    return c.json({ error: 'Nenhum lead informado' }, 400);
+  }
+
+  const statements = ids.map(id => 
+    db.prepare("DELETE FROM leads WHERE user_id = ? AND (id = ? OR username = ?)").bind(userId, id, id)
+  );
+
+  await db.batch(statements);
+  return c.json({ success: true, count: ids.length, userId });
 });
 
 // ==========================================
