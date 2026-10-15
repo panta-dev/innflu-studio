@@ -159,6 +159,10 @@
             <button class="innflu-export-btn csv" id="btnExportCSV" title="Baixar planilha completa">
               📥 Baixar CSV
             </button>
+            <button class="innflu-export-btn" id="btnImportCSV" title="Importar lista de influenciadoras CSV para o CRM">
+              📤 Importar CSV
+            </button>
+            <input type="file" id="hudInputImportCSV" accept=".csv,text/csv,text/plain" style="display:none;" />
             <button class="innflu-export-btn" id="btnCopyWhatsapps" title="Copiar todos os números">
               📱 Copiar Whats
             </button>
@@ -1415,7 +1419,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   $('btnRefreshLeads').onclick = () => { loadLeadsFromApiAndRender(); };
 
   // ==========================================
-  // EXPORTAÇÃO CSV & CÓPIA DE CONTATOS
+  // EXPORTAÇÃO & IMPORTAÇÃO CSV, CÓPIA DE CONTATOS
   // ==========================================
   $('btnExportCSV').onclick = () => {
     if (cachedLeads.length === 0) {
@@ -1423,15 +1427,18 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       return;
     }
 
-    const headers = ['Username', 'Nome Completo', 'WhatsApp', 'Email', 'Seguidores', 'Status', 'Bio', 'Link Perfil', 'Data'];
+    const headers = ['ID', 'Username', 'Nome Completo', 'WhatsApp', 'Email', 'Seguidores', 'Stories Ativos', 'Nicho', 'Status', 'Bio', 'Link Perfil', 'Data'];
     const rows = cachedLeads.map(l => [
+      `"${l.id || ''}"`,
       `"${l.username || ''}"`,
       `"${(l.full_name || '').replace(/"/g, '""')}"`,
       `"${l.whatsapp || ''}"`,
       `"${l.email || ''}"`,
       l.followers_count || 0,
+      `"${l.has_active_stories ? 1 : 0}"`,
+      `"${(l.niche || 'Geral').replace(/"/g, '""')}"`,
       `"${l.status || 'minerada'}"`,
-      `"${(l.bio || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+      `"${(l.bio || '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`,
       `"https://www.instagram.com/${l.username}/"`,
       `"${l.discovered_at || ''}"`
     ]);
@@ -1447,6 +1454,206 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
     showToast({ type: 'success', title: 'Download Concluído', message: `${cachedLeads.length} leads exportados com sucesso!` });
   };
+
+  function parseCSVToLeads(text) {
+    if (!text || !text.trim()) return [];
+    let cleanText = text.replace(/^\uFEFF/, '');
+    const firstLine = cleanText.split(/\r?\n/)[0] || '';
+    let delimiter = ',';
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const semicolonCount = (firstLine.match(/;/g) || []).length;
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    if (semicolonCount > commaCount && semicolonCount >= tabCount) delimiter = ';';
+    else if (tabCount > commaCount && tabCount > semicolonCount) delimiter = '\t';
+
+    const rows = [];
+    let currentRow = [];
+    let currentField = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < cleanText.length) {
+      const char = cleanText[i];
+      const nextChar = cleanText[i + 1];
+
+      if (inQuotes) {
+        if (char === '"') {
+          if (nextChar === '"') {
+            currentField += '"';
+            i += 2;
+            continue;
+          } else {
+            inQuotes = false;
+            i++;
+            continue;
+          }
+        } else {
+          currentField += char;
+          i++;
+          continue;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+          i++;
+          continue;
+        } else if (char === delimiter) {
+          currentRow.push(currentField.trim());
+          currentField = '';
+          i++;
+          continue;
+        } else if (char === '\r') {
+          if (nextChar === '\n') i++;
+          currentRow.push(currentField.trim());
+          rows.push(currentRow);
+          currentRow = [];
+          currentField = '';
+          i++;
+          continue;
+        } else if (char === '\n') {
+          currentRow.push(currentField.trim());
+          rows.push(currentRow);
+          currentRow = [];
+          currentField = '';
+          i++;
+          continue;
+        } else {
+          currentField += char;
+          i++;
+          continue;
+        }
+      }
+    }
+    if (currentField.length > 0 || currentRow.length > 0) {
+      currentRow.push(currentField.trim());
+      rows.push(currentRow);
+    }
+
+    if (rows.length < 2) return [];
+
+    const rawHeaders = rows[0].map(h => (h || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+    const colMap = {};
+    rawHeaders.forEach((h, idx) => {
+      if (/^(id|lead_id)$/i.test(h)) colMap.id = idx;
+      else if (/^(username|usuario|user|influenciadora|perfil|handle|@)$/i.test(h)) colMap.username = idx;
+      else if (/^(nome|nome\s*completo|full_name|name)$/i.test(h)) colMap.full_name = idx;
+      else if (/^(seguidores|followers|followers_count|seguidor|seg)$/i.test(h)) colMap.followers_count = idx;
+      else if (/^(whatsapp|whats|telefone|celular|phone|tel|contato)$/i.test(h)) colMap.whatsapp = idx;
+      else if (/^(email|e-mail|mail)$/i.test(h)) colMap.email = idx;
+      else if (/^(stories|stories\s*ativos|has_active_stories|active_stories|story)$/i.test(h)) colMap.has_active_stories = idx;
+      else if (/^(nicho|niche|categoria|segmento)$/i.test(h)) colMap.niche = idx;
+      else if (/^(bio|biografia|descricao|about)$/i.test(h)) colMap.bio = idx;
+      else if (/^(status|situacao|estado)$/i.test(h)) colMap.status = idx;
+      else if (/^(data|data\s*descoberta|discovered_at|created_at|date)$/i.test(h)) colMap.discovered_at = idx;
+    });
+
+    if (colMap.username === undefined) {
+      const userIdx = rawHeaders.findIndex(h => h.includes('user') || h.includes('perfil') || h.includes('influenciador'));
+      if (userIdx !== -1) colMap.username = userIdx;
+      else colMap.username = 0;
+    }
+
+    const leads = [];
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
+
+      let username = (colMap.username !== undefined && row[colMap.username]) ? row[colMap.username] : '';
+      username = username.replace(/^@/, '').trim().toLowerCase();
+      if (username.includes('instagram.com/')) {
+        username = username.split('instagram.com/')[1].split('/')[0].split('?')[0].trim().toLowerCase();
+      }
+
+      if (!username || username.length < 2) continue;
+
+      let followersCount = 0;
+      if (colMap.followers_count !== undefined && row[colMap.followers_count]) {
+        let rawF = String(row[colMap.followers_count]).toLowerCase().trim();
+        if (/(mil\b|k\b|\d+k)/i.test(rawF)) {
+          followersCount = Math.round(parseFloat(rawF.replace(/[^0-9.,]/g, '').replace(',', '.')) * 1000) || 0;
+        } else if (/(milh[aã]o|milh[oõ]es|mi\b|\d+m\b)/i.test(rawF)) {
+          followersCount = Math.round(parseFloat(rawF.replace(/[^0-9.,]/g, '').replace(',', '.')) * 1000000) || 0;
+        } else {
+          let cleanNumber = rawF.trim();
+          if (/^\d{1,3}(\.\d{3})+$/.test(cleanNumber)) {
+            followersCount = parseInt(cleanNumber.replace(/\./g, ''), 10) || 0;
+          } else if (/^\d{1,3}(,\d{3})+$/.test(cleanNumber)) {
+            followersCount = parseInt(cleanNumber.replace(/,/g, ''), 10) || 0;
+          } else {
+            followersCount = parseInt(cleanNumber.replace(/[^0-9]/g, ''), 10) || 0;
+          }
+        }
+      }
+
+      let hasActiveStories = 0;
+      if (colMap.has_active_stories !== undefined && row[colMap.has_active_stories]) {
+        const rawStory = String(row[colMap.has_active_stories]).toLowerCase().trim();
+        if (rawStory === '1' || rawStory === 'true' || rawStory === 'sim' || rawStory === 'yes' || rawStory === 's' || rawStory.includes('ativo')) {
+          hasActiveStories = 1;
+        }
+      }
+
+      leads.push({
+        id: (colMap.id !== undefined && row[colMap.id]) ? row[colMap.id].trim() : undefined,
+        username,
+        full_name: (colMap.full_name !== undefined && row[colMap.full_name]) ? row[colMap.full_name].trim() : '',
+        followers_count: followersCount,
+        whatsapp: (colMap.whatsapp !== undefined && row[colMap.whatsapp]) ? row[colMap.whatsapp].trim() : null,
+        email: (colMap.email !== undefined && row[colMap.email]) ? row[colMap.email].trim() : null,
+        has_active_stories: hasActiveStories,
+        niche: (colMap.niche !== undefined && row[colMap.niche]) ? row[colMap.niche].trim() : 'Geral',
+        bio: (colMap.bio !== undefined && row[colMap.bio]) ? row[colMap.bio].trim() : '',
+        status: (colMap.status !== undefined && row[colMap.status]) ? row[colMap.status].trim() : 'minerada',
+        discovered_at: (colMap.discovered_at !== undefined && row[colMap.discovered_at]) ? row[colMap.discovered_at].trim() : new Date().toISOString()
+      });
+    }
+
+    return leads;
+  }
+
+  const hudInputImportCSV = $('hudInputImportCSV');
+  if ($('btnImportCSV') && hudInputImportCSV) {
+    $('btnImportCSV').onclick = () => {
+      hudInputImportCSV.click();
+    };
+
+    hudInputImportCSV.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const leads = parseCSVToLeads(text);
+
+        if (!leads || leads.length === 0) {
+          showToast({ type: 'warning', title: 'Arquivo Vazio ou Inválido', message: 'Nenhuma influenciadora válida com @ ou username encontrada no CSV.' });
+          hudInputImportCSV.value = '';
+          return;
+        }
+
+        showToast({ type: 'info', title: 'Importando...', message: `Enviando ${leads.length} influenciadoras para o CRM...` });
+
+        const { apiBaseUrl } = await getState();
+        const res = await fetch(`${apiBaseUrl}/api/leads/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast({ type: 'success', title: 'Importação Concluída', message: `🎉 ${data.imported} leads importados para o CRM com sucesso!` });
+          await loadLeadsFromApiAndRender();
+        } else {
+          showToast({ type: 'error', title: 'Erro na Importação', message: data.error || 'Falha ao importar leads.' });
+        }
+      } catch (err) {
+        showToast({ type: 'error', title: 'Falha no Arquivo', message: err.message });
+      } finally {
+        hudInputImportCSV.value = '';
+      }
+    };
+  }
 
   $('btnCopyWhatsapps').onclick = () => {
     const numbers = cachedLeads.filter(l => !!l.whatsapp).map(l => l.whatsapp);

@@ -370,6 +370,85 @@ app.post('/api/leads', async (c) => {
   }
 });
 
+// Importação em Lote de Leads (CSV & Migração de Contas)
+app.post('/api/leads/import', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  try {
+    const body = await c.req.json();
+    const leads: any[] = Array.isArray(body) ? body : (body.leads || []);
+
+    if (!leads || leads.length === 0) {
+      return c.json({ error: 'Nenhum lead fornecido para importação' }, 400);
+    }
+
+    // Carrega perfis na blacklist para evitar importar bloqueados
+    const blacklistRows = await db.prepare("SELECT username FROM blacklist").all();
+    const blacklistedSet = new Set((blacklistRows.results || []).map((r: any) => (r.username || '').toLowerCase()));
+
+    let imported = 0;
+    let skipped = 0;
+
+    // Lotes de 50 para otimização do D1 batch
+    const batchSize = 50;
+    for (let i = 0; i < leads.length; i += batchSize) {
+      const chunk = leads.slice(i, i + batchSize);
+      const statements: any[] = [];
+
+      for (const lead of chunk) {
+        const username = (lead.username || '').replace('@', '').trim().toLowerCase();
+        if (!username || blacklistedSet.has(username)) {
+          skipped++;
+          continue;
+        }
+
+        const id = lead.id || ('lead_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
+        const campaignId = lead.campaign_id || null;
+        const fullName = (lead.full_name || lead.name || '').trim();
+        const followersCount = Number(lead.followers_count || 0);
+        const detectedGender = lead.detected_gender || 'unknown';
+        const hasActiveStories = (lead.has_active_stories === 1 || lead.has_active_stories === true || String(lead.has_active_stories).toLowerCase() === 'sim') ? 1 : 0;
+        const whatsapp = lead.whatsapp ? String(lead.whatsapp).trim() : null;
+        const email = lead.email ? String(lead.email).trim() : null;
+        const bio = lead.bio ? String(lead.bio).trim() : '';
+        const niche = lead.niche ? String(lead.niche).trim() : 'Geral';
+        const status = lead.status || 'minerada';
+        const discoveredAt = lead.discovered_at || new Date().toISOString();
+
+        statements.push(db.prepare(`
+          INSERT INTO leads (id, campaign_id, username, full_name, followers_count, detected_gender, has_active_stories, whatsapp, email, bio, niche, status, discovered_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(username) DO UPDATE SET
+            full_name = CASE WHEN excluded.full_name != '' THEN excluded.full_name ELSE leads.full_name END,
+            followers_count = CASE WHEN excluded.followers_count > 0 THEN excluded.followers_count ELSE leads.followers_count END,
+            has_active_stories = excluded.has_active_stories,
+            whatsapp = COALESCE(excluded.whatsapp, leads.whatsapp),
+            email = COALESCE(excluded.email, leads.email),
+            bio = CASE WHEN excluded.bio != '' THEN excluded.bio ELSE leads.bio END,
+            niche = COALESCE(excluded.niche, leads.niche),
+            status = CASE WHEN leads.status = 'sent' THEN 'sent' ELSE excluded.status END
+        `).bind(id, campaignId, username, fullName, followersCount, detectedGender, hasActiveStories, whatsapp, email, bio, niche, status, discoveredAt));
+      }
+
+      if (statements.length > 0) {
+        await db.batch(statements);
+        imported += statements.length;
+      }
+    }
+
+    return c.json({
+      success: true,
+      message: `${imported} influenciadoras importadas com sucesso!`,
+      imported,
+      skipped,
+      total: leads.length
+    });
+  } catch (err: any) {
+    return c.json({ error: 'Erro ao importar leads: ' + err.message }, 500);
+  }
+});
+
 // ==========================================
 // 5. REGRA DOS 7 DIAS & VERIFICAÇÃO DE CONTATO
 // ==========================================
