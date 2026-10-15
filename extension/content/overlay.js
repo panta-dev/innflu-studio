@@ -1209,9 +1209,15 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
   async function saveLead(apiBaseUrl, profile, status) {
     try {
+      const { bot } = await getState();
+      const headers = { 'Content-Type': 'application/json' };
+      if (bot && bot.apiToken) {
+        headers['Authorization'] = `Bearer ${bot.apiToken}`;
+        headers['X-API-Key'] = bot.apiToken;
+      }
       await fetch(`${apiBaseUrl}/api/leads`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           username: profile.username,
           full_name: profile.fullName,

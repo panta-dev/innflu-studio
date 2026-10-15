@@ -20,6 +20,180 @@ app.use('*', cors({
 }));
 
 // ==========================================
+// HELPERS CRIPTOGRÁFICOS WEBCRYPTO (ZERO-DEPENDENCY)
+// ==========================================
+async function hashPassword(password: string): Promise<string> {
+  const enc = new TextEncoder();
+  const salt = 'innflu_secure_salt_2026';
+  const data = enc.encode(password + salt);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function generateToken(prefix: string = 'inf'): string {
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  const str = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${prefix}_${str}`;
+}
+
+// Rota explícita para o dashboard
+app.get('/dashboard', (c) => {
+  return c.redirect('/dashboard/');
+});
+
+// ==========================================
+// 0. AUTENTICAÇÃO SAAS (LOGIN, CADASTRO, SESSÃO)
+// ==========================================
+app.post('/api/auth/register', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  const body = await c.req.json();
+  const email = (body.email || '').trim().toLowerCase();
+  const password = body.password || '';
+  const fullName = (body.full_name || body.name || 'Usuário Innflu').trim();
+  const companyName = (body.company_name || '').trim();
+
+  if (!email || !password || password.length < 6) {
+    return c.json({ error: 'E-mail válido e senha com no mínimo 6 caracteres são obrigatórios' }, 400);
+  }
+
+  // Verificar se usuário já existe
+  const existing = await db.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
+  if (existing) {
+    return c.json({ error: 'Este e-mail já está cadastrado na plataforma' }, 409);
+  }
+
+  const userId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+  const passwordHash = await hashPassword(password);
+  const apiToken = generateToken('inf_live');
+  const sessionToken = generateToken('ses');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 dias
+
+  try {
+    await db.prepare(`
+      INSERT INTO users (id, email, password_hash, full_name, company_name, plan, api_token)
+      VALUES (?, ?, ?, ?, ?, 'pro', ?)
+    `).bind(userId, email, passwordHash, fullName, companyName, apiToken).run();
+
+    await db.prepare(`
+      INSERT INTO sessions (id, user_id, token, expires_at)
+      VALUES (?, ?, ?, ?)
+    `).bind('ses_' + Date.now(), userId, sessionToken, expiresAt).run();
+
+    return c.json({
+      success: true,
+      message: 'Conta criada com sucesso!',
+      token: sessionToken,
+      user: {
+        id: userId,
+        email,
+        full_name: fullName,
+        company_name: companyName,
+        plan: 'pro',
+        api_token: apiToken
+      }
+    });
+  } catch (err: any) {
+    return c.json({ error: 'Erro ao criar conta: ' + err.message }, 500);
+  }
+});
+
+app.post('/api/auth/login', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  const body = await c.req.json();
+  const email = (body.email || '').trim().toLowerCase();
+  const password = body.password || '';
+
+  if (!email || !password) {
+    return c.json({ error: 'Informe e-mail e senha' }, 400);
+  }
+
+  const user = await db.prepare("SELECT * FROM users WHERE email = ?").bind(email).first<any>();
+  if (!user) {
+    return c.json({ error: 'E-mail ou senha incorretos' }, 401);
+  }
+
+  const computedHash = await hashPassword(password);
+  if (computedHash !== user.password_hash) {
+    return c.json({ error: 'E-mail ou senha incorretos' }, 401);
+  }
+
+  const sessionToken = generateToken('ses');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  await db.prepare(`
+    INSERT INTO sessions (id, user_id, token, expires_at)
+    VALUES (?, ?, ?, ?)
+  `).bind('ses_' + Date.now(), user.id, sessionToken, expiresAt).run();
+
+  return c.json({
+    success: true,
+    message: 'Login realizado com sucesso!',
+    token: sessionToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      company_name: user.company_name,
+      plan: user.plan,
+      api_token: user.api_token
+    }
+  });
+});
+
+app.get('/api/auth/me', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  const authHeader = c.req.header('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim() || c.req.query('token') || c.req.header('X-API-Key') || '';
+
+  if (!token) {
+    return c.json({ authenticated: false, error: 'Token não fornecido' }, 401);
+  }
+
+  // Tenta encontrar por token de sessão
+  let user = await db.prepare(`
+    SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token, u.created_at
+    FROM sessions s
+    JOIN users u ON s.user_id = u.id
+    WHERE s.token = ? AND datetime(s.expires_at) > datetime('now')
+  `).bind(token).first<any>();
+
+  // Se não achou, tenta por API Token direto
+  if (!user) {
+    user = await db.prepare(`
+      SELECT id, email, full_name, company_name, plan, api_token, created_at
+      FROM users
+      WHERE api_token = ?
+    `).bind(token).first<any>();
+  }
+
+  if (!user) {
+    return c.json({ authenticated: false, error: 'Sessão inválida ou expirada' }, 401);
+  }
+
+  return c.json({
+    authenticated: true,
+    user
+  });
+});
+
+app.post('/api/auth/logout', async (c) => {
+  const db = c.env.DB;
+  const authHeader = c.req.header('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (db && token) {
+    await db.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
+  }
+  return c.json({ success: true, message: 'Logout efetuado' });
+});
+
+// ==========================================
 // 1. HEALTH CHECK & STATS
 // ==========================================
 app.get('/api/health', (c) => {

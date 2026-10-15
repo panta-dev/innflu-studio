@@ -2,6 +2,29 @@
 -- INNFLU - DATABASE SCHEMA (Cloudflare D1 SQLite)
 -- ==========================================================
 
+-- Tabela de Usuários / Assinantes (Multi-tenant SaaS)
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    company_name TEXT,
+    plan TEXT DEFAULT 'pro', -- 'starter', 'pro', 'enterprise'
+    api_token TEXT UNIQUE NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de Sessões / Tokens de Autenticação
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Tabela de Campanhas de Prospecção
 CREATE TABLE IF NOT EXISTS campaigns (
     id TEXT PRIMARY KEY,
@@ -73,6 +96,9 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 -- Índices de Performance
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_api_token ON users(api_token);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 CREATE INDEX IF NOT EXISTS idx_leads_username ON leads(username);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_whatsapp ON leads(whatsapp);
@@ -82,8 +108,11 @@ CREATE INDEX IF NOT EXISTS idx_sent_logs_sent_at ON sent_logs(sent_at);
 CREATE INDEX IF NOT EXISTS idx_blacklist_username ON blacklist(username);
 
 -- Dados Iniciais Padrão
+INSERT OR IGNORE INTO users (id, email, password_hash, full_name, company_name, plan, api_token) VALUES
+('usr_admin_01', 'admin@innflu.com.br', 'dec448ad30b43c85ad3a9390e70535fd66442f27621c9d8b3edc2168aea66ba3', 'Administrador Innflu', 'Innflu HQ', 'pro', 'inf_live_adm123456789');
+
 INSERT OR IGNORE INTO settings (key, value) VALUES 
-('api_key', 'innflu_secret_token_12345'),
+('api_key', 'inf_live_adm123456789'),
 ('safe_mode_enabled', 'true'),
 ('daily_sent_count', '0'),
 ('last_reset_date', DATE('now'));
