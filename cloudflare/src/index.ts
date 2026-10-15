@@ -38,7 +38,7 @@ function generateToken(prefix: string = 'inf'): string {
 }
 
 // Helper de autenticação multi-tenant: identifica o usuário por sessão Bearer ou API Token
-async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email: string; full_name: string; plan: string; api_token: string } | null> {
+async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email: string; full_name: string; company_name?: string; plan: string; api_token: string; avatar_url?: string } | null> {
   const authHeader = c.req.header('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim() || 
                 c.req.header('X-API-Key') || 
@@ -47,7 +47,7 @@ async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email:
 
   if (token) {
     const sessionUser = await db.prepare(`
-      SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token
+      SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token, u.avatar_url
       FROM sessions s
       JOIN users u ON s.user_id = u.id
       WHERE s.token = ? AND datetime(s.expires_at) > datetime('now')
@@ -55,7 +55,7 @@ async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email:
     if (sessionUser) return sessionUser;
 
     const apiUser = await db.prepare(`
-      SELECT id, email, full_name, company_name, plan, api_token
+      SELECT id, email, full_name, company_name, plan, api_token, avatar_url
       FROM users
       WHERE api_token = ?
     `).bind(token).first<any>();
@@ -63,7 +63,7 @@ async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email:
   }
 
   // Fallback padrão para admin em modo visitante/demo local
-  const defaultAdmin = await db.prepare("SELECT id, email, full_name, company_name, plan, api_token FROM users WHERE id = 'usr_admin_01' OR email = 'admin@innflu.com.br' LIMIT 1").first<any>();
+  const defaultAdmin = await db.prepare("SELECT id, email, full_name, company_name, plan, api_token, avatar_url FROM users WHERE id = 'usr_admin_01' OR email = 'admin@innflu.com.br' LIMIT 1").first<any>();
   return defaultAdmin || null;
 }
 
@@ -103,8 +103,8 @@ app.post('/api/auth/register', async (c) => {
 
   try {
     await db.prepare(`
-      INSERT INTO users (id, email, password_hash, full_name, company_name, plan, api_token)
-      VALUES (?, ?, ?, ?, ?, 'pro', ?)
+      INSERT INTO users (id, email, password_hash, full_name, company_name, plan, api_token, avatar_url)
+      VALUES (?, ?, ?, ?, ?, 'pro', ?, NULL)
     `).bind(userId, email, passwordHash, fullName, companyName, apiToken).run();
 
     await db.prepare(`
@@ -139,7 +139,8 @@ app.post('/api/auth/register', async (c) => {
         full_name: fullName,
         company_name: companyName,
         plan: 'pro',
-        api_token: apiToken
+        api_token: apiToken,
+        avatar_url: null
       }
     });
   } catch (err: any) {
@@ -187,7 +188,8 @@ app.post('/api/auth/login', async (c) => {
       full_name: user.full_name,
       company_name: user.company_name,
       plan: user.plan,
-      api_token: user.api_token
+      api_token: user.api_token,
+      avatar_url: user.avatar_url || null
     }
   });
 });
@@ -205,7 +207,7 @@ app.get('/api/auth/me', async (c) => {
 
   // Tenta encontrar por token de sessão
   let user = await db.prepare(`
-    SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token, u.created_at
+    SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token, u.avatar_url, u.created_at
     FROM sessions s
     JOIN users u ON s.user_id = u.id
     WHERE s.token = ? AND datetime(s.expires_at) > datetime('now')
@@ -214,7 +216,7 @@ app.get('/api/auth/me', async (c) => {
   // Se não achou, tenta por API Token direto
   if (!user) {
     user = await db.prepare(`
-      SELECT id, email, full_name, company_name, plan, api_token, created_at
+      SELECT id, email, full_name, company_name, plan, api_token, avatar_url, created_at
       FROM users
       WHERE api_token = ?
     `).bind(token).first<any>();
@@ -238,6 +240,125 @@ app.post('/api/auth/logout', async (c) => {
     await db.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
   }
   return c.json({ success: true, message: 'Logout efetuado' });
+});
+
+// ==========================================
+// 0.1 GERENCIAMENTO COMPLETO DE PERFIL & CONTA
+// ==========================================
+app.get('/api/user/profile', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ error: 'Não autenticado' }, 401);
+  }
+
+  const profile = await db.prepare(`
+    SELECT id, email, full_name, company_name, plan, api_token, avatar_url, created_at
+    FROM users WHERE id = ?
+  `).bind(user.id).first<any>();
+
+  return c.json({ success: true, user: profile });
+});
+
+app.put('/api/user/profile', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ error: 'Não autenticado' }, 401);
+  }
+
+  const body = await c.req.json();
+  const fullName = (body.full_name || user.full_name || '').trim();
+  const companyName = body.company_name !== undefined ? (body.company_name || '').trim() : (user.company_name || '');
+  const email = (body.email || user.email || '').trim().toLowerCase();
+  const avatarUrl = body.avatar_url !== undefined ? body.avatar_url : (user.avatar_url || null);
+
+  if (!email || !fullName) {
+    return c.json({ error: 'Nome e E-mail são obrigatórios' }, 400);
+  }
+
+  if (email !== user.email) {
+    const existing = await db.prepare("SELECT id FROM users WHERE email = ? AND id != ?").bind(email, user.id).first();
+    if (existing) {
+      return c.json({ error: 'Este e-mail já está em uso por outro usuário' }, 409);
+    }
+  }
+
+  await db.prepare(`
+    UPDATE users 
+    SET full_name = ?, company_name = ?, email = ?, avatar_url = ?
+    WHERE id = ?
+  `).bind(fullName, companyName, email, avatarUrl, user.id).run();
+
+  const updatedUser = await db.prepare(`
+    SELECT id, email, full_name, company_name, plan, api_token, avatar_url, created_at
+    FROM users WHERE id = ?
+  `).bind(user.id).first<any>();
+
+  return c.json({
+    success: true,
+    message: 'Perfil atualizado com sucesso!',
+    user: updatedUser
+  });
+});
+
+app.put('/api/user/password', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ error: 'Não autenticado' }, 401);
+  }
+
+  const body = await c.req.json();
+  const currentPassword = body.current_password || '';
+  const newPassword = body.new_password || '';
+
+  if (!currentPassword || !newPassword) {
+    return c.json({ error: 'Informe a senha atual e a nova senha' }, 400);
+  }
+
+  if (newPassword.length < 6) {
+    return c.json({ error: 'A nova senha deve ter no mínimo 6 caracteres' }, 400);
+  }
+
+  const dbUser = await db.prepare("SELECT password_hash FROM users WHERE id = ?").bind(user.id).first<any>();
+  const currentHash = await hashPassword(currentPassword);
+  if (!dbUser || dbUser.password_hash !== currentHash) {
+    return c.json({ error: 'Senha atual incorreta' }, 400);
+  }
+
+  const newHash = await hashPassword(newPassword);
+  await db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").bind(newHash, user.id).run();
+
+  return c.json({
+    success: true,
+    message: 'Senha alterada com sucesso!'
+  });
+});
+
+app.post('/api/user/regenerate-token', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ error: 'Não autenticado' }, 401);
+  }
+
+  const newToken = generateToken('inf_live');
+  await db.prepare("UPDATE users SET api_token = ? WHERE id = ?").bind(newToken, user.id).run();
+
+  return c.json({
+    success: true,
+    api_token: newToken,
+    message: 'Novo Token de API gerado com sucesso!'
+  });
 });
 
 // ==========================================
@@ -868,7 +989,19 @@ app.put('/api/settings', async (c) => {
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
     `).bind(key, String(val)).run();
   }
-  return c.json({ success: true });
+  return c.json({ success: true, settings: body });
+});
+
+app.post('/api/settings', async (c) => {
+  const db = c.env.DB;
+  const body = await c.req.json();
+  for (const [key, val] of Object.entries(body)) {
+    await db.prepare(`
+      INSERT INTO settings (key, value) VALUES (?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `).bind(key, String(val)).run();
+  }
+  return c.json({ success: true, settings: body });
 });
 
 export default app;

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     company_name TEXT,
     plan TEXT DEFAULT 'pro', -- 'starter', 'pro', 'enterprise'
     api_token TEXT UNIQUE NOT NULL,
+    avatar_url TEXT,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

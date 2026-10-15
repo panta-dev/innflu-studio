@@ -242,34 +242,35 @@
 
     <!-- Bottom User & Settings -->
     <div class="p-4 border-t border-surface-border space-y-2.5">
-      <a href="/" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover transition border border-transparent hover:border-surface-border">
-        <span class="flex items-center gap-2.5">
-          <i class="fa-solid fa-arrow-left text-purple-400 text-[11px]"></i>
-          <span>Página Inicial (Site)</span>
+      <!-- Botão Sair da Conta (Logout e redirecionamento para o site) -->
+      <button type="button" onclick="logoutAndGoHome()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-rose-400/90 hover:text-white hover:bg-rose-500/10 transition border border-transparent hover:border-rose-500/20 group cursor-pointer" title="Sair da sua conta e ir para a página inicial">
+        <span class="flex items-center gap-2.5 font-semibold">
+          <i class="fa-solid fa-right-from-bracket text-rose-400 text-[12px] group-hover:-translate-x-0.5 transition-transform"></i>
+          <span>Sair da Conta</span>
         </span>
-        <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500"></i>
-      </a>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500 group-hover:text-rose-400"></i>
+      </button>
 
-      <button onclick="navTo('view-settings')" id="nav-view-settings" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover transition">
-        <i class="fa-solid fa-gear w-4"></i>
+      <button onclick="navToSettings('api')" id="nav-view-settings" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover transition cursor-pointer">
+        <i class="fa-solid fa-gear w-4 text-purple-400"></i>
         <span>Configurações & API</span>
       </button>
 
-      <!-- Card do Usuário Autenticado -->
-      <div id="sidebarUserCard" class="p-3 rounded-xl bg-surface-card/60 border border-surface-border flex items-center justify-between gap-2.5">
+      <!-- Card do Usuário Autenticado (Clicável para abrir Perfil) -->
+      <div id="sidebarUserCard" onclick="navToSettings('profile')" class="p-3 rounded-xl bg-surface-card/60 hover:bg-surface-card border border-surface-border hover:border-purple-500/40 flex items-center justify-between gap-2.5 cursor-pointer transition group" title="Clique para gerenciar seu perfil de usuário">
         <div class="flex items-center gap-2.5 min-w-0">
-          <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center font-bold text-xs text-white shrink-0">
+          <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center font-bold text-xs text-white shrink-0 overflow-hidden shadow-sm">
             AD
           </div>
           <div class="flex-1 min-w-0">
-            <p id="userNameDisplay" class="text-xs font-semibold text-white truncate">Admin Pro</p>
+            <p id="userNameDisplay" class="text-xs font-semibold text-white truncate group-hover:text-purple-300 transition">Admin Pro</p>
             <div class="flex items-center gap-1.5">
               <span id="userPlanBadge" class="text-[9px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1 py-0.2 rounded font-mono">PRO</span>
               <p id="userEmailDisplay" class="text-[10px] text-slate-400 truncate">admin@innflu.com.br</p>
             </div>
           </div>
         </div>
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-1" onclick="event.stopPropagation()">
           <button onclick="openApiModal()" title="Chave de API & Extensão" class="text-slate-400 hover:text-purple-400 transition p-1.5 rounded-lg hover:bg-surface-hover">
             <i class="fa-solid fa-key text-xs"></i>
           </button>
@@ -1163,68 +1164,301 @@ Parcerias: assessoria@marialuiza.com.br
            VIEW 9: CONFIGURAÇÕES GERAIS & API
       ==================================================== -->
       <section id="view-settings" class="space-y-6 hidden">
-        <div>
-          <h2 class="text-xl font-extrabold text-white">Configurações do Sistema & API</h2>
-          <p class="text-xs text-slate-400">Integração da extensão Chrome com o backend Cloudflare Workers.</p>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">Configurações & Perfil</h2>
+            <p class="text-xs text-slate-400">Gerencie seus dados pessoais, senha, avatar, credenciais de API e regras anti-ban.</p>
+          </div>
+
+          <!-- Tabs de Navegação Interna de Configurações -->
+          <div class="flex rounded-xl bg-surface-card p-1 border border-surface-border">
+            <button type="button" onclick="switchSettingsTab('profile')" id="tabBtnSettingsProfile" class="px-3.5 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-user text-xs"></i>
+              <span>Meu Perfil</span>
+            </button>
+            <button type="button" onclick="switchSettingsTab('api')" id="tabBtnSettingsApi" class="px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5">
+              <i class="fa-solid fa-plug text-xs"></i>
+              <span>Credenciais & API</span>
+            </button>
+            <button type="button" onclick="switchSettingsTab('antiban')" id="tabBtnSettingsAntiban" class="px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-halved text-xs"></i>
+              <span>Regras Anti-Ban</span>
+            </button>
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="glass-panel p-6 rounded-2xl space-y-4">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-plug text-purple-400"></i> Credenciais de Conexão
-            </h3>
+        <!-- ====================================================
+             CONTEÚDO DA ABA 1: MEU PERFIL & SEGURANÇA
+        ==================================================== -->
+        <div id="settingsTabContentProfile" class="space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <div class="space-y-3">
+            <!-- Card de Foto de Perfil & Avatar -->
+            <div class="glass-panel p-6 rounded-2xl space-y-5 lg:col-span-1 flex flex-col items-center text-center">
+              <div class="relative group">
+                <div id="settingsAvatarPreview" class="w-24 h-24 rounded-full bg-gradient-to-tr from-purple-600 via-pink-500 to-amber-400 p-[2.5px] shadow-xl shadow-purple-500/20 overflow-hidden flex items-center justify-center">
+                  <div id="settingsAvatarInner" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center font-black text-2xl text-white overflow-hidden">
+                    AD
+                  </div>
+                </div>
+                <button type="button" onclick="document.getElementById('inputAvatarUpload').click()" class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center shadow-lg transition border-2 border-[#090d16]" title="Carregar foto de perfil">
+                  <i class="fa-solid fa-camera text-xs"></i>
+                </button>
+              </div>
+
+              <input type="file" id="inputAvatarUpload" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="handleAvatarFileSelect(event)">
+
               <div>
-                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Endpoint Cloudflare API</label>
-                <div class="flex gap-2">
-                  <input type="text" id="settingsApiUrl" readonly class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-slate-300 font-mono">
-                  <button onclick="copyInput('settingsApiUrl')" class="bg-surface-card hover:bg-surface-hover border border-surface-border px-3 rounded-xl text-xs text-purple-400 font-semibold">Copiar</button>
+                <h3 id="settingsProfileNameDisplay" class="text-sm font-bold text-white">Administrador Innflu</h3>
+                <p id="settingsProfileEmailDisplay" class="text-xs text-slate-400">admin@innflu.com.br</p>
+                <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold font-mono uppercase">
+                  <i class="fa-solid fa-crown text-[9px] text-amber-400"></i> Plano Pro SaaS Ativo
                 </div>
               </div>
 
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-300 mb-1">API Key / Token da Extensão</label>
-                <div class="flex gap-2">
-                  <input type="text" id="settingsApiKey" readonly value="innflu_secret_token_12345" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-slate-300 font-mono">
-                  <button onclick="copyInput('settingsApiKey')" class="bg-surface-card hover:bg-surface-hover border border-surface-border px-3 rounded-xl text-xs text-purple-400 font-semibold">Copiar</button>
+              <!-- Ações do Avatar -->
+              <div class="flex flex-wrap items-center justify-center gap-2 w-full pt-2 border-t border-surface-border">
+                <button type="button" onclick="document.getElementById('inputAvatarUpload').click()" class="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition">
+                  <i class="fa-solid fa-upload text-[11px]"></i> Carregar Foto
+                </button>
+                <button type="button" onclick="removeProfileAvatar()" class="px-3 py-1.5 rounded-xl bg-surface-card hover:bg-surface-hover text-slate-400 hover:text-rose-400 border border-surface-border text-xs transition" title="Remover foto e usar iniciais">
+                  <i class="fa-solid fa-trash-can text-[11px]"></i> Remover
+                </button>
+              </div>
+
+              <!-- Sugestões de Avatares Rápidos -->
+              <div class="w-full pt-2">
+                <span class="block text-[10px] uppercase font-bold text-slate-500 mb-2">Avatares Rápidos com 1 Clique:</span>
+                <div class="flex justify-center gap-2">
+                  <button type="button" onclick="setQuickAvatarPreset('🚀')" class="w-8 h-8 rounded-xl bg-surface-card hover:bg-purple-500/20 border border-surface-border text-sm flex items-center justify-center transition" title="Foguete">🚀</button>
+                  <button type="button" onclick="setQuickAvatarPreset('⚡')" class="w-8 h-8 rounded-xl bg-surface-card hover:bg-purple-500/20 border border-surface-border text-sm flex items-center justify-center transition" title="Raio">⚡</button>
+                  <button type="button" onclick="setQuickAvatarPreset('👑')" class="w-8 h-8 rounded-xl bg-surface-card hover:bg-purple-500/20 border border-surface-border text-sm flex items-center justify-center transition" title="Coroa">👑</button>
+                  <button type="button" onclick="setQuickAvatarPreset('💼')" class="w-8 h-8 rounded-xl bg-surface-card hover:bg-purple-500/20 border border-surface-border text-sm flex items-center justify-center transition" title="Negócios">💼</button>
+                  <button type="button" onclick="setQuickAvatarPreset('🌸')" class="w-8 h-8 rounded-xl bg-surface-card hover:bg-purple-500/20 border border-surface-border text-sm flex items-center justify-center transition" title="Flor">🌸</button>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="glass-panel p-6 rounded-2xl space-y-4">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-sliders text-pink-400"></i> Parâmetros Anti-Ban Padrão
-            </h3>
+            <!-- Dados do Perfil & Alteração de Senha -->
+            <div class="lg:col-span-2 space-y-6">
+              
+              <!-- Formulário de Dados Pessoais -->
+              <div class="glass-panel p-6 rounded-2xl space-y-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-id-card text-purple-400"></i> Dados Pessoais & Conta
+                </h3>
 
-            <div class="space-y-3 text-xs">
-              <div class="flex justify-between items-center p-3 rounded-xl bg-surface-card/60 border border-surface-border">
-                <div>
-                  <p class="font-semibold text-white">Delay Mínimo entre Mensagens</p>
-                  <p class="text-[10px] text-slate-400">Intervalo randômico humanizado</p>
-                </div>
-                <span class="font-mono text-purple-400 font-bold">60 segundos</span>
+                <form onsubmit="handleSaveProfileData(event)" class="space-y-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nome Completo</label>
+                      <input type="text" id="inputProfileFullName" required placeholder="Seu Nome Completo" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                    </div>
+
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-300 mb-1">Empresa / Agência</label>
+                      <input type="text" id="inputProfileCompany" placeholder="Nome da Sua Empresa" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">E-mail de Login & Notificações</label>
+                    <input type="email" id="inputProfileEmail" required placeholder="seu@email.com" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                  </div>
+
+                  <div class="flex justify-end pt-2">
+                    <button type="submit" id="btnSaveProfileData" class="gradient-btn text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20">
+                      <i class="fa-solid fa-floppy-disk"></i>
+                      <span>Salvar Dados do Perfil</span>
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              <div class="flex justify-between items-center p-3 rounded-xl bg-surface-card/60 border border-surface-border">
-                <div>
-                  <p class="font-semibold text-white">Delay Máximo entre Mensagens</p>
-                  <p class="text-[10px] text-slate-400">Evita detecção de periodicidade</p>
-                </div>
-                <span class="font-mono text-pink-400 font-bold">180 segundos</span>
+              <!-- Formulário de Troca de Senha -->
+              <div class="glass-panel p-6 rounded-2xl space-y-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-lock text-pink-400"></i> Segurança & Alteração de Senha
+                </h3>
+
+                <form onsubmit="handleUpdatePassword(event)" class="space-y-4">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Senha Atual</label>
+                    <input type="password" id="inputProfileCurrentPassword" required placeholder="••••••••" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nova Senha (Mínimo 6 caracteres)</label>
+                      <input type="password" id="inputProfileNewPassword" required minlength="6" placeholder="Nova senha segura" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                    </div>
+
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-300 mb-1">Confirmar Nova Senha</label>
+                      <input type="password" id="inputProfileConfirmPassword" required minlength="6" placeholder="Repita a nova senha" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                    </div>
+                  </div>
+
+                  <div class="flex justify-end pt-2">
+                    <button type="submit" id="btnUpdatePassword" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition">
+                      <i class="fa-solid fa-key"></i>
+                      <span>Atualizar Senha</span>
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              <div class="flex justify-between items-center p-3 rounded-xl bg-surface-card/60 border border-surface-border">
-                <div>
-                  <p class="font-semibold text-white">Período de Bloqueio de Recontato</p>
-                  <p class="text-[10px] text-slate-400">Tempo mínimo antes de nova mensagem</p>
-                </div>
-                <span class="font-mono text-emerald-400 font-bold">7 dias corridos</span>
-              </div>
             </div>
           </div>
         </div>
+
+        <!-- ====================================================
+             CONTEÚDO DA ABA 2: CREDENCIAIS DE API & EXTENSÃO
+        ==================================================== -->
+        <div id="settingsTabContentApi" class="space-y-6 hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Card de Credenciais -->
+            <div class="glass-panel p-6 rounded-2xl space-y-4">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-plug text-purple-400"></i> Credenciais de Conexão com a Nuvem
+              </h3>
+
+              <div class="space-y-3.5">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Endpoint Cloudflare API</label>
+                  <div class="flex gap-2">
+                    <input type="text" id="settingsApiUrl" readonly class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-slate-300 font-mono">
+                    <button onclick="copyInput('settingsApiUrl')" class="bg-surface-card hover:bg-surface-hover border border-surface-border px-3.5 rounded-xl text-xs text-purple-400 font-semibold flex items-center gap-1.5 transition">
+                      <i class="fa-solid fa-copy text-xs"></i> Copiar
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Sua API Key / Token da Extensão</label>
+                    <button onclick="regenerateUserApiToken()" class="text-[10px] text-purple-400 hover:text-purple-300 transition flex items-center gap-1">
+                      <i class="fa-solid fa-rotate text-[9px]"></i> Gerar Nova Chave
+                    </button>
+                  </div>
+                  <div class="flex gap-2">
+                    <input type="text" id="settingsApiKey" readonly value="inf_live_adm123456789" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-purple-300 font-mono">
+                    <button onclick="copyInput('settingsApiKey')" class="bg-surface-card hover:bg-surface-hover border border-surface-border px-3.5 rounded-xl text-xs text-purple-400 font-semibold flex items-center gap-1.5 transition">
+                      <i class="fa-solid fa-copy text-xs"></i> Copiar
+                    </button>
+                  </div>
+                  <p class="text-[10px] text-slate-500 mt-1">Este token vincula as influenciadoras mineradas no Chrome diretamente à sua conta SaaS.</p>
+                </div>
+              </div>
+
+              <!-- Teste de Conexão -->
+              <div class="p-4 rounded-xl bg-surface-card/60 border border-surface-border flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <div>
+                    <p class="text-xs font-bold text-white">Cloudflare D1 Conectado</p>
+                    <p class="text-[10px] text-slate-400">Banco de dados serverless ativo</p>
+                  </div>
+                </div>
+                <button onclick="checkApiHealth()" class="text-xs px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border text-slate-300 hover:text-white transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-arrows-rotate text-[10px]"></i> Testar API
+                </button>
+              </div>
+            </div>
+
+            <!-- Card de Download e Instalação da Extensão -->
+            <div class="glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+              <div class="space-y-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-puzzle-piece text-pink-400"></i> Pacote da Extensão Chrome
+                </h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  Baixe o arquivo comprimido da extensão para instalar no seu navegador Google Chrome sem depender do repositório inteiro.
+                </p>
+
+                <div class="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-white flex items-center gap-2">
+                      <i class="fa-solid fa-file-zipper text-purple-400"></i> influ-extensao.zip
+                    </span>
+                    <span class="text-[10px] font-mono text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded">v1.2</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400">Contém manifesto V3, scripts de mineração contínua, detecção de stories ativos e anti-loop.</p>
+                  <a href="/influ-extensao.zip" download class="w-full py-2.5 rounded-xl gradient-btn text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 transition">
+                    <i class="fa-solid fa-download"></i> Baixar Arquivo da Extensão (.zip)
+                  </a>
+                </div>
+              </div>
+
+              <div class="text-[11px] text-slate-400 flex items-center gap-2 pt-2 border-t border-surface-border">
+                <i class="fa-solid fa-circle-question text-purple-400"></i>
+                <span>Precisa de ajuda para instalar? Abra o <button type="button" onclick="openApiModal()" class="text-purple-400 underline font-semibold">Guia Ilustrado</button></span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ====================================================
+             CONTEÚDO DA ABA 3: REGRAS & PARÂMETROS ANTI-BAN
+        ==================================================== -->
+        <div id="settingsTabContentAntiban" class="space-y-6 hidden">
+          <div class="glass-panel p-6 rounded-2xl space-y-5 max-w-3xl">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-emerald-400"></i> Configuração de Delays Humanizados e Limites
+            </h3>
+
+            <form onsubmit="handleSaveAntiBanSettings(event)" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Delay Mínimo entre Mensagens (segundos)</label>
+                  <input type="number" id="inputSettingMinDelay" value="60" min="20" max="600" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                  <span class="text-[10px] text-slate-500 mt-1 block">Recomendado: 60s ou mais para evitar detecção.</span>
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Delay Máximo entre Mensagens (segundos)</label>
+                  <input type="number" id="inputSettingMaxDelay" value="180" min="40" max="1200" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                  <span class="text-[10px] text-slate-500 mt-1 block">Garante variação estocástica e natural de tempo.</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Limite Máximo Diário de DMs</label>
+                  <input type="number" id="inputSettingDailyLimit" value="40" min="5" max="200" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                  <span class="text-[10px] text-slate-500 mt-1 block">Padrão seguro para contas estabelecidas no Instagram.</span>
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Período de Bloqueio de Recontato</label>
+                  <input type="text" readonly value="7 dias corridos (Regra Anti-Spam)" class="w-full bg-surface-card/60 border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-slate-400 font-mono">
+                  <span class="text-[10px] text-slate-500 mt-1 block">Renovação automática após o 7º dia.</span>
+                </div>
+              </div>
+
+              <div class="p-4 rounded-xl bg-surface-card/60 border border-surface-border flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-bold text-white">Modo Seguro Anti-Bloqueio Ativo</p>
+                  <p class="text-[11px] text-slate-400">Interrompe automaticamente caso o Instagram sinalize ação repetida.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="checkSettingSafeMode" checked class="sr-only peer">
+                  <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
+
+              <div class="flex justify-end pt-2">
+                <button type="submit" id="btnSaveAntiBanSettings" class="gradient-btn text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Salvar Parâmetros Anti-Ban</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
       </section>
 
     </main>
@@ -1547,7 +1781,14 @@ Parcerias: assessoria@marialuiza.com.br
         fetchBlacklist();
       } else if (viewId === 'view-templates') {
         syncTemplateEditorFields();
+      } else if (viewId === 'view-settings') {
+        syncSettingsFields();
       }
+    }
+
+    function navToSettings(tab = 'profile') {
+      navTo('view-settings');
+      switchSettingsTab(tab);
     }
 
     function refreshCurrentView() {
@@ -2988,26 +3229,124 @@ Parcerias: assessoria@marialuiza.com.br
       }
     }
 
+    // ----------------------------------------------------
+    // REDIRECIONAR / SAIR DA CONTA (LOGOUT & HOME)
+    // ----------------------------------------------------
+    async function logoutAndGoHome() {
+      const token = localStorage.getItem('innflu_token');
+      if (token) {
+        try {
+          await fetch(`${API_BASE}/api/auth/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        } catch (e) {}
+      }
+      localStorage.removeItem('innflu_token');
+      localStorage.removeItem('innflu_user');
+      window.location.href = '/';
+    }
+
+    // ----------------------------------------------------
+    // NAVEGAÇÃO INTERNA DAS ABAS DE CONFIGURAÇÕES
+    // ----------------------------------------------------
+    function switchSettingsTab(tab) {
+      const tabs = ['profile', 'api', 'antiban'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('tabBtnSettings' + t.charAt(0).toUpperCase() + t.slice(1));
+        const content = document.getElementById('settingsTabContent' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) {
+          if (t === tab) {
+            btn.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition flex items-center gap-1.5';
+          } else {
+            btn.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5';
+          }
+        }
+        if (content) {
+          if (t === tab) {
+            content.classList.remove('hidden');
+          } else {
+            content.classList.add('hidden');
+          }
+        }
+      });
+      syncSettingsFields();
+    }
+
+    function syncSettingsFields() {
+      if (!currentUser) return;
+
+      const nameInput = document.getElementById('inputProfileFullName');
+      const companyInput = document.getElementById('inputProfileCompany');
+      const emailInput = document.getElementById('inputProfileEmail');
+      const nameDisplay = document.getElementById('settingsProfileNameDisplay');
+      const emailDisplay = document.getElementById('settingsProfileEmailDisplay');
+
+      if (nameInput) nameInput.value = currentUser.full_name || '';
+      if (companyInput) companyInput.value = currentUser.company_name || '';
+      if (emailInput) emailInput.value = currentUser.email || '';
+      if (nameDisplay) nameDisplay.innerText = currentUser.full_name || 'Usuário Innflu';
+      if (emailDisplay) emailDisplay.innerText = currentUser.email || '';
+
+      const apiKeyInput = document.getElementById('settingsApiKey');
+      if (apiKeyInput && currentUser.api_token) apiKeyInput.value = currentUser.api_token;
+
+      renderAvatarPreview(currentUser);
+    }
+
+    function renderAvatarPreview(u) {
+      const inner = document.getElementById('settingsAvatarInner');
+      if (!inner) return;
+
+      if (u && u.avatar_url) {
+        if (u.avatar_url.startsWith('preset:')) {
+          const emoji = u.avatar_url.replace('preset:', '');
+          inner.innerHTML = `<span class="text-3xl">${emoji}</span>`;
+        } else {
+          inner.innerHTML = `<img src="${u.avatar_url}" class="w-full h-full object-cover rounded-full" alt="Foto de Perfil">`;
+        }
+      } else {
+        const initials = ((u && u.full_name) || 'AD').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        inner.innerText = initials;
+      }
+    }
+
     function renderUserProfile(u) {
       const nameEl = document.getElementById('userNameDisplay');
       const emailEl = document.getElementById('userEmailDisplay');
       const badgeEl = document.getElementById('userPlanBadge');
       const avatarEl = document.getElementById('userAvatar');
       const tokenInput = document.getElementById('modalApiToken');
+      const apiKeySettings = document.getElementById('settingsApiKey');
       const btnToggle = document.getElementById('btnAuthToggle');
 
       if (nameEl) nameEl.innerText = u.full_name || 'Usuário Innflu';
       if (emailEl) emailEl.innerText = u.email || 'conta@innflu.com';
       if (badgeEl) badgeEl.innerText = (u.plan || 'PRO').toUpperCase();
+
       if (avatarEl) {
-        const initials = (u.full_name || 'AD').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-        avatarEl.innerText = initials;
+        if (u.avatar_url) {
+          if (u.avatar_url.startsWith('preset:')) {
+            const emoji = u.avatar_url.replace('preset:', '');
+            avatarEl.innerHTML = `<span class="text-sm">${emoji}</span>`;
+          } else {
+            avatarEl.innerHTML = `<img src="${u.avatar_url}" class="w-full h-full object-cover rounded-full" alt="Avatar">`;
+          }
+        } else {
+          const initials = (u.full_name || 'AD').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+          avatarEl.innerText = initials;
+        }
       }
+
       if (tokenInput && u.api_token) tokenInput.value = u.api_token;
+      if (apiKeySettings && u.api_token) apiKeySettings.value = u.api_token;
+
       if (btnToggle) {
         btnToggle.title = 'Sair da Conta (Logout)';
         btnToggle.innerHTML = '<i class="fa-solid fa-right-from-bracket text-xs text-rose-400"></i>';
       }
+
+      renderAvatarPreview(u);
     }
 
     function renderGuestProfile() {
@@ -3024,6 +3363,240 @@ Parcerias: assessoria@marialuiza.com.br
       if (btnToggle) {
         btnToggle.title = 'Entrar ou Criar Conta';
         btnToggle.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket text-xs text-purple-400"></i>';
+      }
+      renderAvatarPreview(null);
+    }
+
+    // ----------------------------------------------------
+    // GERENCIAMENTO DE AVATAR & FOTO DE PERFIL
+    // ----------------------------------------------------
+    function handleAvatarFileSelect(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Selecione um arquivo de imagem válido (PNG, JPG ou WebP).', 'error');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('A imagem deve ter no máximo 5MB.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // Redimensiona para max 180x180 para salvar leve no D1
+          const canvas = document.createElement('canvas');
+          const maxDim = 180;
+          let w = img.width;
+          let h = img.height;
+          if (w > h) {
+            if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          } else {
+            if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/webp', 0.82);
+          saveAvatarToServer(dataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function setQuickAvatarPreset(preset) {
+      const avatarUrl = `preset:${preset}`;
+      await saveAvatarToServer(avatarUrl);
+    }
+
+    async function removeProfileAvatar() {
+      await saveAvatarToServer(null);
+      showToast('Foto de perfil removida.', 'info');
+    }
+
+    async function saveAvatarToServer(avatarUrl) {
+      if (!currentUser) {
+        showToast('Você precisa estar logado para alterar a foto.', 'error');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/user/profile`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            full_name: currentUser.full_name,
+            company_name: currentUser.company_name,
+            email: currentUser.email,
+            avatar_url: avatarUrl
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          currentUser = data.user;
+          localStorage.setItem('innflu_user', JSON.stringify(currentUser));
+          renderUserProfile(currentUser);
+          showToast('Foto de perfil atualizada com sucesso!', 'success');
+        } else {
+          showToast(data.error || 'Erro ao salvar avatar.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro ao atualizar foto de perfil.', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // SALVAR DADOS DO PERFIL (NOME, EMPRESA, EMAIL)
+    // ----------------------------------------------------
+    async function handleSaveProfileData(e) {
+      e.preventDefault();
+      const fullName = document.getElementById('inputProfileFullName').value.trim();
+      const companyName = document.getElementById('inputProfileCompany').value.trim();
+      const email = document.getElementById('inputProfileEmail').value.trim();
+      const btn = document.getElementById('btnSaveProfileData');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/user/profile`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            full_name: fullName,
+            company_name: companyName,
+            email: email,
+            avatar_url: currentUser?.avatar_url
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          currentUser = data.user;
+          localStorage.setItem('innflu_user', JSON.stringify(currentUser));
+          renderUserProfile(currentUser);
+          showToast('Dados do perfil salvos com sucesso no Cloudflare D1!', 'success');
+        } else {
+          showToast(data.error || 'Erro ao salvar dados do perfil.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao salvar perfil.', 'error');
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Salvar Dados do Perfil</span>';
+      }
+    }
+
+    // ----------------------------------------------------
+    // ALTERAÇÃO DE SENHA DO USUÁRIO
+    // ----------------------------------------------------
+    async function handleUpdatePassword(e) {
+      e.preventDefault();
+      const currentPassword = document.getElementById('inputProfileCurrentPassword').value;
+      const newPassword = document.getElementById('inputProfileNewPassword').value;
+      const confirmPassword = document.getElementById('inputProfileConfirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        showToast('A confirmação da nova senha não confere.', 'error');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showToast('A nova senha deve ter no mínimo 6 caracteres.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnUpdatePassword');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/user/password`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('Senha alterada com sucesso!', 'success');
+          document.getElementById('inputProfileCurrentPassword').value = '';
+          document.getElementById('inputProfileNewPassword').value = '';
+          document.getElementById('inputProfileConfirmPassword').value = '';
+        } else {
+          showToast(data.error || 'Erro ao alterar senha.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao atualizar senha.', 'error');
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-key"></i> <span>Atualizar Senha</span>';
+      }
+    }
+
+    // ----------------------------------------------------
+    // REGENERAR API TOKEN DO USUÁRIO
+    // ----------------------------------------------------
+    async function regenerateUserApiToken() {
+      if (!confirm('Deseja gerar uma nova API Key? A chave anterior deixará de funcionar na extensão Chrome.')) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/user/regenerate-token`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (currentUser) {
+            currentUser.api_token = data.api_token;
+            localStorage.setItem('innflu_user', JSON.stringify(currentUser));
+          }
+          document.getElementById('settingsApiKey').value = data.api_token;
+          const modalToken = document.getElementById('modalApiToken');
+          if (modalToken) modalToken.value = data.api_token;
+          showToast('Nova API Key gerada com sucesso!', 'success');
+        } else {
+          showToast(data.error || 'Erro ao regenerar token.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao gerar nova chave.', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // SALVAR PARÂMETROS ANTI-BAN DA API
+    // ----------------------------------------------------
+    async function handleSaveAntiBanSettings(e) {
+      e.preventDefault();
+      const minDelay = document.getElementById('inputSettingMinDelay').value;
+      const maxDelay = document.getElementById('inputSettingMaxDelay').value;
+      const dailyLimit = document.getElementById('inputSettingDailyLimit').value;
+      const safeMode = document.getElementById('checkSettingSafeMode').checked;
+
+      const btn = document.getElementById('btnSaveAntiBanSettings');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/settings`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            min_delay_sec: minDelay,
+            max_delay_sec: maxDelay,
+            daily_limit: dailyLimit,
+            safe_mode_enabled: safeMode
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('Parâmetros Anti-Ban salvos com sucesso!', 'success');
+        } else {
+          showToast(data.error || 'Erro ao salvar configurações.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro ao salvar parâmetros.', 'error');
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Salvar Parâmetros Anti-Ban</span>';
       }
     }
 
