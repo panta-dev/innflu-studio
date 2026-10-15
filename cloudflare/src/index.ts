@@ -293,26 +293,36 @@ app.post('/api/templates', async (c) => {
 });
 
 // ==========================================
-// 4. LEADS & INFLUENCERS (MINERAÇÃO COM WHATSAPP & EMAIL)
+// 4. LEADS & INFLUENCERS (MINERAÇÃO COM WHATSAPP, EMAIL & NICHO)
 // ==========================================
 app.get('/api/leads', async (c) => {
   const db = c.env.DB;
   const status = c.req.query('status');
+  const niche = c.req.query('niche');
   let query = "SELECT * FROM leads";
   const params: any[] = [];
+  const conditions: string[] = [];
 
-  if (status) {
-    query += " WHERE status = ?";
+  if (status && status !== 'all') {
+    conditions.push("status = ?");
     params.push(status);
   }
-  query += " ORDER BY discovered_at DESC LIMIT 200";
+  if (niche && niche !== 'all') {
+    conditions.push("niche LIKE ?");
+    params.push(`%${niche}%`);
+  }
+
+  if (conditions.length > 0) {
+    query += " WHERE " + conditions.join(" AND ");
+  }
+  query += " ORDER BY discovered_at DESC LIMIT 300";
 
   const stmt = db.prepare(query);
   const { results } = params.length > 0 ? await stmt.bind(...params).all() : await stmt.all();
   return c.json({ leads: results });
 });
 
-// Salvar / Sincronizar lead minerado (com WhatsApp, Email e seguidores)
+// Salvar / Sincronizar lead minerado (com WhatsApp, Email, Nicho e seguidores)
 app.post('/api/leads', async (c) => {
   const db = c.env.DB;
   const body = await c.req.json();
@@ -337,22 +347,24 @@ app.post('/api/leads', async (c) => {
   const whatsapp = body.whatsapp || null;
   const email = body.email || null;
   const bio = body.bio || '';
+  const niche = body.niche || 'Geral';
   const status = body.status || 'minerada';
 
   try {
     await db.prepare(`
-      INSERT INTO leads (id, campaign_id, username, full_name, followers_count, detected_gender, has_active_stories, whatsapp, email, bio, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO leads (id, campaign_id, username, full_name, followers_count, detected_gender, has_active_stories, whatsapp, email, bio, niche, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(username) DO UPDATE SET
         followers_count = excluded.followers_count,
         has_active_stories = excluded.has_active_stories,
         whatsapp = COALESCE(excluded.whatsapp, leads.whatsapp),
         email = COALESCE(excluded.email, leads.email),
         bio = excluded.bio,
+        niche = COALESCE(excluded.niche, leads.niche),
         status = CASE WHEN leads.status = 'sent' THEN 'sent' ELSE excluded.status END
-    `).bind(id, campaignId, username, fullName, followersCount, detectedGender, hasActiveStories, whatsapp, email, bio, status).run();
+    `).bind(id, campaignId, username, fullName, followersCount, detectedGender, hasActiveStories, whatsapp, email, bio, niche, status).run();
 
-    return c.json({ success: true, username });
+    return c.json({ success: true, username, niche });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
   }

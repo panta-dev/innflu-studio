@@ -571,21 +571,26 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       return;
     }
 
-    const targetClean = targetVal.replace(/^@/, '').trim().toLowerCase();
-    let currentSource = bot.miningSource || 'similar';
+    const rawInput = (inputMiningTarget.value || '').trim();
+    let currentSource = bot.miningSource || 'keyword';
 
-    // Se o usuário inseriu um perfil (ex: marialuizazamoner ou @marialuizazamoner)
-    // garante que fique configurado para 'similar' se for semelhante
-    if (targetVal.startsWith('@') || currentSource === 'similar') {
+    // Auto-detecção inteligente de prefixos sem sobrescrever a escolha deliberada do usuário
+    if (rawInput.startsWith('@')) {
       currentSource = 'similar';
       selectSourceUI('similar');
-    } else if (targetVal.startsWith('#')) {
+    } else if (rawInput.startsWith('#')) {
       currentSource = 'hashtag';
       selectSourceUI('hashtag');
     }
 
-    // Ao iniciar uma nova mineração com um perfil alvo específico, SEMPRE limpa a fila antiga
-    // para não navegar para resquícios de testes anteriores (como brendahofmannttk)!
+    const targetClean = rawInput.replace(/^[@#]/, '').trim().toLowerCase();
+
+    if (!targetClean) {
+      showToast({ type: 'error', title: 'Alvo Vazio', message: 'Digite uma palavra-chave, hashtag ou perfil de referência.' });
+      return;
+    }
+
+    // Ao iniciar uma nova mineração, SEMPRE limpa a fila antiga para não navegar para resquícios anteriores
     await saveBot({
       isRunning: true,
       activeMode: 'miner',
@@ -598,7 +603,11 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
     const updated = await getState();
     syncUI(updated.bot);
-    showToast({ type: 'success', title: 'Mineração Iniciada', message: `Minerando via ${updated.bot.miningSource}: "${targetClean}"` });
+    showToast({
+      type: 'success',
+      title: 'Mineração Iniciada',
+      message: `Minerando via ${currentSource}: "${targetClean}"`
+    });
     runLoop();
   };
 
@@ -770,53 +779,71 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       return;
     }
 
-    // 3. Se estamos na página de busca / hashtag
+    // 3. Se estamos na página de busca / explore / hashtag
     if (pageType === 'search') {
-      hudCurrentAction.innerText = `Varrendo publicações de "${target}"...`;
-      await window.InnfluCrawler.sleep(2500);
+      hudCurrentAction.innerText = `Varrendo influenciadoras de "${target}"...`;
+      await window.InnfluCrawler.sleep(2000);
 
-      let found = window.InnfluCrawler.extractUsernamesFromPage();
       const visited = bot.visited || [];
-      let newCandidates = found.filter(u => !visited.includes(u));
+      const candidateSet = new Set();
 
-      // Se não encontrou o suficiente, clica em posts para descobrir autores
-      if (newCandidates.length < 3) {
-        hudCurrentAction.innerText = 'Inspecionando posts para descobrir criadores...';
-        const fromPosts = await window.InnfluCrawler.clickPostsAndExtractAuthors(4);
-        const moreNew = fromPosts.filter(u => !visited.includes(u) && !newCandidates.includes(u));
-        newCandidates = [...newCandidates, ...moreNew];
+      // Estratégia A: Sugestões de contas no dropdown/painel de busca
+      if (window.InnfluCrawler.extractFromSearchDropdown) {
+        const fromDropdown = window.InnfluCrawler.extractFromSearchDropdown();
+        fromDropdown.forEach(u => candidateSet.add(u));
       }
 
-      // Se ainda nada, rola a página
+      // Estratégia B: Usernames via Alt-text e links contextuais da página
+      const fromPage = window.InnfluCrawler.extractUsernamesFromPage();
+      fromPage.forEach(u => candidateSet.add(u));
+
+      // Estratégia C (Principal): Clicar nas publicações/reels para extrair autor de cada vídeo
+      hudCurrentAction.innerText = `Inspecionando vídeos/posts para extrair criadores de "${target}"...`;
+      const fromPosts = await window.InnfluCrawler.clickPostsAndExtractAuthors(5);
+      fromPosts.forEach(u => candidateSet.add(u));
+
+      let newCandidates = Array.from(candidateSet).filter(u => !visited.includes(u));
+
+      // Se ainda nenhum candidato, rola e tenta mais uma vez
       if (newCandidates.length === 0) {
         hudCurrentAction.innerText = 'Rolando feed para carregar mais publicações...';
         await window.InnfluCrawler.scrollDown();
-        await window.InnfluCrawler.scrollDown();
         await window.InnfluCrawler.sleep(1800);
-
-        found = window.InnfluCrawler.extractUsernamesFromPage();
-        newCandidates = found.filter(u => !visited.includes(u));
-
-        if (newCandidates.length === 0) {
-          const fromPosts2 = await window.InnfluCrawler.clickPostsAndExtractAuthors(3);
-          newCandidates = fromPosts2.filter(u => !visited.includes(u));
-        }
+        const fromPostsRetry = await window.InnfluCrawler.clickPostsAndExtractAuthors(4);
+        fromPostsRetry.forEach(u => candidateSet.add(u));
+        newCandidates = Array.from(candidateSet).filter(u => !visited.includes(u));
       }
 
       if (newCandidates.length > 0) {
-        await saveBot({ queue: newCandidates.slice(0, 40) });
-        hudQueueCount.innerText = Math.min(newCandidates.length, 40);
+        await saveBot({ queue: newCandidates.slice(0, 50) });
+        hudQueueCount.innerText = Math.min(newCandidates.length, 50);
         showToast({
-          type: 'info',
-          title: `${newCandidates.length} Perfis Encontrados`,
-          message: newCandidates.slice(0, 3).map(u => `@${u}`).join(', ') + '...'
+          type: 'success',
+          title: `${newCandidates.length} Influenciadoras Encontradas!`,
+          message: newCandidates.slice(0, 4).map(u => `@${u}`).join(', ') + '...'
         });
-        scheduleNext(2000);
+        scheduleNext(1500);
       } else {
-        hudCurrentAction.innerText = 'Sem novos perfis. Rolando mais...';
+        hudCurrentAction.innerText = 'Nenhum novo criador encontrado nesta rolagem. Rolando mais...';
         await window.InnfluCrawler.scrollDown();
-        scheduleNext(4000);
+        scheduleNext(3500);
       }
+      return;
+    }
+
+    // Se estamos diretamente num post individual/reel
+    if (pageType === 'post') {
+      hudCurrentAction.innerText = 'Extraindo criador do post/vídeo...';
+      const fromPosts = await window.InnfluCrawler.clickPostsAndExtractAuthors(1);
+      if (fromPosts.length > 0) {
+        const visited = bot.visited || [];
+        const fresh = fromPosts.filter(u => !visited.includes(u));
+        if (fresh.length > 0) {
+          await saveBot({ queue: [...(bot.queue || []), ...fresh] });
+        }
+      }
+      window.history.back();
+      scheduleNext(2000);
       return;
     }
 
@@ -837,6 +864,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
     const minFollowersRequired = bot.minFollowers !== undefined ? bot.minFollowers : 10000;
     const requireContactFilter = bot.requireContact || 'all';
+    const currentNiche = (bot.miningTarget || 'Geral').trim();
 
     let fDisplay = '?';
     if (profile.followersCount > 0) {
@@ -847,34 +875,35 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           : profile.followersCount.toString();
     }
 
-    hudCurrentAction.innerText = `Extraindo @${profile.username} (${fDisplay} seg.)...`;
+    hudCurrentAction.innerText = `Avaliando @${profile.username} (${fDisplay} seg.)...`;
 
     // Checagem de filtros de qualificação
     let isApproved = true;
-    let statusText = 'minerada';
+    let rejectReason = '';
 
     if (profile.followersCount > 0 && profile.followersCount < minFollowersRequired) {
       isApproved = false;
+      rejectReason = `${fDisplay} seg. (< ${minFollowersRequired.toLocaleString('pt-BR')} mín.)`;
     }
 
     if (requireContactFilter === 'any_contact' && !profile.whatsapp && !profile.email) {
       isApproved = false;
+      rejectReason = 'Sem WhatsApp nem E-mail';
     } else if (requireContactFilter === 'wa_only' && !profile.whatsapp) {
       isApproved = false;
+      rejectReason = 'Sem WhatsApp';
     } else if (requireContactFilter === 'email_only' && !profile.email) {
       isApproved = false;
-    }
-
-    if (profile.followersCount === 0) {
-      statusText = 'pendente';
+      rejectReason = 'Sem E-mail';
     }
 
     if (isApproved) {
-      // 1. Salva no Cloudflare D1
-      await saveLead(apiBaseUrl, profile, statusText);
+      const statusText = 'minerada';
+      // 1. Salva no Cloudflare D1 com Nicho
+      await saveLead(apiBaseUrl, profile, statusText, currentNiche);
 
-      // 2. Salva no cache local de leads para renderização instantânea
-      await cacheLocalLead(profile, statusText);
+      // 2. Salva no cache local com Nicho
+      await cacheLocalLead(profile, statusText, currentNiche);
 
       const newMined = (bot.minedCount || 0) + 1;
       await saveBot({ minedCount: newMined });
@@ -889,15 +918,15 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
       showToast({
         type: 'success',
-        title: `Extraída: @${profile.username}`,
-        message: `${fDisplay} seg. • ${profile.whatsapp ? '📱 ' + profile.whatsapp : ''} ${profile.email ? '✉️ ' + profile.email : (!profile.whatsapp ? 'Sem contato direto' : '')}`
+        title: `Salva: @${profile.username} [${currentNiche}]`,
+        message: `${fDisplay} seg. • ${profile.whatsapp ? '📱 ' + profile.whatsapp : ''} ${profile.email ? '✉️ ' + profile.email : (!profile.whatsapp ? 'Sem telefone direto' : '')}`
       });
 
       // Atualiza aba de leads se estiver aberta
       renderLeadsTable();
     } else {
-      hudCurrentAction.innerText = `@${profile.username}: Não atende aos filtros.`;
-      await logActivity({ username: profile.username, status: `Pulada (${fDisplay})` });
+      hudCurrentAction.innerText = `@${profile.username}: Pulada (${rejectReason})`;
+      await logActivity({ username: profile.username, status: `Pulada (${rejectReason})` });
     }
   }
 
@@ -989,7 +1018,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   // ==========================================
   // GERENCIAMENTO DA LISTA DE LEADS
   // ==========================================
-  async function cacheLocalLead(profile, status) {
+  async function cacheLocalLead(profile, status, niche) {
     const { savedLeads } = await getState();
     const cleanUser = profile.username.toLowerCase();
     const existingIndex = savedLeads.findIndex(l => (l.username || '').toLowerCase() === cleanUser);
@@ -1001,6 +1030,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       whatsapp: profile.whatsapp || null,
       email: profile.email || null,
       bio: profile.bio || '',
+      niche: niche || profile.niche || 'Geral',
       status: status || 'minerada',
       discovered_at: new Date().toISOString()
     };
@@ -1078,7 +1108,10 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
             <a href="https://www.instagram.com/${l.username}/" target="_blank" class="innflu-lead-user">
               @${l.username} ↗
             </a>
-            <span class="innflu-lead-followers">${fDisplay} seg.</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span class="innflu-lead-followers" style="background:rgba(168,85,247,0.18);color:#c084fc;border:1px solid rgba(168,85,247,0.3);font-size:9px;">🏷️ ${l.niche || 'Geral'}</span>
+              <span class="innflu-lead-followers">${fDisplay} seg.</span>
+            </div>
           </div>
           ${l.full_name ? `<div class="innflu-lead-name">${l.full_name}</div>` : ''}
           <div class="innflu-lead-contacts">
@@ -1092,7 +1125,6 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
                 ✉️ ${l.email}
               </a>
             ` : ''}
-            ${!l.whatsapp && !l.email ? `<span class="innflu-contact-empty">Sem telefone/email direto</span>` : ''}
           </div>
         </div>
       `;
@@ -1207,7 +1239,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     } catch (e) { return { eligible: true }; }
   }
 
-  async function saveLead(apiBaseUrl, profile, status) {
+  async function saveLead(apiBaseUrl, profile, status, niche) {
     try {
       const { bot } = await getState();
       const headers = { 'Content-Type': 'application/json' };
@@ -1227,6 +1259,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           whatsapp: profile.whatsapp,
           email: profile.email,
           bio: profile.bio,
+          niche: niche || profile.niche || 'Geral',
           status
         })
       });
@@ -1236,25 +1269,27 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   // ==========================================
   // BOTÃO INSPECIONAR PERFIL ABERTO
   // ==========================================
-  $('btnQuickInspect').onclick = () => {
+  $('btnQuickInspect').onclick = async () => {
     const profile = window.InnfluInspector.extractCurrentProfileData();
     if (!profile) {
       showToast({ type: 'warning', title: 'Perfil Não Detectado', message: 'Abra a página de um perfil para analisar.' });
       return;
     }
-    const eval_ = window.InnfluInspector.evaluateCandidate(profile, { minFollowers: 10000, requireActiveStories: false, targetGender: 'any' });
+    const { bot, apiBaseUrl } = await getState();
+    const currentNiche = (bot.miningTarget || 'Geral').trim();
     let fDisplay = profile.followersCount >= 1000000
       ? (profile.followersCount / 1000000).toFixed(1).replace('.', ',') + ' mi'
       : (profile.followersCount >= 1000 ? (profile.followersCount / 1000).toFixed(1).replace('.', ',') + ' mil' : profile.followersCount.toString());
 
     showToast({
       type: 'success',
-      title: `@${profile.username} (${fDisplay})`,
+      title: `@${profile.username} (${fDisplay}) [${currentNiche}]`,
       message: `Nome: ${profile.fullName} • WA: ${profile.whatsapp || 'Não'} • Email: ${profile.email || 'Não'}`
     });
 
-    // Salva automaticamente o perfil inspecionado na lista de leads!
-    cacheLocalLead(profile, 'minerada');
+    // Salva automaticamente o perfil inspecionado no D1 e no cache local
+    await saveLead(apiBaseUrl, profile, 'minerada', currentNiche);
+    await cacheLocalLead(profile, 'minerada', currentNiche);
     renderLeadsTable();
   };
 

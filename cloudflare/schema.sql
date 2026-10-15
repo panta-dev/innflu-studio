@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS leads (
     whatsapp TEXT,
     email TEXT,
     bio TEXT,
+    niche TEXT DEFAULT 'Geral',
     status TEXT DEFAULT 'pending', -- 'pending', 'minerada', 'sent', 'replied', 'skipped', 'blacklisted'
     discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_contacted_at DATETIME,
@@ -103,6 +104,7 @@ CREATE INDEX IF NOT EXISTS idx_leads_username ON leads(username);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_whatsapp ON leads(whatsapp);
 CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email);
+CREATE INDEX IF NOT EXISTS idx_leads_niche ON leads(niche);
 CREATE INDEX IF NOT EXISTS idx_sent_logs_username ON sent_logs(username);
 CREATE INDEX IF NOT EXISTS idx_sent_logs_sent_at ON sent_logs(sent_at);
 CREATE INDEX IF NOT EXISTS idx_blacklist_username ON blacklist(username);

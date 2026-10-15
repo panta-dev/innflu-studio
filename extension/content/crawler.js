@@ -113,8 +113,8 @@ window.InnfluCrawler = {
     const url = window.location.href.toLowerCase();
     const path = window.location.pathname.toLowerCase();
 
-    // Páginas de busca / hashtag (todos os formatos que o Instagram usa)
-    if (url.includes('/explore/search/') || url.includes('/explore/tags/') || url.includes('q=%23')) {
+    // Páginas de busca / explore / hashtag (todos os formatos que o Instagram usa)
+    if (url.includes('/explore/search/') || url.includes('/explore/tags/') || url.includes('q=%23') || path.startsWith('/explore')) {
       return 'search';
     }
 
@@ -157,7 +157,7 @@ window.InnfluCrawler = {
 
   /**
    * Navega para a fonte escolhida pelo usuário
-   * @param {'keyword' | 'hashtag' | 'reels' | 'followers'} source 
+   * @param {'keyword' | 'hashtag' | 'reels' | 'followers' | 'following' | 'similar'} source 
    * @param {string} target 
    */
   navigateToSource(source, target) {
@@ -167,14 +167,14 @@ window.InnfluCrawler = {
     let targetUrl = '';
     const currentUrl = window.location.href.toLowerCase();
 
-    if (source === 'hashtag') {
+    if (source === 'hashtag' || clean.startsWith('#')) {
       const cleanTag = clean.replace(/^#/, '').toLowerCase();
       targetUrl = `https://www.instagram.com/explore/tags/${encodeURIComponent(cleanTag)}/`;
       if (currentUrl.includes(cleanTag) && (currentUrl.includes('/explore/tags/') || currentUrl.includes('q=%23'))) {
         console.log('[Innflu] Já estamos na página da hashtag');
         return false;
       }
-    } else if (source === 'followers' || source === 'following' || source === 'similar') {
+    } else if (source === 'following' || (source === 'similar' && clean.startsWith('@')) || source === 'followers') {
       const cleanUser = clean.replace(/^@/, '').toLowerCase();
       targetUrl = `https://www.instagram.com/${encodeURIComponent(cleanUser)}/`;
       if (this.getCurrentProfileUsername() === cleanUser) {
@@ -182,11 +182,12 @@ window.InnfluCrawler = {
         return false;
       }
     } else {
-      // 'keyword' ou 'reels' (pesquisa geral do Instagram)
-      const cleanKw = clean.replace(/^#/, '').toLowerCase();
+      // 'keyword' (busca geral / nicho de influenciadoras)
+      const cleanKw = clean.replace(/^[@#]/, '').toLowerCase();
+      // Leva diretamente para o resultado de busca do Instagram ou explore
       targetUrl = `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(cleanKw)}`;
-      if (currentUrl.includes(encodeURIComponent(cleanKw)) && this.detectCurrentPage() === 'search') {
-        console.log('[Innflu] Já estamos na página de busca');
+      if (currentUrl.includes(encodeURIComponent(cleanKw)) && (currentUrl.includes('/explore/search/') || currentUrl.includes('/explore/tags/'))) {
+        console.log('[Innflu] Já estamos na página de busca da palavra-chave');
         return false;
       }
     }
@@ -541,48 +542,67 @@ window.InnfluCrawler = {
   },
 
   // ==========================================
-  // CLICK-INTO-POSTS (FALLBACK CONFIÁVEL)
+  // CLICK-INTO-POSTS (MÉTODO PRECISO & SEGURO)
   // ==========================================
 
   /**
-   * Clica em posts na grid para descobrir autores
-   * Mais lento mas muito mais confiável que scraping de links
-   * @param {number} maxPosts Quantos posts clicar (padrão 3)
+   * Extrai contas sugeridas diretamente do painel/dropdown de busca do Instagram
+   */
+  extractFromSearchDropdown() {
+    const usernames = new Set();
+    const links = document.querySelectorAll('div[role="dialog"] a[href^="/"], div[aria-label*="Pesquisa" i] a[href^="/"], nav a[href^="/"]');
+    for (const a of links) {
+      const href = a.getAttribute('href') || '';
+      const parts = href.split('/').filter(Boolean);
+      if (parts.length === 1 && this.isValidUsername(parts[0])) {
+        if (a.querySelector('img') || a.innerText.toLowerCase().includes(parts[0])) {
+          usernames.add(parts[0].toLowerCase());
+        }
+      }
+    }
+    return Array.from(usernames);
+  },
+
+  /**
+   * Clica em posts na grid para descobrir autores com precisão cirúrgica
+   * @param {number} maxPosts Quantos posts clicar sequencialmente (padrão 5)
    * @returns {Promise<string[]>}
    */
-  async clickPostsAndExtractAuthors(maxPosts = 3) {
+  async clickPostsAndExtractAuthors(maxPosts = 5) {
     const postLinks = Array.from(
       document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]')
     );
     
     if (postLinks.length === 0) {
-      console.log('[Innflu] Nenhum post encontrado para clicar');
+      console.log('[Innflu] Nenhum post/reel encontrado para clicar');
       return [];
     }
 
     const usernames = new Set();
-    
-    // Seleciona posts aleatórios
-    const indices = Array.from({ length: Math.min(postLinks.length, maxPosts * 2) }, (_, i) => i)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, maxPosts);
+    const count = Math.min(postLinks.length, maxPosts);
 
-    for (const idx of indices) {
-      if (idx >= postLinks.length) continue;
-      
+    for (let idx = 0; idx < count; idx++) {
       try {
-        console.log(`[Innflu] Clicando no post ${idx + 1}...`);
-        postLinks[idx].click();
-        await this.sleep(this.randomDelay(2500, 4000));
-        
-        // No modal do post, o autor aparece no header como link de perfil
+        const postEl = postLinks[idx];
+        if (!postEl) continue;
+
+        console.log(`[Innflu] Inspecionando publicação/vídeo ${idx + 1}/${count}...`);
+        postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        await this.sleep(400);
+
+        // Dispara clique no elemento do post
+        postEl.click();
+        await this.sleep(this.randomDelay(2200, 3200));
+
+        // Procura o autor do post no cabeçalho
         const authorSelectors = [
           'div[role="dialog"] header a[href^="/"]',
-          'div[role="dialog"] a[href^="/"]',
+          'div[role="dialog"] a[role="link"][href^="/"]',
           'article header a[href^="/"]',
-          'article a[href^="/"]'
+          'article a[role="link"][href^="/"]',
+          'header a[href^="/"]'
         ];
-        
+
         let found = false;
         for (const sel of authorSelectors) {
           const authorLinks = document.querySelectorAll(sel);
@@ -593,7 +613,7 @@ window.InnfluCrawler = {
               const u = parts[0].toLowerCase();
               if (this.isValidUsername(u)) {
                 usernames.add(u);
-                console.log(`[Innflu] Autor do post: @${u}`);
+                console.log(`[Innflu] Criador(a) identificado(a): @${u}`);
                 found = true;
                 break;
               }
@@ -601,25 +621,33 @@ window.InnfluCrawler = {
           }
           if (found) break;
         }
-        
-        // Também verifica alt text no modal
+
+        // Se não encontrou no header, tenta via alt text
         if (!found) {
           this._extractFromAltText().forEach(u => usernames.add(u));
         }
-        
-        // Fecha o modal
-        await this._closeModal();
-        await this.sleep(this.randomDelay(800, 1500));
-        
+
+        // Se a navegação mudou a URL inteira para /p/ ou /reel/, volta no histórico
+        const curPath = window.location.pathname.toLowerCase();
+        if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
+          console.log('[Innflu] Retornando da visualização direta do post...');
+          window.history.back();
+          await this.sleep(1800);
+        } else {
+          // Fecha modal aberto
+          await this._closeModal();
+          await this.sleep(this.randomDelay(700, 1200));
+        }
+
       } catch (err) {
-        console.warn('[Innflu] Erro ao clicar post:', err);
+        console.warn('[Innflu] Erro ao inspecionar post:', err);
         await this._closeModal();
         await this.sleep(500);
       }
     }
     
     const result = Array.from(usernames);
-    console.log(`[Innflu] Click-into-posts → ${result.length} autores:`, result);
+    console.log(`[Innflu] Click-into-posts concluído → ${result.length} autores descobertos:`, result);
     return result;
   },
 
@@ -630,7 +658,8 @@ window.InnfluCrawler = {
     const closeSelectors = [
       'svg[aria-label="Fechar"]', 'svg[aria-label="Close"]',
       '[aria-label="Fechar"]', '[aria-label="Close"]',
-      'button svg[aria-label*="close" i]', 'button svg[aria-label*="fechar" i]'
+      'button svg[aria-label*="close" i]', 'button svg[aria-label*="fechar" i]',
+      'div[role="dialog"] button'
     ];
     
     for (const sel of closeSelectors) {

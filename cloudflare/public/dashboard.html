@@ -530,6 +530,16 @@
               <option value="email">Apenas com E-mail</option>
             </select>
 
+            <!-- Filtro de Nicho -->
+            <select id="filterLeadNiche" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500 font-medium">
+              <option value="all">Todos os Nichos</option>
+              <option value="maternidade">Maternidade & Família</option>
+              <option value="moda">Moda & Look</option>
+              <option value="beleza">Beleza & Skincare</option>
+              <option value="fitness">Fitness & Saúde</option>
+              <option value="lifestyle">Lifestyle & Geral</option>
+            </select>
+
             <!-- Ações em Lote -->
             <button onclick="copyAllWhatsApps()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition">
               <i class="fa-brands fa-whatsapp"></i> Copiar WhatsApps
@@ -552,6 +562,7 @@
               <thead class="text-[10px] uppercase bg-surface-card/80 text-slate-400 border-b border-surface-border">
                 <tr>
                   <th class="px-4 py-3.5">Influenciadora</th>
+                  <th class="px-4 py-3.5">Nicho</th>
                   <th class="px-4 py-3.5">Seguidores</th>
                   <th class="px-4 py-3.5">WhatsApp</th>
                   <th class="px-4 py-3.5">E-mail Comercial</th>
@@ -1370,6 +1381,11 @@ Parcerias: assessoria@marialuiza.com.br
                 </div>
               </div>
             </td>
+            <td class="px-4 py-3">
+              <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold uppercase">
+                ${l.niche || 'Maternidade'}
+              </span>
+            </td>
             <td class="px-4 py-3 font-mono font-semibold text-slate-200">
               ${formatNumber(l.followers_count)}
             </td>
@@ -1453,11 +1469,13 @@ Parcerias: assessoria@marialuiza.com.br
     function applyLeadsFilters() {
       const status = document.getElementById('filterLeadStatus').value;
       const contact = document.getElementById('filterLeadContact').value;
+      const niche = document.getElementById('filterLeadNiche')?.value || 'all';
 
       let filtered = leadsData.filter(l => {
         if (status !== 'all' && l.status !== status) return false;
         if (contact === 'wa' && !l.whatsapp) return false;
         if (contact === 'email' && !l.email) return false;
+        if (niche !== 'all' && !(l.niche || '').toLowerCase().includes(niche.toLowerCase())) return false;
         return true;
       });
 
