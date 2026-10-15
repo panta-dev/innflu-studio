@@ -68,11 +68,11 @@
                 <span class="innflu-source-sub">Página de hashtag</span>
               </div>
             </button>
-            <button class="innflu-source-btn" data-source="followers" id="srcBtnFollowers">
+            <button class="innflu-source-btn" data-source="following" id="srcBtnFollowing">
               <span class="innflu-source-icon">👥</span>
               <div class="innflu-source-label">
-                <span class="innflu-source-name">Seguidores de @</span>
-                <span class="innflu-source-sub">Público de autoridade</span>
+                <span class="innflu-source-name">Seguindo de @</span>
+                <span class="innflu-source-sub">Quem ela segue (Parceiras)</span>
               </div>
             </button>
           </div>
@@ -280,7 +280,8 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     similar: $('srcBtnSimilar'),
     keyword: $('srcBtnKeyword'),
     hashtag: $('srcBtnHashtag'),
-    followers: $('srcBtnFollowers')
+    following: $('srcBtnFollowing'),
+    followers: $('srcBtnFollowing') // fallback
   };
 
   let countdownInterval = null;
@@ -449,9 +450,9 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     } else if (source === 'hashtag') {
       lblMiningTarget.innerText = 'Hashtag (com ou sem #):';
       inputMiningTarget.placeholder = 'ex: #maternidadereal, #lookdodia';
-    } else if (source === 'followers') {
-      lblMiningTarget.innerText = 'Seguidores de @ (ex: @vihtube):';
-      inputMiningTarget.placeholder = 'ex: @vihtube, @marinaferrarig';
+    } else if (source === 'following' || source === 'followers') {
+      lblMiningTarget.innerText = 'Quem ela segue (ex: @marialuizazamoner):';
+      inputMiningTarget.placeholder = 'ex: @marialuizazamoner, @vihtube';
     }
   }
 
@@ -690,17 +691,17 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       return;
     }
 
-    // 2. Se a fonte for "✨ Semelhantes a @" ou "👥 Seguidores de @" e NÃO estamos no perfil alvo, navega até ele primeiro!
+    // 2. Se a fonte for "✨ Semelhantes a @" ou "👥 Seguindo de @" e NÃO estamos no perfil alvo, navega até ele primeiro!
     const targetUser = (target || '').replace(/^@/, '').toLowerCase().trim();
     const currentProfileUser = window.InnfluCrawler.getCurrentProfileUsername();
 
-    if ((source === 'similar' || source === 'followers') && targetUser && currentProfileUser !== targetUser) {
+    if ((source === 'similar' || source === 'following' || source === 'followers') && targetUser && currentProfileUser !== targetUser) {
       hudCurrentAction.innerText = `Navegando até o perfil alvo @${targetUser}...`;
       window.InnfluCrawler.openProfile(targetUser);
       return;
     }
 
-    // 3. Se estamos num perfil sem fila: analisa e extrai fontes (semelhantes, seguidores ou volta para busca)
+    // 3. Se estamos num perfil sem fila: analisa e extrai fontes (semelhantes, quem está seguindo ou volta para busca)
     if (pageType === 'profile') {
       // Primeiro, extrai os dados do perfil atual (WhatsApp, email, seguidores) e salva
       await analyzeAndMineProfile(bot, apiBaseUrl);
@@ -733,21 +734,31 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         }
       }
 
-      // CASO B: Fonte é "👥 Seguidores de @"
-      if (source === 'followers' && currentProfileUser === targetUser) {
-        hudCurrentAction.innerText = `Extraindo seguidores de @${currentProfileUser}...`;
-        const modalFollowers = await window.InnfluCrawler.extractFollowersFromModal(5);
+      // CASO B: Fonte é "👥 Seguindo de @" (quem ela segue - parceiras/influenciadoras)
+      if ((source === 'following' || source === 'followers') && currentProfileUser === targetUser) {
+        hudCurrentAction.innerText = `Extraindo quem @${currentProfileUser} está seguindo...`;
+        const modalCandidates = source === 'following' 
+          ? await window.InnfluCrawler.extractFollowingFromModal(5)
+          : await window.InnfluCrawler.extractFollowersFromModal(5);
         const visited = bot.visited || [];
-        const newCandidates = modalFollowers.filter(u => !visited.includes(u));
+        const newCandidates = modalCandidates.filter(u => !visited.includes(u));
         if (newCandidates.length > 0) {
           await saveBot({ queue: newCandidates.slice(0, 50) });
           hudQueueCount.innerText = Math.min(newCandidates.length, 50);
           showToast({
             type: 'success',
-            title: `${newCandidates.length} Seguidores Encontrados!`,
-            message: `Fila preenchida com seguidores de @${currentProfileUser}`
+            title: `${newCandidates.length} Perfis Encontrados!`,
+            message: `Fila preenchida com quem @${currentProfileUser} segue.`
           });
           scheduleNext(2000);
+          return;
+        } else {
+          showToast({
+            type: 'info',
+            title: 'Nenhum perfil extraído',
+            message: `Não foi possível extrair a lista de seguindo de @${currentProfileUser}.`
+          });
+          scheduleNext(4000);
           return;
         }
       }

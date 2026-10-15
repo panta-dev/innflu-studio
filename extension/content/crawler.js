@@ -174,7 +174,7 @@ window.InnfluCrawler = {
         console.log('[Innflu] Já estamos na página da hashtag');
         return false;
       }
-    } else if (source === 'followers' || source === 'similar') {
+    } else if (source === 'followers' || source === 'following' || source === 'similar') {
       const cleanUser = clean.replace(/^@/, '').toLowerCase();
       targetUrl = `https://www.instagram.com/${encodeURIComponent(cleanUser)}/`;
       if (this.getCurrentProfileUsername() === cleanUser) {
@@ -217,53 +217,64 @@ window.InnfluCrawler = {
   },
 
   /**
-   * Abre o modal de seguidores do perfil atual e extrai usernames
+   * Abre o modal de QUEM O PERFIL ESTÁ SEGUINDO (Following) e extrai influenciadoras
    */
-  async extractFollowersFromModal(maxScrolls = 4) {
-    // 1. Procura botão ou link de seguidores
-    const followerBtn = document.querySelector('header a[href*="/followers"], a[href*="/followers/"]') ||
-                        Array.from(document.querySelectorAll('header a')).find(a => (a.innerText || '').toLowerCase().includes('seguidor') || (a.innerText || '').toLowerCase().includes('follower'));
+  async extractFollowingFromModal(maxScrolls = 5) {
+    const currentUsername = this.getCurrentProfileUsername();
+    console.log(`[Innflu] Abrindo lista de quem @${currentUsername} está seguindo...`);
+
+    // 1. Procura botão ou link de "Seguindo" / "following" no cabeçalho
+    const followingBtn = document.querySelector('header a[href*="/following"], header a[href*="/following/"]') ||
+                         Array.from(document.querySelectorAll('header a')).find(a => {
+                           const t = (a.innerText || '').toLowerCase();
+                           return t.includes('seguindo') || t.includes('following');
+                         });
     
-    if (followerBtn) {
-      console.log('[Innflu] Clicando para abrir modal de seguidores...');
-      followerBtn.click();
-      await this.sleep(this.randomDelay(2000, 3500));
+    if (followingBtn) {
+      console.log('[Innflu] Clicando no link "Seguindo" do perfil...');
+      followingBtn.click();
+      await this.sleep(this.randomDelay(2200, 3500));
     }
 
     const dialog = document.querySelector('div[role="dialog"]');
     if (!dialog) {
-      console.log('[Innflu] Modal de seguidores não abriu ou perfil é privado');
+      console.log('[Innflu] Modal de "Seguindo" não abriu ou perfil é privado');
       return [];
     }
 
     const usernames = new Set();
-
-    // Rola o container do diálogo para carregar mais seguidores
     const scrollContainer = dialog.querySelector('div[style*="overflow"]') || dialog.querySelector('ul') || dialog;
+
     for (let i = 0; i < maxScrolls; i++) {
-      // Coleta links dentro do dialog
       const dialogLinks = dialog.querySelectorAll('a[href^="/"]');
       for (const a of dialogLinks) {
         const href = a.getAttribute('href') || '';
         const parts = href.split('/').filter(Boolean);
         if (parts.length === 1) {
           const u = parts[0].toLowerCase();
-          if (this.isValidUsername(u)) {
+          if (u !== currentUsername && this.isValidUsername(u)) {
             usernames.add(u);
           }
         }
       }
 
       if (scrollContainer && scrollContainer.scrollBy) {
-        scrollContainer.scrollBy({ top: 400, behavior: 'smooth' });
+        scrollContainer.scrollBy({ top: 450, behavior: 'smooth' });
         await this.sleep(1200);
       }
     }
 
     await this._closeModal();
     const result = Array.from(usernames);
-    console.log(`[Innflu] Extraídos ${result.length} seguidores do modal:`, result);
+    console.log(`[Innflu] Extraídas ${result.length} contas que @${currentUsername} está seguindo:`, result);
     return result;
+  },
+
+  /**
+   * Abre o modal de seguidores do perfil (fallback)
+   */
+  async extractFollowersFromModal(maxScrolls = 4) {
+    return this.extractFollowingFromModal(maxScrolls);
   },
 
   /**
