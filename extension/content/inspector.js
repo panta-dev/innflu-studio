@@ -116,26 +116,50 @@ window.InnfluInspector = {
     const header = document.querySelector('header');
     if (!header) return false;
 
-    const storyAria = header.querySelector('[aria-label*="story" i], [aria-label*="stories" i]');
+    // 1. Aria-label explícito de stories no header ou botão do avatar
+    const storyAria = header.querySelector([
+      '[aria-label*="story" i]',
+      '[aria-label*="stories" i]',
+      '[aria-label*="história" i]',
+      '[aria-label*="histórias" i]',
+      'a[href*="/stories/"]'
+    ].join(','));
     if (storyAria) return true;
 
+    // 2. Canvas do anel de story (Instagram Web desenha o anel colorido em <canvas>)
     const canvasRing = header.querySelector('canvas');
     if (canvasRing) return true;
 
+    // 3. SVG com gradiente (arco do Instagram stories)
+    const svgs = header.querySelectorAll('svg');
+    for (const svg of svgs) {
+      if (svg.querySelector('linearGradient, radialGradient')) return true;
+      const aria = (svg.getAttribute('aria-label') || '').toLowerCase();
+      if (aria.includes('story') || aria.includes('stories') || aria.includes('história')) return true;
+    }
+
+    // 4. Elementos ao redor do avatar com classes/estilos de gradiente
     const avatarImg = header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img');
     if (avatarImg) {
       let current = avatarImg.parentElement;
-      for (let i = 0; i < 4 && current; i++) {
-        const role = current.getAttribute('role');
+      for (let i = 0; i < 5 && current; i++) {
         const className = (current.className || '').toString().toLowerCase();
-        const style = current.getAttribute('style') || '';
+        const style = (current.getAttribute('style') || '').toLowerCase();
+        const ariaLabel = (current.getAttribute('aria-label') || '').toLowerCase();
 
-        if (role === 'button' || role === 'link') {
+        if (ariaLabel.includes('story') || ariaLabel.includes('stories') || ariaLabel.includes('história')) {
           return true;
         }
-        if (className.includes('story') || className.includes('gradient') || style.includes('gradient')) {
+
+        if (className.includes('gradient') || className.includes('story') || 
+            style.includes('gradient') || style.includes('conic-gradient') || style.includes('linear-gradient')) {
           return true;
         }
+
+        if (current.tagName === 'A' && (current.getAttribute('href') || '').includes('/stories/')) {
+          return true;
+        }
+
         current = current.parentElement;
       }
     }

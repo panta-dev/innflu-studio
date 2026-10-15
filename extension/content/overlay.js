@@ -88,19 +88,41 @@
               <label class="innflu-form-label">Mín. Seguidores:</label>
               <select class="innflu-select" id="selMinFollowers">
                 <option value="0">Qualquer tamanho</option>
+                <option value="1000">1.000+ seguidores</option>
+                <option value="2000">2.000+ seguidores</option>
+                <option value="3000">3.000+ seguidores</option>
+                <option value="4000">4.000+ seguidores</option>
                 <option value="5000">5.000+ seguidores</option>
                 <option value="10000" selected>10.000+ (Recomendado)</option>
-                <option value="25000">25.000+ seguidores</option>
+                <option value="20000">20.000+ seguidores</option>
+                <option value="30000">30.000+ seguidores</option>
                 <option value="50000">50.000+ seguidores</option>
+                <option value="100000">100.000+ seguidores</option>
               </select>
             </div>
             <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Stories Ativos (24h):</label>
+              <select class="innflu-select" id="selRequireStories">
+                <option value="true" selected>⚡ Apenas c/ Stories Ativos</option>
+                <option value="false">Todos (com ou sem stories)</option>
+              </select>
+            </div>
+          </div>
+          <div class="innflu-filters-row" style="margin-top:6px;">
+            <div class="innflu-form-group" style="margin-bottom:0;">
               <label class="innflu-form-label">Filtro de Contato:</label>
               <select class="innflu-select" id="selRequireContact">
-                <option value="all" selected>Todos os perfis</option>
+                <option value="all" selected>Todos os contatos</option>
                 <option value="any_contact">Apenas com WA ou Email</option>
                 <option value="wa_only">Apenas com WhatsApp</option>
                 <option value="email_only">Apenas com E-mail</option>
+              </select>
+            </div>
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Gênero Alvo:</label>
+              <select class="innflu-select" id="selTargetGender">
+                <option value="female" selected>Apenas Feminino</option>
+                <option value="all">Todos os Gêneros</option>
               </select>
             </div>
           </div>
@@ -269,7 +291,9 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   const inputMiningTarget = $('inputMiningTarget');
   const lblMiningTarget = $('lblMiningTarget');
   const selMinFollowers = $('selMinFollowers');
+  const selRequireStories = $('selRequireStories');
   const selRequireContact = $('selRequireContact');
+  const selTargetGender = $('selTargetGender');
   const btnToggleMining = $('btnToggleMining');
   const btnMiningLabel = $('btnMiningLabel');
   const btnToggleSender = $('btnToggleSender');
@@ -287,6 +311,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   let countdownInterval = null;
   let activeLeadFilter = 'all'; // 'all' | 'wa' | 'email'
   let cachedLeads = [];
+  let knownCRMUsersCache = new Set();
 
   // ==========================================
   // NOTIFICAÇÕES (TOASTS INTERNOS)
@@ -326,7 +351,9 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           miningSource: 'similar',
           miningTarget: 'anaclaralopes',
           minFollowers: 10000,
+          requireStories: true,
           requireContact: 'all',
+          targetGender: 'female',
           queue: [],
           visited: [],
           visitedPosts: [],
@@ -406,11 +433,17 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     if (bot.miningTarget && inputMiningTarget.value !== bot.miningTarget) {
       inputMiningTarget.value = bot.miningTarget;
     }
-    if (bot.minFollowers !== undefined) {
+    if (bot.minFollowers !== undefined && selMinFollowers) {
       selMinFollowers.value = bot.minFollowers.toString();
     }
-    if (bot.requireContact) {
+    if (bot.requireStories !== undefined && selRequireStories) {
+      selRequireStories.value = bot.requireStories ? 'true' : 'false';
+    }
+    if (bot.requireContact && selRequireContact) {
       selRequireContact.value = bot.requireContact;
+    }
+    if (bot.targetGender && selTargetGender) {
+      selTargetGender.value = bot.targetGender;
     }
 
     // Seleciona botão de fonte ativo
@@ -502,9 +535,21 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     saveBot({ minFollowers: parseInt(selMinFollowers.value, 10) });
   });
 
+  if (selRequireStories) {
+    selRequireStories.addEventListener('change', () => {
+      saveBot({ requireStories: selRequireStories.value === 'true' });
+    });
+  }
+
   selRequireContact.addEventListener('change', () => {
     saveBot({ requireContact: selRequireContact.value });
   });
+
+  if (selTargetGender) {
+    selTargetGender.addEventListener('change', () => {
+      saveBot({ targetGender: selTargetGender.value });
+    });
+  }
 
   // ==========================================
   // NAVEGAÇÃO ENTRE ABAS
@@ -578,10 +623,52 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   };
 
   // ==========================================
+  // SINCRONIZAÇÃO DA MEMÓRIA DO CRM (ANTI-REPETIÇÃO INSTANTÂNEA)
+  // ==========================================
+  async function syncKnownCRMUsers(apiBaseUrl) {
+    const { bot, savedLeads } = await getState();
+    const set = new Set();
+
+    // 1. Histórico da extensão (visited)
+    (bot.visited || []).forEach(u => {
+      if (u) set.add(u.toLowerCase());
+    });
+
+    // 2. Cache local de leads
+    (savedLeads || []).forEach(l => {
+      if (l.username) set.add(l.username.toLowerCase());
+    });
+
+    // 3. Busca lista remota do Cloudflare D1 (/api/leads)
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/leads`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.leads && Array.isArray(data.leads)) {
+          data.leads.forEach(l => {
+            if (l.username) set.add(l.username.toLowerCase());
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[Innflu] Aviso ao sincronizar CRM:', e);
+    }
+
+    knownCRMUsersCache = set;
+
+    // Persiste a lista completa em bot.visited para garantir que mesmo pausando/recarregando ela se lembre de todas!
+    const mergedVisited = Array.from(set).slice(-1000);
+    bot.visited = mergedVisited;
+    await saveBot({ visited: mergedVisited });
+    console.log(`[Innflu] ⚡ Memória do CRM carregada: ${set.size} influenciadoras registradas (serão descartadas na hora se reaparecerem).`);
+    return set;
+  }
+
+  // ==========================================
   // BOTÕES PRINCIPAIS DE EXECUÇÃO
   // ==========================================
   btnToggleMining.onclick = async () => {
-    const { bot } = await getState();
+    const { bot, apiBaseUrl } = await getState();
     if (bot.isRunning && bot.activeMode === 'miner') {
       await saveBot({ isRunning: false, activeMode: null, nextActionAt: 0 });
       clearInterval(countdownInterval);
@@ -610,6 +697,9 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       showToast({ type: 'error', title: 'Alvo Vazio', message: 'Digite uma palavra-chave, hashtag ou perfil de referência.' });
       return;
     }
+
+    // Carrega todo o histórico do CRM para nunca re-chamar nem re-analisar influenciadoras já conhecidas
+    await syncKnownCRMUsers(apiBaseUrl);
 
     // Ao iniciar uma nova mineração, limpa a fila e histórico de posts inspecionados para a nova rodada
     await saveBot({
@@ -701,13 +791,14 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       // A) Se ainda não analisou este perfil, analisa e salva no CRM agora!
       if (!hasBeenVisited) {
         await analyzeAndMineProfile(bot, apiBaseUrl);
-        const updatedVisited = [...visited, currentProfileUser].slice(-400);
+        const updatedVisited = [...visited, currentProfileUser].slice(-1000);
         const updatedQueue = (bot.queue || []).filter(u => u !== currentProfileUser);
         bot.visited = updatedVisited;
         bot.queue = updatedQueue;
+        knownCRMUsersCache.add(currentProfileUser.toLowerCase());
         await saveBot({ visited: updatedVisited, queue: updatedQueue });
         hudQueueCount.innerText = updatedQueue.length;
-        scheduleNext(window.InnfluCrawler.randomDelay(2000, 3500));
+        scheduleNext(window.InnfluCrawler.randomDelay(1000, 1600));
         return;
       }
 
@@ -873,9 +964,13 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     // ========================================================
     if (pageType === 'search') {
       hudCurrentAction.innerText = `Varrendo publicações de "${target}"...`;
-      await window.InnfluCrawler.sleep(1800);
+      await window.InnfluCrawler.sleep(1200);
 
-      const visitedUsers = new Set(bot.visited || []);
+      if (knownCRMUsersCache.size === 0) {
+        await syncKnownCRMUsers(apiBaseUrl);
+      }
+
+      const visitedUsers = new Set([...(bot.visited || []), ...Array.from(knownCRMUsersCache)]);
       const visitedPosts = new Set((bot.visitedPosts || []).map(h => window.InnfluCrawler.normalizePostHref(h)));
 
       // PASSO 1: Extrai criadoras diretamente das imagens da grade (alt-text)
@@ -895,7 +990,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           message: newQueue.slice(0, 4).map(u => `@${u}`).join(', ') + '...'
         });
         hudCurrentAction.innerText = `Abrindo primeira criadora: @${newQueue[0]}...`;
-        scheduleNext(1200);
+        scheduleNext(800);
         return;
       }
 
@@ -906,19 +1001,19 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         // Todos os posts visíveis foram inspecionados! Rola para carregar novos posts
         hudCurrentAction.innerText = 'Rolando feed para carregar novas publicações...';
         await window.InnfluCrawler.scrollDown();
-        await window.InnfluCrawler.sleep(2500);
+        await window.InnfluCrawler.sleep(2000);
 
         const retryPost = window.InnfluCrawler.getNextUnvisitedPost(Array.from(visitedPosts));
         if (!retryPost) {
           hudCurrentAction.innerText = 'Carregando mais conteúdo do feed...';
           await window.InnfluCrawler.scrollDown();
-          scheduleNext(3000);
+          scheduleNext(2500);
           return;
         }
-        return handleInspectPostElement(retryPost, visitedPosts, visitedUsers, source, target);
+        return handleInspectPostElement(retryPost, visitedPosts, visitedUsers, source, target, apiBaseUrl);
       }
 
-      return handleInspectPostElement(nextPost, visitedPosts, visitedUsers, source, target);
+      return handleInspectPostElement(nextPost, visitedPosts, visitedUsers, source, target, apiBaseUrl);
     }
 
     // ========================================================
@@ -931,7 +1026,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   /**
    * Inspeciona uma publicação específica na grade e avança sequencialmente
    */
-  async function handleInspectPostElement(postInfo, visitedPostsSet, visitedUsersSet, source, target) {
+  async function handleInspectPostElement(postInfo, visitedPostsSet, visitedUsersSet, source, target, apiBaseUrl) {
     const { element, href } = postInfo;
     
     // IMPORTANTE: Salva o post no storage ANTES de clicar para garantir que nunca será repetido
@@ -940,46 +1035,65 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
     hudCurrentAction.innerText = `Inspecionando publicação (${href})...`;
     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    await window.InnfluCrawler.sleep(500);
+    await window.InnfluCrawler.sleep(300);
 
     // Clica na publicação
     element.click();
-    await window.InnfluCrawler.sleep(2200);
 
-    // Verifica se mudou a rota ou abriu modal
-    const curPath = window.location.pathname.toLowerCase();
-    if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
-      const directNorm = window.InnfluCrawler.normalizePostHref(curPath);
-      visitedPostsSet.add(directNorm);
-      await saveBot({ visitedPosts: Array.from(visitedPostsSet).slice(-600) });
+    // Aguarda o autor da publicação carregar de forma responsiva e rápida (máx 1400ms)
+    let author = null;
+    let curPath = '';
+    for (let t = 0; t < 7; t++) {
+      await window.InnfluCrawler.sleep(200);
+      curPath = window.location.pathname.toLowerCase();
+      if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
+        const directNorm = window.InnfluCrawler.normalizePostHref(curPath);
+        visitedPostsSet.add(directNorm);
+      }
+      author = window.InnfluCrawler.extractPostAuthor();
+      if (author) break;
     }
 
-    // Extrai o autor da publicação aberta
-    const author = window.InnfluCrawler.extractPostAuthor();
-
     if (author) {
-      if (!visitedUsersSet.has(author)) {
-        hudCurrentAction.innerText = `Criadora descoberta: @${author}! Abrindo perfil...`;
-        await window.InnfluCrawler.sleep(1000);
-        window.InnfluCrawler.openProfile(author);
-        return;
+      const authorLower = author.toLowerCase();
+      // VERIFICAÇÃO INSTANTÂNEA: Está no CRM ou já foi visitada?
+      const isAlreadyInCRM = visitedUsersSet.has(authorLower) || knownCRMUsersCache.has(authorLower);
+
+      if (isAlreadyInCRM) {
+        hudCurrentAction.innerText = `@${author} já está no CRM / visitada. Descartando na hora! ⚡`;
+        console.log(`[Innflu] ⚡ Descarte rápido: @${author} já consta no CRM. Não precisa abrir perfil.`);
+        await logActivity({ username: author, status: 'Descartada (Já no CRM ⚡)' });
       } else {
-        hudCurrentAction.innerText = `@${author} já foi analisada anteriormente. Próxima publicação...`;
+        // Checagem de elegibilidade da regra dos 7 dias antes de abrir perfil
+        const check7d = await check7DayRule(apiBaseUrl, authorLower);
+        if (!check7d.eligible) {
+          hudCurrentAction.innerText = `@${author} contatada nos últimos 7 dias. Descartando na hora! ⚡`;
+          visitedUsersSet.add(authorLower);
+          knownCRMUsersCache.add(authorLower);
+          await saveBot({ visited: Array.from(visitedUsersSet).slice(-1000) });
+          await logActivity({ username: author, status: 'Descartada (Regra 7d ⚡)' });
+        } else {
+          // ELEGÍVEL E INÉDITA! Abre o perfil para auditar seguidores, stories e contatos!
+          hudCurrentAction.innerText = `Nova criadora: @${author}! Abrindo perfil...`;
+          await window.InnfluCrawler.sleep(600);
+          window.InnfluCrawler.openProfile(author);
+          return;
+        }
       }
     } else {
-      hudCurrentAction.innerText = 'Não foi possível identificar o autor desta publicação.';
+      hudCurrentAction.innerText = 'Não foi possível ler o autor deste post. Próximo...';
     }
 
     // Fecha modal ou volta se navegou
     if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
       window.history.back();
-      await window.InnfluCrawler.sleep(1800);
+      await window.InnfluCrawler.sleep(1400);
     } else {
       await window.InnfluCrawler._closeModal();
-      await window.InnfluCrawler.sleep(1000);
+      await window.InnfluCrawler.sleep(500);
     }
 
-    scheduleNext(1500);
+    scheduleNext(800);
   }
 
   // ==========================================
@@ -993,7 +1107,9 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     }
 
     const minFollowersRequired = bot.minFollowers !== undefined ? bot.minFollowers : 10000;
+    const requireStoriesFilter = bot.requireStories !== undefined ? bot.requireStories : true;
     const requireContactFilter = bot.requireContact || 'all';
+    const targetGenderFilter = bot.targetGender || 'female';
     const rawTarget = (bot.miningTarget || 'Geral').trim();
     const currentNiche = bot.miningSource === 'hashtag' ? ('#' + rawTarget.replace(/^#/, '')) : rawTarget;
 
@@ -1006,26 +1122,43 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           : profile.followersCount.toString();
     }
 
-    hudCurrentAction.innerText = `Avaliando @${profile.username} (${fDisplay} seg.)...`;
+    const storiesStatusText = profile.hasActiveStories ? 'c/ Stories ⚡' : 's/ Stories';
+    hudCurrentAction.innerText = `Avaliando @${profile.username} (${fDisplay} seg., ${storiesStatusText})...`;
 
     // Checagem de filtros de qualificação
     let isApproved = true;
     let rejectReason = '';
 
+    // 1. Mínimo de seguidores
     if (profile.followersCount > 0 && profile.followersCount < minFollowersRequired) {
       isApproved = false;
       rejectReason = `${fDisplay} seg. (< ${minFollowersRequired.toLocaleString('pt-BR')} mín.)`;
     }
 
-    if (requireContactFilter === 'any_contact' && !profile.whatsapp && !profile.email) {
+    // 2. Stories Ativos (últimas 24h)
+    if (isApproved && requireStoriesFilter && !profile.hasActiveStories) {
       isApproved = false;
-      rejectReason = 'Sem WhatsApp nem E-mail';
-    } else if (requireContactFilter === 'wa_only' && !profile.whatsapp) {
+      rejectReason = 'Sem Stories ativos nas últimas 24h';
+    }
+
+    // 3. Contatos
+    if (isApproved) {
+      if (requireContactFilter === 'any_contact' && !profile.whatsapp && !profile.email) {
+        isApproved = false;
+        rejectReason = 'Sem WhatsApp nem E-mail';
+      } else if (requireContactFilter === 'wa_only' && !profile.whatsapp) {
+        isApproved = false;
+        rejectReason = 'Sem WhatsApp';
+      } else if (requireContactFilter === 'email_only' && !profile.email) {
+        isApproved = false;
+        rejectReason = 'Sem E-mail';
+      }
+    }
+
+    // 4. Gênero Feminino (se ativado)
+    if (isApproved && targetGenderFilter === 'female' && !profile.isFemale) {
       isApproved = false;
-      rejectReason = 'Sem WhatsApp';
-    } else if (requireContactFilter === 'email_only' && !profile.email) {
-      isApproved = false;
-      rejectReason = 'Sem E-mail';
+      rejectReason = 'Perfil não identificado como feminino';
     }
 
     if (isApproved) {
@@ -1035,6 +1168,9 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
       // 2. Salva no cache local com Nicho
       await cacheLocalLead(profile, statusText, currentNiche);
+
+      // 3. Registra na memória de conhecidos
+      knownCRMUsersCache.add(profile.username.toLowerCase());
 
       const newMined = (bot.minedCount || 0) + 1;
       await saveBot({ minedCount: newMined });
@@ -1050,7 +1186,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       showToast({
         type: 'success',
         title: `Salva: @${profile.username} [${currentNiche}]`,
-        message: `${fDisplay} seg. • ${profile.whatsapp ? '📱 ' + profile.whatsapp : ''} ${profile.email ? '✉️ ' + profile.email : (!profile.whatsapp ? 'Sem telefone direto' : '')}`
+        message: `${fDisplay} seg. • ${storiesStatusText} • ${profile.whatsapp ? '📱 ' + profile.whatsapp : ''} ${profile.email ? '✉️ ' + profile.email : (!profile.whatsapp ? 'Sem telefone direto' : '')}`
       });
 
       // Atualiza aba de leads se estiver aberta
