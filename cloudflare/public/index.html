@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Innflu Studio | Prospecção & Captação Inteligente de Influenciadores</title>
+  
+  <!-- Tailwind CSS & FontAwesome Pro Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Chart.js para gráficos SaaS modernos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            surface: {
+              base: '#090d16',
+              card: '#0f172a',
+              subtle: '#131e36',
+              border: 'rgba(255, 255, 255, 0.08)',
+              hover: 'rgba(255, 255, 255, 0.04)'
+            },
+            accent: {
+              purple: '#8b5cf6',
+              violet: '#7c3aed',
+              pink: '#ec4899',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              sky: '#0ea5e9'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 999px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    body {
+      background: radial-gradient(circle at top left, #141c33 0%, #080c15 50%, #05070d 100%);
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    .glass-panel-glow {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.15);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #c084fc 0%, #ec4899 50%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .gradient-btn {
+      background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+      box-shadow: 0 4px 15px -3px rgba(124, 58, 237, 0.4);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .gradient-btn:hover {
+      box-shadow: 0 6px 20px -2px rgba(236, 72, 153, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .story-ring {
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      padding: 2px;
+      border-radius: 9999px;
+    }
+
+    .nav-item {
+      transition: all 0.15s ease;
+    }
+    .nav-item.active {
+      background: linear-gradient(90deg, rgba(124, 58, 237, 0.15) 0%, rgba(124, 58, 237, 0.02) 100%);
+      border-left: 3px solid #8b5cf6;
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .status-badge {
+      font-size: 0.68rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+  </style>
+</head>
+
+<body class="flex min-h-screen">
+
+  <!-- ========================================================
+       SIDEBAR PREMIUM (ESTILO SAAS STRIPE / VERCEL)
+  ======================================================== -->
+  <aside class="w-64 border-r border-surface-border bg-surface-base/95 backdrop-blur-xl flex flex-col justify-between shrink-0 h-screen sticky top-0 z-40 select-none">
+    
+    <!-- Top Branding -->
+    <div>
+      <div class="h-16 flex items-center px-6 gap-3 border-b border-surface-border">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-pink-500 to-amber-400 p-[1.5px] shadow-lg shadow-purple-500/25">
+          <div class="w-full h-full bg-[#0d1322] rounded-[10px] flex items-center justify-center font-black text-lg text-white">
+            <i class="fa-solid fa-bolt text-purple-400 text-sm"></i>
+          </div>
+        </div>
+        <div>
+          <span class="text-base font-extrabold tracking-tight gradient-text">Innflu Studio</span>
+          <span class="text-[10px] text-slate-400 uppercase tracking-widest block font-bold -mt-0.5">SaaS Growth</span>
+        </div>
+      </div>
+
+      <!-- Live Engine Status Badge -->
+      <div class="px-5 py-4">
+        <div class="p-3 rounded-xl bg-surface-card border border-surface-border flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <div>
+              <p class="text-[11px] font-bold text-slate-200">Motor Cloudflare</p>
+              <p class="text-[9px] text-emerald-400 font-mono">D1 Serverless • Online</p>
+            </div>
+          </div>
+          <span class="text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded font-mono">v1.2</span>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="px-3 space-y-1">
+        <div class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Principal</div>
+        
+        <button onclick="navTo('view-overview')" id="nav-view-overview" class="nav-item active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
+          <i class="fa-solid fa-chart-line w-4 text-purple-400"></i>
+          <span>Visão Geral & Métricas</span>
+        </button>
+
+        <button onclick="navTo('view-leads')" id="nav-view-leads" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-users-viewfinder w-4 text-pink-400"></i>
+            <span>Influenciadoras (CRM)</span>
+          </div>
+          <span id="badgeSidebarLeads" class="bg-pink-500/10 text-pink-400 border border-pink-500/20 text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+        </button>
+
+        <button onclick="navTo('view-mining-hub')" id="nav-view-mining-hub" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
+          <i class="fa-solid fa-magnifying-glass-location w-4 text-amber-400"></i>
+          <span>Central de Mineração</span>
+        </button>
+
+        <button onclick="navTo('view-campaigns')" id="nav-view-campaigns" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
+          <i class="fa-solid fa-bullseye w-4 text-sky-400"></i>
+          <span>Campanhas & Filtros</span>
+        </button>
+
+        <div class="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Captação & Disparos</div>
+
+        <button onclick="navTo('view-templates')" id="nav-view-templates" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
+          <i class="fa-solid fa-comment-dots w-4 text-emerald-400"></i>
+          <span>Templates & Spintax</span>
+        </button>
+
+        <button onclick="navTo('view-ai-qualifier')" id="nav-view-ai-qualifier" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
+          <i class="fa-solid fa-wand-magic-sparkles w-4 text-purple-400"></i>
+          <span>Classificador IA (Llama)</span>
+        </button>
+
+        <button onclick="navTo('view-logs')" id="nav-view-logs" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
+          <i class="fa-solid fa-list-check w-4 text-slate-400"></i>
+          <span>Auditoria & Disparos</span>
+        </button>
+
+        <button onclick="navTo('view-blacklist')" id="nav-view-blacklist" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
+          <i class="fa-solid fa-ban w-4 text-rose-400"></i>
+          <span>Blacklist & 7 Dias</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom User & Settings -->
+    <div class="p-4 border-t border-surface-border space-y-3">
+      <button onclick="navTo('view-settings')" id="nav-view-settings" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover transition">
+        <i class="fa-solid fa-gear w-4"></i>
+        <span>Configurações & API</span>
+      </button>
+
+      <div class="p-3 rounded-xl bg-surface-card/60 border border-surface-border flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center font-bold text-xs text-white">
+          AD
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-semibold text-white truncate">Admin Pro</p>
+          <p class="text-[10px] text-slate-400 truncate">contato@innflu.com</p>
+        </div>
+        <button onclick="openApiModal()" title="Chave de API da Extensão" class="text-slate-400 hover:text-purple-400 transition p-1">
+          <i class="fa-solid fa-key text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================
+       CONTEÚDO PRINCIPAL (HEADER + MULTI-VIEWS)
+  ======================================================== -->
+  <div class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+
+    <!-- Topbar Sticky com Busca Global & Ações Rápidas -->
+    <header class="h-16 border-b border-surface-border bg-surface-base/80 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between px-8">
+      <div class="flex items-center gap-4 flex-1 max-w-xl">
+        <div class="relative w-full">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+          <input type="text" id="globalSearchInput" onkeyup="handleGlobalSearch(event)" placeholder="Buscar @influenciadora, nicho, WhatsApp ou tag..." class="w-full bg-surface-card/70 border border-surface-border rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Badge Regra 7 Dias Ativa -->
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+          <i class="fa-solid fa-shield-check"></i>
+          <span>Regra 7 Dias Ativa (Anti-Repetição)</span>
+        </div>
+
+        <!-- Botão Sincronizar / Atualizar -->
+        <button onclick="refreshCurrentView()" title="Atualizar dados" class="p-2.5 rounded-xl bg-surface-card border border-surface-border text-slate-300 hover:text-white hover:bg-surface-hover transition text-xs">
+          <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+        </button>
+
+        <!-- Botão Exportar CSV Global -->
+        <button onclick="exportLeadsCSV()" class="px-3.5 py-2 rounded-xl bg-surface-card border border-surface-border hover:border-purple-500/40 text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
+          <i class="fa-solid fa-download text-purple-400"></i>
+          <span class="hidden md:inline">Exportar CSV</span>
+        </button>
+
+        <!-- Botão Abrir Modal Extensão -->
+        <button onclick="openApiModal()" class="gradient-btn text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2">
+          <i class="fa-solid fa-puzzle-piece"></i>
+          <span>Extensão Chrome</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ÁREA DE VIEWS (SPA DINÂMICO) -->
+    <main class="flex-1 p-8 space-y-8 max-w-7xl w-full mx-auto">
+
+      <!-- ====================================================
+           VIEW 1: OVERVIEW & DASHBOARD ANALYTICS
+      ==================================================== -->
+      <section id="view-overview" class="space-y-8">
+        
+        <!-- Welcome Hero -->
+        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div class="space-y-1.5 z-10">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20">Pipeline Ativo</span>
+              <span class="text-xs text-slate-400 font-medium">• Nicho principal: Maternidade & Família</span>
+            </div>
+            <h1 class="text-2xl font-black text-white tracking-tight">Centro de Comando de Influenciadoras</h1>
+            <p class="text-xs text-slate-400 max-w-2xl leading-relaxed">
+              Monitore a mineração contínua por perfil semelhante, extração automática de contatos diretos (WhatsApp/Email) e disparos de abordagem com segurança anti-ban.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 shrink-0 z-10">
+            <button onclick="navTo('view-mining-hub')" class="gradient-btn px-4 py-2.5 rounded-xl text-xs font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Nova Mineração</span>
+            </button>
+            <button onclick="navTo('view-leads')" class="bg-surface-subtle hover:bg-surface-hover border border-surface-border text-slate-200 px-4 py-2.5 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+              <i class="fa-solid fa-address-book"></i>
+              <span>Ver CRM</span>
+            </button>
+          </div>
+
+          <!-- Ambient Light Blob -->
+          <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -left-10 -top-10 w-64 h-64 bg-pink-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        </div>
+
+        <!-- Grid de 4 Cards Principais de Métricas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          
+          <!-- Card 1: DMs Hoje & Quota -->
+          <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-purple-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DMs Enviadas Hoje</p>
+                <h3 id="statSentToday" class="text-3xl font-extrabold text-white mt-1.5 font-mono">0</h3>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+                <i class="fa-solid fa-paper-plane text-sm"></i>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-surface-border">
+              <div class="flex justify-between text-[11px] text-slate-400 mb-1.5">
+                <span>Limite Diário Seguro</span>
+                <span class="font-mono text-slate-300"><span id="statSentPercent">0</span>% (<span id="statDailySentCount">0</span>/40)</span>
+              </div>
+              <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+                <div id="statProgressBar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Total Mineradas -->
+          <div class="glass-panel p-5 rounded-2xl group hover:border-pink-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Influenciadoras Mineradas</p>
+                <h3 id="statTotalLeads" class="text-3xl font-extrabold text-white mt-1.5 font-mono">0</h3>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center">
+                <i class="fa-solid fa-users-viewfinder text-sm"></i>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
+              <span class="text-emerald-400 flex items-center gap-1">
+                <i class="fa-solid fa-circle-check text-[10px]"></i> Qualificadas +10k
+              </span>
+              <span id="statPendingCount" class="text-slate-400 font-mono">0 na fila</span>
+            </div>
+          </div>
+
+          <!-- Card 3: WhatsApps Capturados -->
+          <div class="glass-panel p-5 rounded-2xl group hover:border-emerald-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">WhatsApps Diretos</p>
+                <h3 id="statWithWhatsapp" class="text-3xl font-extrabold text-emerald-400 mt-1.5 font-mono">0</h3>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i class="fa-brands fa-whatsapp text-base"></i>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
+              <span class="text-slate-400 flex items-center gap-1">
+                <i class="fa-solid fa-envelope text-sky-400"></i> <b id="statWithEmail" class="text-slate-200">0</b> com e-mail
+              </span>
+              <button onclick="copyAllWhatsApps()" class="text-emerald-400 hover:underline font-semibold">Copiar Todos</button>
+            </div>
+          </div>
+
+          <!-- Card 4: Taxa de Resposta / DMs Totais -->
+          <div class="glass-panel p-5 rounded-2xl group hover:border-amber-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Abordagens Realizadas</p>
+                <h3 id="statTotalSent" class="text-3xl font-extrabold text-amber-300 mt-1.5 font-mono">0</h3>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
+              <span class="text-slate-400 flex items-center gap-1">
+                <i class="fa-solid fa-shield-halved text-amber-400"></i> Proteção Ativa
+              </span>
+              <span class="text-purple-400 font-semibold font-mono">Intervalos 60-180s</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Seção de Gráficos e Analytics SaaS -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Gráfico de Disparos & Tendência -->
+          <div class="glass-panel p-6 rounded-2xl lg:col-span-2 space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-chart-area text-purple-400"></i>
+                  Ritmo de Abordagem Semanal (Anti-Ban)
+                </h3>
+                <p class="text-[11px] text-slate-400">Volume de DMs enviadas respeitando os limites da conta</p>
+              </div>
+              <span class="text-[10px] bg-surface-card px-2.5 py-1 rounded-lg border border-surface-border text-slate-300 font-mono">Últimos 7 dias</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="chartActivity"></canvas>
+            </div>
+          </div>
+
+          <!-- Distribuição de Contatos (WhatsApp vs Email vs DM) -->
+          <div class="glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-pie-chart text-pink-400"></i>
+                  Canais de Contato
+                </h3>
+              </div>
+              <p class="text-[11px] text-slate-400">Oportunidades de contato direto extraídas</p>
+            </div>
+
+            <div class="h-44 relative flex items-center justify-center">
+              <canvas id="chartChannels"></canvas>
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-surface-border text-xs">
+              <div class="flex justify-between items-center text-slate-300">
+                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> WhatsApp Comercial</span>
+                <span id="labelPercentWa" class="font-mono text-emerald-400 font-bold">0%</span>
+              </div>
+              <div class="flex justify-between items-center text-slate-300">
+                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> E-mail Comercial</span>
+                <span id="labelPercentEmail" class="font-mono text-sky-400 font-bold">0%</span>
+              </div>
+              <div class="flex justify-between items-center text-slate-300">
+                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Apenas DM Direta</span>
+                <span id="labelPercentDM" class="font-mono text-purple-400 font-bold">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabela Rápida de Atividades Recentes -->
+        <div class="glass-panel p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="text-sm font-bold text-white">Últimas Influenciadoras Mineradas</h3>
+              <p class="text-[11px] text-slate-400">Perfis identificados e prontos para abordagem</p>
+            </div>
+            <button onclick="navTo('view-leads')" class="text-xs text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1">
+              Ver CRM Completo <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[10px] uppercase bg-surface-card/60 text-slate-400 border-b border-surface-border">
+                <tr>
+                  <th class="px-4 py-3">Influenciadora</th>
+                  <th class="px-4 py-3">Seguidores</th>
+                  <th class="px-4 py-3">WhatsApp</th>
+                  <th class="px-4 py-3">E-mail</th>
+                  <th class="px-4 py-3">Stories</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="overviewRecentTable" class="divide-y divide-surface-border">
+                <tr>
+                  <td colspan="7" class="text-center py-6 text-slate-500">Carregando leads recentes...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ====================================================
+           VIEW 2: CRM & INFLUENCIADORAS (LEADS)
+      ==================================================== -->
+      <section id="view-leads" class="space-y-6 hidden">
+        
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">CRM de Influenciadoras</h2>
+            <p class="text-xs text-slate-400">Base consolidada de influenciadoras mineradas, contatos e histórico.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Filtro de Status -->
+            <select id="filterLeadStatus" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500">
+              <option value="all">Todos os Status</option>
+              <option value="minerada">Mineradas (Prontas)</option>
+              <option value="sent">DMs Enviadas</option>
+              <option value="pending">Pendentes</option>
+            </select>
+
+            <!-- Filtro de Contato -->
+            <select id="filterLeadContact" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500">
+              <option value="all">Todos os Contatos</option>
+              <option value="wa">Apenas com WhatsApp</option>
+              <option value="email">Apenas com E-mail</option>
+            </select>
+
+            <!-- Ações em Lote -->
+            <button onclick="copyAllWhatsApps()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition">
+              <i class="fa-brands fa-whatsapp"></i> Copiar WhatsApps
+            </button>
+
+            <button onclick="copyAllEmails()" class="bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-envelope"></i> Copiar E-mails
+            </button>
+
+            <button onclick="exportLeadsCSV()" class="gradient-btn text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5">
+              <i class="fa-solid fa-file-csv"></i> Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabela Completa de Leads -->
+        <div class="glass-panel rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[10px] uppercase bg-surface-card/80 text-slate-400 border-b border-surface-border">
+                <tr>
+                  <th class="px-4 py-3.5">Influenciadora</th>
+                  <th class="px-4 py-3.5">Seguidores</th>
+                  <th class="px-4 py-3.5">WhatsApp</th>
+                  <th class="px-4 py-3.5">E-mail Comercial</th>
+                  <th class="px-4 py-3.5">Stories Ativos</th>
+                  <th class="px-4 py-3.5">Status</th>
+                  <th class="px-4 py-3.5">Data Descoberta</th>
+                  <th class="px-4 py-3.5 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="fullLeadsTableBody" class="divide-y divide-surface-border">
+                <tr>
+                  <td colspan="8" class="text-center py-8 text-slate-500">Nenhuma influenciadora minerada encontrada.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="p-4 border-t border-surface-border flex justify-between items-center text-xs text-slate-400">
+            <span>Exibindo <b id="leadsCountShowing" class="text-slate-200">0</b> influenciadoras</span>
+            <span class="text-[11px]">Banco Cloudflare D1 Serverless</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ====================================================
+           VIEW 3: CENTRAL DE MINERAÇÃO (MULTI-FONTE)
+      ==================================================== -->
+      <section id="view-mining-hub" class="space-y-6 hidden">
+        <div>
+          <h2 class="text-xl font-extrabold text-white">Central de Mineração Multi-Fonte</h2>
+          <p class="text-xs text-slate-400">Descubra novas influenciadoras por perfis de referência, hashtags, palavras-chave ou seguidores.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Formulário de Configuração de Busca -->
+          <div class="glass-panel p-6 rounded-2xl space-y-4 lg:col-span-1">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-crosshairs text-purple-400"></i>
+              Configurar Nova Mineração
+            </h3>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">Fonte de Descoberta</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <button type="button" onclick="setMiningSourceHub('similar')" id="hubSrcSimilar" class="p-2.5 rounded-xl border border-purple-500/40 bg-purple-500/10 text-white font-semibold flex items-center gap-2">
+                    <i class="fa-solid fa-sparkles text-purple-400"></i> Semelhantes
+                  </button>
+                  <button type="button" onclick="setMiningSourceHub('keyword')" id="hubSrcKeyword" class="p-2.5 rounded-xl border border-surface-border bg-surface-card text-slate-300 hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass text-pink-400"></i> Palavra-chave
+                  </button>
+                  <button type="button" onclick="setMiningSourceHub('hashtag')" id="hubSrcHashtag" class="p-2.5 rounded-xl border border-surface-border bg-surface-card text-slate-300 hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-hashtag text-amber-400"></i> Hashtag
+                  </button>
+                  <button type="button" onclick="setMiningSourceHub('followers')" id="hubSrcFollowers" class="p-2.5 rounded-xl border border-surface-border bg-surface-card text-slate-300 hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-users text-sky-400"></i> Seguidores
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label id="lblHubTarget" class="block text-[11px] font-semibold text-slate-300 mb-1">Perfil de Referência</label>
+                <input type="text" id="hubTargetInput" value="@marialuizazamoner" placeholder="ex: @marialuizazamoner" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                <p class="text-[10px] text-slate-400 mt-1">O robô entrará no perfil e extrairá toda a rede de influenciadoras semelhantes.</p>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Mínimo de Seguidores</label>
+                <select id="hubMinFollowers" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                  <option value="10000" selected>10.000+ (Micro-influenciadoras)</option>
+                  <option value="25000">25.000+ seguidores</option>
+                  <option value="50000">50.000+ seguidores</option>
+                  <option value="100000">100.000+ (Médio porte)</option>
+                  <option value="0">Qualquer tamanho (sem filtro)</option>
+                </select>
+              </div>
+
+              <div class="pt-2">
+                <button onclick="launchMiningFromDashboard()" class="w-full gradient-btn text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-play"></i> Enviar Instrução para o Bot
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards de Métodos de Mineração Explicados -->
+          <div class="glass-panel p-6 rounded-2xl lg:col-span-2 space-y-4">
+            <h3 class="text-sm font-bold text-white">Como Funciona a Tecnologia de Mineração</h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="p-4 rounded-xl bg-surface-card/60 border border-surface-border space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-xs">
+                  <i class="fa-solid fa-sparkles"></i>
+                </div>
+                <h4 class="text-xs font-bold text-white">Semelhantes por Grafo (Lookalike)</h4>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                  Acessa perfis referência como <code class="text-purple-300 font-mono">@marialuizazamoner</code>, abre o carrossel de recomendadas do algoritmo do Instagram e minera a rede de influenciadoras correlacionadas.
+                </p>
+              </div>
+
+              <div class="p-4 rounded-xl bg-surface-card/60 border border-surface-border space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                  <i class="fa-brands fa-whatsapp"></i>
+                </div>
+                <h4 class="text-xs font-bold text-white">Decodificador WhatsApp & Link-in-Bio</h4>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                  Decodifica links de redirecionamento <code class="text-emerald-300 font-mono">l.instagram.com/?u=wa.me</code>, Linktree e botões nativos, formatando no padrão brasileiro <code class="text-slate-300">+55 (DD) 9XXXX-XXXX</code>.
+                </p>
+              </div>
+
+              <div class="p-4 rounded-xl bg-surface-card/60 border border-surface-border space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold text-xs">
+                  <i class="fa-solid fa-hashtag"></i>
+                </div>
+                <h4 class="text-xs font-bold text-white">Hashtags & Posts Virais</h4>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                  Varre as publicações em alta de <code class="text-pink-300 font-mono">#maternidadereal</code>, identifica as criadoras de conteúdo com fotos autorais e filtra perfis falsos.
+                </p>
+              </div>
+
+              <div class="p-4 rounded-xl bg-surface-card/60 border border-surface-border space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-xs">
+                  <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h4 class="text-xs font-bold text-white">Regra de Segurança de 7 Dias</h4>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                  Se um perfil já recebeu mensagem nossa nos últimos 7 dias, o sistema bloqueia qualquer reenvio automático, protegendo sua conta de denúncias e spam.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====================================================
+           VIEW 4: CAMPANHAS & FILTROS
+      ==================================================== -->
+      <section id="view-campaigns" class="space-y-6 hidden">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">Gestão de Campanhas</h2>
+            <p class="text-xs text-slate-400">Configure metas de prospecção, limites diários e regras por nicho.</p>
+          </div>
+          <button onclick="openNewCampaignModal()" class="gradient-btn text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Nova Campanha
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="campaignsCardGrid">
+          <div class="text-center py-12 text-slate-500 col-span-3">Carregando campanhas...</div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           VIEW 5: TEMPLATES & SPINTAX
+      ==================================================== -->
+      <section id="view-templates" class="space-y-6 hidden">
+        <div>
+          <h2 class="text-xl font-extrabold text-white">Editor de Templates com Spintax</h2>
+          <p class="text-xs text-slate-400">Crie mensagens dinâmicas para evitar que o Instagram detecte textos repetidos.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="glass-panel p-6 rounded-2xl space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-code text-purple-400"></i> Mensagem da Campanha
+            </h3>
+            
+            <div class="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs">
+              <p class="font-semibold mb-1">Como usar Spintax:</p>
+              <p class="text-[11px] text-purple-200/80">Use <code>{Olá|Oi|Oie}</code> para variações aleatórias e <code>{nome}</code> para puxar o primeiro nome da influenciadora.</p>
+            </div>
+
+            <form id="templateForm" onsubmit="saveTemplateWeb(event)" class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Título do Modelo</label>
+                <input type="text" id="tmplTitle" required value="Campanha Padrão Parceria" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Conteúdo com Spintax</label>
+                <textarea id="tmplContent" rows="7" required class="w-full bg-surface-card border border-surface-border rounded-xl p-3.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 leading-relaxed">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?}
+
+Adorei seu conteúdo e a forma leve como você compartilha a maternidade real por aqui!
+
+Somos uma marca e gostaríamos de te presentear com nossos produtos sem nenhum custo em troca de você conhecer nossa proposta. Teria interesse?</textarea>
+              </div>
+
+              <div class="flex gap-2">
+                <button type="button" onclick="testSpintaxWeb()" class="w-1/2 bg-surface-card hover:bg-surface-hover border border-surface-border text-slate-200 py-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-shuffle text-purple-400"></i> Testar Variação
+                </button>
+                <button type="submit" class="w-1/2 gradient-btn text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-save"></i> Salvar no D1
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-bold text-white">Simulador de Envio Real</h3>
+                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">Anti-Spam Ativo</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Veja exatamente como cada influenciadora receberá o texto no Direct:</p>
+            </div>
+
+            <!-- Bubble de DM do Instagram -->
+            <div class="bg-surface-card/90 border border-surface-border rounded-2xl p-4 my-auto space-y-3">
+              <div class="flex items-center gap-2.5 pb-2 border-b border-surface-border">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white">
+                  MF
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-white">Marina Ferrari</p>
+                  <p class="text-[10px] text-slate-400 font-mono">@marinaferrarig • 4,8 mi seguidores</p>
+                </div>
+              </div>
+
+              <div class="bg-purple-600/20 border border-purple-500/20 rounded-2xl rounded-tl-sm p-3.5 text-xs text-slate-200 leading-relaxed whitespace-pre-line" id="spintaxPreviewOutput">
+                Clique em "Testar Variação" para simular o resultado do spintax.
+              </div>
+
+              <div class="flex justify-between text-[10px] text-slate-500 pt-1">
+                <span>Direct Message</span>
+                <span id="charCount" class="font-mono text-purple-400">0 caracteres</span>
+              </div>
+            </div>
+
+            <div class="text-[11px] text-slate-400 text-center">
+              Cada influenciadora recebe uma combinação única de palavras, reduzindo a chance de bloqueio para quase zero.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           VIEW 6: CLASSIFICADOR IA (LLAMA 3.1 WORKERS AI)
+      ==================================================== -->
+      <section id="view-ai-qualifier" class="space-y-6 hidden">
+        <div>
+          <h2 class="text-xl font-extrabold text-white">Classificador de Perfis com IA (Cloudflare Workers AI)</h2>
+          <p class="text-xs text-slate-400">Analisa biografia, gênero e vocabulário com modelo Llama 3.1 8B para filtrar apenas perfis qualificados.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="glass-panel p-6 rounded-2xl space-y-4">
+            <h3 class="text-sm font-bold text-white">Testar Bio de Influenciadora</h3>
+            <form onsubmit="testAIQualifier(event)" class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nome Completo</label>
+                <input type="text" id="aiTestName" value="Maria Luiza Zamoner" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Biografia do Instagram</label>
+                <textarea id="aiTestBio" rows="4" class="w-full bg-surface-card border border-surface-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-purple-500">Mãe da Maitê 🌸 | Maternidade Real & Dicas
+Compartilhando minha rotina com vcs ✨
+Parcerias: assessoria@marialuiza.com.br
+📍 Curitiba - PR</textarea>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nicho Alvo</label>
+                <input type="text" id="aiTestNiche" value="maternidade" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+              </div>
+
+              <button type="submit" class="w-full gradient-btn text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                <i class="fa-solid fa-brain"></i> Analisar com IA
+              </button>
+            </form>
+          </div>
+
+          <div class="glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-white mb-2">Diagnóstico da Inteligência Artificial</h3>
+              <p class="text-[11px] text-slate-400">Classificação semântica em tempo real</p>
+            </div>
+
+            <div id="aiResultCard" class="bg-surface-card/80 border border-surface-border rounded-2xl p-5 space-y-3">
+              <div class="text-slate-400 text-xs text-center py-6">
+                Envie uma biografia para classificar.
+              </div>
+            </div>
+
+            <div class="text-[10px] text-slate-500 text-center font-mono">
+              Powered by Cloudflare Workers AI • Llama 3.1 8B Instruct
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           VIEW 7: AUDITORIA & DISPAROS (LOGS)
+      ==================================================== -->
+      <section id="view-logs" class="space-y-6 hidden">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">Auditoria & Logs de Disparo</h2>
+            <p class="text-xs text-slate-400">Histórico completo de mensagens enviadas e validações da regra de 7 dias.</p>
+          </div>
+          <button onclick="fetchAuditLogs()" class="p-2 rounded-xl bg-surface-card border border-surface-border text-xs text-slate-300 hover:text-white transition">
+            <i class="fa-solid fa-arrows-rotate"></i> Atualizar Logs
+          </button>
+        </div>
+
+        <div class="glass-panel rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[10px] uppercase bg-surface-card/80 text-slate-400 border-b border-surface-border">
+                <tr>
+                  <th class="px-4 py-3.5">ID Log</th>
+                  <th class="px-4 py-3.5">Influenciadora</th>
+                  <th class="px-4 py-3.5">Mensagem Enviada</th>
+                  <th class="px-4 py-3.5">Status</th>
+                  <th class="px-4 py-3.5">Horário</th>
+                </tr>
+              </thead>
+              <tbody id="logsTableBody" class="divide-y divide-surface-border">
+                <tr>
+                  <td colspan="5" class="text-center py-8 text-slate-500">Carregando histórico...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           VIEW 8: BLACKLIST & REGRA DE 7 DIAS
+      ==================================================== -->
+      <section id="view-blacklist" class="space-y-6 hidden">
+        <div>
+          <h2 class="text-xl font-extrabold text-white">Blacklist & Controle Anti-Spam</h2>
+          <p class="text-xs text-slate-400">Contas bloqueadas permanentemente de receberem abordagens ou convites.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="glass-panel p-6 rounded-2xl space-y-4 lg:col-span-1">
+            <h3 class="text-sm font-bold text-white">Adicionar à Blacklist</h3>
+            <form onsubmit="addToBlacklistWeb(event)" class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">@username da Conta</label>
+                <input type="text" id="blkUsername" required placeholder="ex: perfil_indesejado" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Motivo</label>
+                <input type="text" id="blkReason" placeholder="ex: Não aceita parcerias / Concorrente" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+              </div>
+
+              <button type="submit" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-2.5 rounded-xl text-xs transition">
+                <i class="fa-solid fa-ban mr-1"></i> Bloquear Usuário
+              </button>
+            </form>
+          </div>
+
+          <div class="glass-panel p-6 rounded-2xl lg:col-span-2 space-y-4">
+            <h3 class="text-sm font-bold text-white">Contas em Blacklist</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="text-[10px] uppercase bg-surface-card/60 text-slate-400 border-b border-surface-border">
+                  <tr>
+                    <th class="px-4 py-3">Username</th>
+                    <th class="px-4 py-3">Motivo</th>
+                    <th class="px-4 py-3">Bloqueado em</th>
+                  </tr>
+                </thead>
+                <tbody id="blacklistTableBody" class="divide-y divide-surface-border">
+                  <tr><td colspan="3" class="text-center py-6 text-slate-500">Carregando blacklist...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           VIEW 9: CONFIGURAÇÕES GERAIS & API
+      ==================================================== -->
+      <section id="view-settings" class="space-y-6 hidden">
+        <div>
+          <h2 class="text-xl font-extrabold text-white">Configurações do Sistema & API</h2>
+          <p class="text-xs text-slate-400">Integração da extensão Chrome com o backend Cloudflare Workers.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="glass-panel p-6 rounded-2xl space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-plug text-purple-400"></i> Credenciais de Conexão
+            </h3>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Endpoint Cloudflare API</label>
+                <div class="flex gap-2">
+                  <input type="text" id="settingsApiUrl" readonly class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-slate-300 font-mono">
+                  <button onclick="copyInput('settingsApiUrl')" class="bg-surface-card hover:bg-surface-hover border border-surface-border px-3 rounded-xl text-xs text-purple-400 font-semibold">Copiar</button>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">API Key / Token da Extensão</label>
+                <div class="flex gap-2">
+                  <input type="text" id="settingsApiKey" readonly value="innflu_secret_token_12345" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-slate-300 font-mono">
+                  <button onclick="copyInput('settingsApiKey')" class="bg-surface-card hover:bg-surface-hover border border-surface-border px-3 rounded-xl text-xs text-purple-400 font-semibold">Copiar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-panel p-6 rounded-2xl space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-pink-400"></i> Parâmetros Anti-Ban Padrão
+            </h3>
+
+            <div class="space-y-3 text-xs">
+              <div class="flex justify-between items-center p-3 rounded-xl bg-surface-card/60 border border-surface-border">
+                <div>
+                  <p class="font-semibold text-white">Delay Mínimo entre Mensagens</p>
+                  <p class="text-[10px] text-slate-400">Intervalo randômico humanizado</p>
+                </div>
+                <span class="font-mono text-purple-400 font-bold">60 segundos</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 rounded-xl bg-surface-card/60 border border-surface-border">
+                <div>
+                  <p class="font-semibold text-white">Delay Máximo entre Mensagens</p>
+                  <p class="text-[10px] text-slate-400">Evita detecção de periodicidade</p>
+                </div>
+                <span class="font-mono text-pink-400 font-bold">180 segundos</span>
+              </div>
+
+              <div class="flex justify-between items-center p-3 rounded-xl bg-surface-card/60 border border-surface-border">
+                <div>
+                  <p class="font-semibold text-white">Período de Bloqueio de Recontato</p>
+                  <p class="text-[10px] text-slate-400">Tempo mínimo antes de nova mensagem</p>
+                </div>
+                <span class="font-mono text-emerald-400 font-bold">7 dias corridos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========================================================
+       MODAIS (CONEXÃO EXTENSÃO & NOVA CAMPANHA)
+  ======================================================== -->
+  <!-- Modal Chave API -->
+  <div id="modalApi" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+    <div class="glass-panel max-w-md w-full p-6 rounded-2xl space-y-4 relative">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-plug text-purple-400"></i> Conectar com a Extensão
+        </h3>
+        <button onclick="closeApiModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-400">Insira a URL do backend na extensão do Chrome para manter os dados sincronizados em tempo real.</p>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">URL da API Cloudflare</label>
+          <div class="flex gap-2">
+            <input type="text" id="modalApiUrl" readonly class="w-full bg-surface-card border border-surface-border rounded-xl px-3 py-2 text-xs text-slate-200 font-mono">
+            <button onclick="copyInput('modalApiUrl')" class="gradient-btn text-white text-xs px-3 rounded-xl font-bold">Copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-surface-border text-right">
+        <button onclick="closeApiModal()" class="bg-surface-card border border-surface-border hover:bg-surface-hover text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ========================================================
+       SCRIPT DO DASHBOARD SPA (LOGICA & DADOS REAIS)
+  ======================================================== -->
+  <script>
+    const API_BASE = window.location.origin;
+    let leadsData = [];
+    let currentMiningSource = 'similar';
+    let chartActivityInstance = null;
+    let chartChannelsInstance = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('settingsApiUrl').value = API_BASE;
+      document.getElementById('modalApiUrl').value = API_BASE;
+
+      loadAllData();
+      testSpintaxWeb();
+    });
+
+    // ----------------------------------------------------
+    // NAVEGAÇÃO ENTRE TELAS DO DASHBOARD (SPA)
+    // ----------------------------------------------------
+    function navTo(viewId) {
+      const allViews = [
+        'view-overview', 'view-leads', 'view-mining-hub', 
+        'view-campaigns', 'view-templates', 'view-ai-qualifier', 
+        'view-logs', 'view-blacklist', 'view-settings'
+      ];
+
+      allViews.forEach(id => {
+        const el = document.getElementById(id);
+        const nav = document.getElementById('nav-' + id);
+        if (el) el.classList.add('hidden');
+        if (nav) nav.classList.remove('active');
+      });
+
+      const activeEl = document.getElementById(viewId);
+      const activeNav = document.getElementById('nav-' + viewId);
+      if (activeEl) activeEl.classList.remove('hidden');
+      if (activeNav) activeNav.classList.add('active');
+
+      if (viewId === 'view-overview') {
+        renderCharts();
+      } else if (viewId === 'view-logs') {
+        fetchAuditLogs();
+      } else if (viewId === 'view-blacklist') {
+        fetchBlacklist();
+      }
+    }
+
+    function refreshCurrentView() {
+      const icon = document.getElementById('refreshIcon');
+      if (icon) icon.classList.add('fa-spin');
+      loadAllData().then(() => {
+        setTimeout(() => { if (icon) icon.classList.remove('fa-spin'); }, 600);
+      });
+      showToast('Dados atualizados com sucesso!', 'info');
+    }
+
+    // ----------------------------------------------------
+    // CARREGAMENTO CONSOLIDADO DE DADOS
+    // ----------------------------------------------------
+    async function loadAllData() {
+      await Promise.allSettled([
+        fetchStats(),
+        fetchLeads(),
+        fetchCampaigns()
+      ]);
+    }
+
+    // ----------------------------------------------------
+    // 1. MÉTRICAS & STATS
+    // ----------------------------------------------------
+    async function fetchStats() {
+      try {
+        const res = await fetch(`${API_BASE}/api/stats`);
+        const data = await res.json();
+
+        document.getElementById('statSentToday').innerText = data.sentToday || 0;
+        document.getElementById('statTotalLeads').innerText = data.totalLeads || 0;
+        document.getElementById('statWithWhatsapp').innerText = data.withWhatsapp || 0;
+        document.getElementById('statWithEmail').innerText = data.withEmail || 0;
+        document.getElementById('statTotalSent').innerText = data.totalSent || 0;
+        document.getElementById('badgeSidebarLeads').innerText = data.totalLeads || 0;
+        document.getElementById('statPendingCount').innerText = `${data.pendingLeads || 0} na fila`;
+        document.getElementById('statDailySentCount').innerText = data.sentToday || 0;
+
+        const limit = data.dailyLimit || 40;
+        const pct = Math.min(100, Math.round(((data.sentToday || 0) / limit) * 100));
+        document.getElementById('statSentPercent').innerText = pct;
+        document.getElementById('statProgressBar').style.width = pct + '%';
+
+        // Atualiza percentuais de canais
+        const total = data.totalLeads || 1;
+        const waPct = Math.round(((data.withWhatsapp || 0) / total) * 100);
+        const emailPct = Math.round(((data.withEmail || 0) / total) * 100);
+        const dmOnlyPct = Math.max(0, 100 - waPct);
+
+        document.getElementById('labelPercentWa').innerText = waPct + '%';
+        document.getElementById('labelPercentEmail').innerText = emailPct + '%';
+        document.getElementById('labelPercentDM').innerText = dmOnlyPct + '%';
+
+        renderCharts(data);
+      } catch (e) {
+        console.error('Falha ao obter stats:', e);
+      }
+    }
+
+    // ----------------------------------------------------
+    // 2. LEADS (CRM)
+    // ----------------------------------------------------
+    async function fetchLeads() {
+      try {
+        const res = await fetch(`${API_BASE}/api/leads`);
+        const data = await res.json();
+        leadsData = data.leads || [];
+        renderLeadsTable();
+        renderOverviewRecentTable();
+      } catch (e) {
+        console.error('Falha ao carregar leads:', e);
+      }
+    }
+
+    function formatNumber(num) {
+      if (!num) return '0';
+      if (num >= 1000000) return (num / 1000000).toFixed(1).replace('.', ',') + ' mi';
+      if (num >= 1000) return (num / 1000).toFixed(1).replace('.', ',') + ' mil';
+      return num.toLocaleString('pt-BR');
+    }
+
+    function renderLeadsTable(filtered = null) {
+      const list = filtered || leadsData;
+      const tbody = document.getElementById('fullLeadsTableBody');
+      const countEl = document.getElementById('leadsCountShowing');
+      if (countEl) countEl.innerText = list.length;
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500">Nenhuma influenciadora encontrada para os filtros selecionados.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(l => {
+        const waClean = (l.whatsapp || '').replace(/[^0-9]/g, '');
+        const waLink = waClean ? `https://wa.me/${waClean}` : null;
+        const emailLink = l.email ? `mailto:${l.email}` : null;
+
+        return `
+          <tr class="hover:bg-surface-hover/50 transition">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="story-ring">
+                  <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-purple-300">
+                    ${(l.username || 'I').substring(0, 2).toUpperCase()}
+                  </div>
+                </div>
+                <div>
+                  <a href="https://instagram.com/${l.username}" target="_blank" class="font-bold text-white hover:text-purple-400 transition flex items-center gap-1">
+                    @${l.username} <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-500"></i>
+                  </a>
+                  <span class="text-[11px] text-slate-400 block">${l.full_name || 'Sem nome informado'}</span>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3 font-mono font-semibold text-slate-200">
+              ${formatNumber(l.followers_count)}
+            </td>
+            <td class="px-4 py-3 font-mono">
+              ${waLink ? `
+                <a href="${waLink}" target="_blank" class="inline-flex items-center gap-1.5 text-emerald-400 hover:underline font-semibold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
+                  <i class="fa-brands fa-whatsapp text-xs"></i> ${l.whatsapp}
+                </a>
+              ` : '<span class="text-slate-600 font-sans">—</span>'}
+            </td>
+            <td class="px-4 py-3 font-mono">
+              ${emailLink ? `
+                <a href="${emailLink}" class="inline-flex items-center gap-1.5 text-sky-400 hover:underline bg-sky-500/10 px-2 py-1 rounded-lg border border-sky-500/20">
+                  <i class="fa-solid fa-envelope text-xs"></i> ${l.email}
+                </a>
+              ` : '<span class="text-slate-600 font-sans">—</span>'}
+            </td>
+            <td class="px-4 py-3">
+              ${l.has_active_stories ? `
+                <span class="status-badge bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                  <i class="fa-solid fa-fire text-[9px]"></i> Ativos
+                </span>
+              ` : '<span class="text-slate-500 text-[11px]">Inativo</span>'}
+            </td>
+            <td class="px-4 py-3">
+              ${l.status === 'sent' ? `
+                <span class="status-badge bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <i class="fa-solid fa-check text-[9px]"></i> DM Enviada
+                </span>
+              ` : `
+                <span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <i class="fa-solid fa-circle text-[6px]"></i> Minerada
+                </span>
+              `}
+            </td>
+            <td class="px-4 py-3 text-slate-400 text-[11px]">
+              ${(l.discovered_at || '').substring(0, 16)}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button onclick="deleteLead('${l.id}')" title="Excluir Lead" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderOverviewRecentTable() {
+      const tbody = document.getElementById('overviewRecentTable');
+      if (!tbody) return;
+      const recent = leadsData.slice(0, 5);
+
+      if (recent.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500">Nenhum perfil minerado ainda. Inicie a mineração pelo hub ou extensão!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = recent.map(l => {
+        return `
+          <tr class="hover:bg-surface-hover/50 transition">
+            <td class="px-4 py-2.5">
+              <a href="https://instagram.com/${l.username}" target="_blank" class="font-bold text-white hover:text-purple-400">@${l.username}</a>
+              <span class="text-[10px] text-slate-400 block">${l.full_name || ''}</span>
+            </td>
+            <td class="px-4 py-2.5 font-mono">${formatNumber(l.followers_count)}</td>
+            <td class="px-4 py-2.5 text-emerald-400 font-mono">${l.whatsapp || '—'}</td>
+            <td class="px-4 py-2.5 text-sky-400 font-mono">${l.email || '—'}</td>
+            <td class="px-4 py-2.5">${l.has_active_stories ? '🔥 Sim' : 'Não'}</td>
+            <td class="px-4 py-2.5"><span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${l.status}</span></td>
+            <td class="px-4 py-2.5 text-right">
+              <a href="https://instagram.com/${l.username}" target="_blank" class="text-purple-400 hover:text-purple-300 text-xs font-semibold">Abrir</a>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function applyLeadsFilters() {
+      const status = document.getElementById('filterLeadStatus').value;
+      const contact = document.getElementById('filterLeadContact').value;
+
+      let filtered = leadsData.filter(l => {
+        if (status !== 'all' && l.status !== status) return false;
+        if (contact === 'wa' && !l.whatsapp) return false;
+        if (contact === 'email' && !l.email) return false;
+        return true;
+      });
+
+      renderLeadsTable(filtered);
+    }
+
+    function handleGlobalSearch(e) {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        renderLeadsTable();
+        return;
+      }
+      const filtered = leadsData.filter(l => {
+        return (l.username || '').toLowerCase().includes(q) ||
+               (l.full_name || '').toLowerCase().includes(q) ||
+               (l.whatsapp || '').includes(q) ||
+               (l.email || '').toLowerCase().includes(q) ||
+               (l.bio || '').toLowerCase().includes(q);
+      });
+      renderLeadsTable(filtered);
+      if (document.getElementById('view-leads').classList.contains('hidden')) {
+        navTo('view-leads');
+      }
+    }
+
+    async function deleteLead(id) {
+      if (!confirm('Deseja realmente remover esta influenciadora da base?')) return;
+      try {
+        await fetch(`${API_BASE}/api/leads/${id}`, { method: 'DELETE' });
+        showToast('Lead removido com sucesso.', 'info');
+        loadAllData();
+      } catch (e) {
+        showToast('Erro ao remover lead.', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // 3. EXPORTAÇÃO (CSV, WHATSAPP, EMAIL)
+    // ----------------------------------------------------
+    function exportLeadsCSV() {
+      if (!leadsData || leadsData.length === 0) {
+        showToast('Nenhum dado para exportar.', 'error');
+        return;
+      }
+
+      let csv = 'ID,Username,Nome Completo,Seguidores,WhatsApp,Email,Stories Ativos,Status,Data Descoberta\n';
+      leadsData.forEach(l => {
+        csv += `"${l.id}","${l.username}","${(l.full_name || '').replace(/"/g, '""')}","${l.followers_count}","${l.whatsapp || ''}","${l.email || ''}","${l.has_active_stories}","${l.status}","${l.discovered_at}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `influenciadoras_innflu_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Planilha CSV gerada e baixada!', 'success');
+    }
+
+    function copyAllWhatsApps() {
+      const list = leadsData.map(l => l.whatsapp).filter(Boolean);
+      if (list.length === 0) {
+        showToast('Nenhum número de WhatsApp encontrado.', 'info');
+        return;
+      }
+      navigator.clipboard.writeText(list.join('\n'));
+      showToast(`${list.length} números de WhatsApp copiados para o clipboard!`, 'success');
+    }
+
+    function copyAllEmails() {
+      const list = leadsData.map(l => l.email).filter(Boolean);
+      if (list.length === 0) {
+        showToast('Nenhum e-mail comercial encontrado.', 'info');
+        return;
+      }
+      navigator.clipboard.writeText(list.join('\n'));
+      showToast(`${list.length} e-mails copiados para o clipboard!`, 'success');
+    }
+
+    // ----------------------------------------------------
+    // 4. CAMPANHAS
+    // ----------------------------------------------------
+    async function fetchCampaigns() {
+      try {
+        const res = await fetch(`${API_BASE}/api/campaigns`);
+        const data = await res.json();
+        const grid = document.getElementById('campaignsCardGrid');
+        if (!grid) return;
+
+        const camps = data.campaigns || [];
+        if (camps.length === 0) {
+          grid.innerHTML = '<div class="text-center py-8 text-slate-500 col-span-3">Nenhuma campanha criada. Crie sua primeira campanha acima!</div>';
+          return;
+        }
+
+        grid.innerHTML = camps.map(c => `
+          <div class="glass-panel p-5 rounded-2xl space-y-3 group hover:border-purple-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded font-mono font-bold uppercase">#${c.keyword}</span>
+                <h3 class="text-sm font-bold text-white mt-2">${c.name}</h3>
+              </div>
+              <span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${c.status}</span>
+            </div>
+
+            <div class="space-y-1.5 text-xs text-slate-400 pt-2 border-t border-surface-border">
+              <div class="flex justify-between">
+                <span>Filtro Seguidores:</span>
+                <span class="font-mono text-slate-200">${formatNumber(c.min_followers)} - ${formatNumber(c.max_followers)}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Limite Diário:</span>
+                <span class="font-mono text-purple-400 font-bold">${c.daily_limit} DMs/dia</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Delays Anti-Ban:</span>
+                <span class="font-mono text-slate-200">${c.min_delay_sec}s a ${c.max_delay_sec}s</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error('Falha ao carregar campanhas:', e);
+      }
+    }
+
+    // ----------------------------------------------------
+    // 5. TEMPLATES & SPINTAX
+    // ----------------------------------------------------
+    function parseSpintax(str) {
+      let result = str;
+      const regex = /\{([^{}]+)\}/g;
+      while (regex.test(result)) {
+        result = result.replace(regex, (match, choices) => {
+          const parts = choices.split('|');
+          return parts[Math.floor(Math.random() * parts.length)];
+        });
+      }
+      return result;
+    }
+
+    function testSpintaxWeb() {
+      const raw = document.getElementById('tmplContent').value;
+      const replaced = raw
+        .replace(/\{nome\}/gi, 'Marina')
+        .replace(/\{username\}/gi, 'marinaferrarig');
+      
+      const out = parseSpintax(replaced);
+      const outEl = document.getElementById('spintaxPreviewOutput');
+      if (outEl) outEl.innerText = out;
+      const countEl = document.getElementById('charCount');
+      if (countEl) countEl.innerText = `${out.length} caracteres`;
+    }
+
+    async function saveTemplateWeb(e) {
+      e.preventDefault();
+      const title = document.getElementById('tmplTitle').value;
+      const content = document.getElementById('tmplContent').value;
+
+      try {
+        await fetch(`${API_BASE}/api/templates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content })
+        });
+        showToast('Template salvo com sucesso no banco Cloudflare D1!', 'success');
+      } catch (err) {
+        showToast('Erro ao salvar template.', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // 6. CLASSIFICADOR IA
+    // ----------------------------------------------------
+    async function testAIQualifier(e) {
+      e.preventDefault();
+      const fullName = document.getElementById('aiTestName').value;
+      const bio = document.getElementById('aiTestBio').value;
+      const niche = document.getElementById('aiTestNiche').value;
+      const card = document.getElementById('aiResultCard');
+
+      card.innerHTML = `<div class="text-center py-6 text-purple-400 font-semibold text-xs flex items-center justify-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> Processando com Workers AI...</div>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/qualify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name: fullName, bio, niche })
+        });
+        const data = await res.json();
+        const r = data.result;
+
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-slate-400">Classificação:</span>
+              <span class="status-badge ${r.isFemale && !r.isBrand ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+                ${r.isFemale && !r.isBrand ? 'Aprovada (Influenciadora)' : 'Reprovada'}
+              </span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">Nicho Detectado:</span>
+              <span class="font-bold text-white uppercase font-mono">${r.niche}</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">Tipo de Perfil:</span>
+              <span class="text-slate-200">${r.isBrand ? 'Loja/Comercial' : 'Pessoa Física / Mãe'}</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">Confiança IA:</span>
+              <span class="font-mono text-purple-400 font-bold">${Math.round(r.confidence * 100)}%</span>
+            </div>
+            <div class="pt-2 border-t border-surface-border text-[11px] text-slate-300">
+              <b>Justificativa:</b> ${r.reason}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        card.innerHTML = `<div class="text-rose-400 text-xs py-4">Erro ao executar análise de IA.</div>`;
+      }
+    }
+
+    // ----------------------------------------------------
+    // 7. MINING HUB & CONTROLES
+    // ----------------------------------------------------
+    function setMiningSourceHub(src) {
+      currentMiningSource = src;
+      ['hubSrcSimilar', 'hubSrcKeyword', 'hubSrcHashtag', 'hubSrcFollowers'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+          btn.className = 'p-2.5 rounded-xl border border-surface-border bg-surface-card text-slate-300 hover:text-white flex items-center gap-2';
+        }
+      });
+
+      const activeMap = {
+        similar: 'hubSrcSimilar',
+        keyword: 'hubSrcKeyword',
+        hashtag: 'hubSrcHashtag',
+        followers: 'hubSrcFollowers'
+      };
+
+      const activeBtn = document.getElementById(activeMap[src]);
+      if (activeBtn) {
+        activeBtn.className = 'p-2.5 rounded-xl border border-purple-500/40 bg-purple-500/10 text-white font-semibold flex items-center gap-2';
+      }
+
+      const lbl = document.getElementById('lblHubTarget');
+      const input = document.getElementById('hubTargetInput');
+
+      if (src === 'similar') {
+        lbl.innerText = 'Perfil de Referência (ex: @marialuizazamoner):';
+        input.value = '@marialuizazamoner';
+      } else if (src === 'keyword') {
+        lbl.innerText = 'Palavra-chave do Nicho:';
+        input.value = 'maternidade';
+      } else if (src === 'hashtag') {
+        lbl.innerText = 'Hashtag (#):';
+        input.value = '#maternidadereal';
+      } else if (src === 'followers') {
+        lbl.innerText = 'Seguidores de @:';
+        input.value = '@vihtube';
+      }
+    }
+
+    function launchMiningFromDashboard() {
+      const target = document.getElementById('hubTargetInput').value.trim();
+      showToast(`Instrução preparada para @${target}! Abra o Instagram com a extensão para iniciar.`, 'success');
+      window.open(`https://www.instagram.com/${target.replace('@', '')}/`, '_blank');
+    }
+
+    // ----------------------------------------------------
+    // 8. LOGS & AUDITORIA
+    // ----------------------------------------------------
+    async function fetchAuditLogs() {
+      try {
+        const res = await fetch(`${API_BASE}/api/logs`);
+        const data = await res.json();
+        const tbody = document.getElementById('logsTableBody');
+        const logs = data.logs || [];
+
+        if (logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500">Nenhum disparo registrado até o momento.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = logs.map(l => `
+          <tr class="hover:bg-surface-hover/50 transition">
+            <td class="px-4 py-3 font-mono text-slate-500 text-[10px]">${l.id}</td>
+            <td class="px-4 py-3 font-bold text-white">@${l.username}</td>
+            <td class="px-4 py-3 text-slate-300 max-w-xs truncate">${l.message_text}</td>
+            <td class="px-4 py-3"><span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${l.status}</span></td>
+            <td class="px-4 py-3 text-slate-400 font-mono text-[11px]">${l.sent_at}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error('Falha ao obter logs:', e);
+      }
+    }
+
+    // ----------------------------------------------------
+    // 9. BLACKLIST
+    // ----------------------------------------------------
+    async function fetchBlacklist() {
+      try {
+        const res = await fetch(`${API_BASE}/api/blacklist`);
+        const data = await res.json();
+        const tbody = document.getElementById('blacklistTableBody');
+        const list = data.blacklist || [];
+
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-500">Nenhum perfil bloqueado.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(b => `
+          <tr>
+            <td class="px-4 py-3 font-bold text-white">@${b.username}</td>
+            <td class="px-4 py-3 text-slate-400">${b.reason || 'Sem motivo'}</td>
+            <td class="px-4 py-3 text-slate-500 font-mono">${b.created_at || '—'}</td>
+          </tr>
+        `).join('');
+      } catch (e) {}
+    }
+
+    async function addToBlacklistWeb(e) {
+      e.preventDefault();
+      const username = document.getElementById('blkUsername').value;
+      const reason = document.getElementById('blkReason').value;
+
+      try {
+        await fetch(`${API_BASE}/api/blacklist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, reason })
+        });
+        showToast(`@${username} bloqueado na Blacklist!`, 'success');
+        document.getElementById('blkUsername').value = '';
+        fetchBlacklist();
+      } catch (err) {
+        showToast('Erro ao adicionar à blacklist.', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // 10. GRÁFICOS SAAS (CHART.JS)
+    // ----------------------------------------------------
+    function renderCharts(statsData = null) {
+      // Gráfico 1: Atividade Semanal
+      const ctxAct = document.getElementById('chartActivity');
+      if (ctxAct) {
+        if (chartActivityInstance) chartActivityInstance.destroy();
+        
+        const gradient = ctxAct.getContext('2d').createLinearGradient(0, 0, 0, 200);
+        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+        gradient.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+        chartActivityInstance = new Chart(ctxAct, {
+          type: 'line',
+          data: {
+            labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Hoje'],
+            datasets: [{
+              label: 'DMs Enviadas',
+              data: [12, 19, 15, 24, 22, 18, (statsData?.sentToday || 5)],
+              borderColor: '#8b5cf6',
+              borderWidth: 2.5,
+              backgroundColor: gradient,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: '#ec4899',
+              pointRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+              y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true }
+            }
+          }
+        });
+      }
+
+      // Gráfico 2: Canais de Contato Donut
+      const ctxChan = document.getElementById('chartChannels');
+      if (ctxChan) {
+        if (chartChannelsInstance) chartChannelsInstance.destroy();
+        const wa = statsData?.withWhatsapp || 1;
+        const em = statsData?.withEmail || 0;
+        const total = statsData?.totalLeads || 1;
+        const dm = Math.max(0, total - wa);
+
+        chartChannelsInstance = new Chart(ctxChan, {
+          type: 'doughnut',
+          data: {
+            labels: ['WhatsApp', 'E-mail', 'DM Direta'],
+            datasets: [{
+              data: [wa, em, dm],
+              backgroundColor: ['#10b981', '#0ea5e9', '#8b5cf6'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            cutout: '75%'
+          }
+        });
+      }
+    }
+
+    // ----------------------------------------------------
+    // UTILITÁRIOS: TOASTS & MODAIS
+    // ----------------------------------------------------
+    function openApiModal() { document.getElementById('modalApi').classList.remove('hidden'); }
+    function closeApiModal() { document.getElementById('modalApi').classList.add('hidden'); }
+
+    function copyInput(id) {
+      const input = document.getElementById(id);
+      navigator.clipboard.writeText(input.value);
+      showToast('Copiado para o clipboard!', 'success');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const colors = {
+        success: 'border-emerald-500/30 bg-slate-900/95 text-emerald-300',
+        error: 'border-rose-500/30 bg-slate-900/95 text-rose-300',
+        info: 'border-purple-500/30 bg-slate-900/95 text-purple-300'
+      };
+
+      toast.className = `p-3.5 rounded-xl border ${colors[type]} text-xs font-semibold shadow-2xl backdrop-blur-xl flex items-center gap-2.5 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-400' : type === 'error' ? 'fa-triangle-exclamation text-rose-400' : 'fa-circle-info text-purple-400'}"></i> <span>${message}</span>`;
+      
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>

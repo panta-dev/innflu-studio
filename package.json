@@ -1,0 +1,20 @@
+{
+  "name": "innflu",
+  "version": "1.0.0",
+  "description": "Innflu - Automated Instagram Influencer Discovery & Outreach SaaS",
+  "scripts": {
+    "dev": "npm --prefix cloudflare run dev",
+    "deploy": "npm --prefix cloudflare run deploy"
+  },
+  "keywords": [
+    "instagram",
+    "saas",
+    "influencer",
+    "cloudflare",
+    "workers",
+    "d1",
+    "extension"
+  ],
+  "author": "",
+  "license": "MIT"
+}

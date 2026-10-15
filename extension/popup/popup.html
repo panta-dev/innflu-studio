@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Innflu | Configurações</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <div class="popup-header">
+      <div class="logo">
+        <span class="logo-badge">I</span>
+        <span class="logo-title">Innflu</span>
+      </div>
+      <span class="version">v1.0.0</span>
+    </div>
+
+    <!-- Status Hoje -->
+    <div class="stats-box">
+      <div class="stats-item">
+        <span class="stats-label">Enviadas Hoje</span>
+        <span class="stats-val" id="popDailyCount">0</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-label">Limite Seguro</span>
+        <span class="stats-val" id="popDailyLimit">40</span>
+      </div>
+    </div>
+
+    <!-- Formulário de Conexão Cloudflare -->
+    <div class="form-section">
+      <label class="input-label">URL da API Cloudflare</label>
+      <input type="text" id="apiBaseUrl" placeholder="http://127.0.0.1:8787" class="text-input">
+
+      <label class="input-label">API Token</label>
+      <input type="password" id="apiToken" placeholder="innflu_secret_token_12345" class="text-input">
+
+      <label class="input-label">Palavra-chave Ativa</label>
+      <input type="text" id="campaignKeyword" placeholder="maternidade" class="text-input">
+
+      <div class="range-group">
+        <label class="input-label">Delays Randômicos (Segurança)</label>
+        <div class="delay-tags">
+          <span>Mín: <b>60s</b></span>
+          <span>Máx: <b>180s</b></span>
+        </div>
+      </div>
+
+      <button id="btnSaveConfig" class="btn-primary">Salvar Configurações</button>
+      <div id="saveFeedback" class="feedback-msg"></div>
+    </div>
+
+    <div class="popup-footer">
+      <span>Anti-ban ativo: 1 a 1 com atrasos humanos</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

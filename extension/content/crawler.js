@@ -1,0 +1,652 @@
+/**
+ * Crawler & Minerador do Instagram — v3 (Extração Precisa)
+ * 
+ * CORREÇÕES v3:
+ * 1. Validação rigorosa com blacklist de ~200 palavras comuns
+ * 2. Extração primária via alt-text (mais confiável no Instagram)
+ * 3. Links de perfil SÓ aceitos com contexto visual (avatar, article, header)
+ * 4. Click-into-posts para descobrir autores (fallback robusto)
+ * 5. Busca sem hashtag por padrão (resultados mais amplos, encontra contas)
+ * 6. Console.log para debug
+ */
+window.InnfluCrawler = {
+
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  },
+
+  randomDelay(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  },
+
+  // ==========================================
+  // VALIDAÇÃO DE USERNAME (RIGOROSA)
+  // ==========================================
+
+  /** Palavras que NUNCA são usernames reais */
+  _blacklist: new Set([
+    // Instagram system paths
+    'explore', 'direct', 'stories', 'reels', 'accounts', 'reel',
+    'about', 'developer', 'legal', 'privacy', 'terms', 'api', 'help',
+    'nametag', 'settings', 'session', 'emails', 'challenge', 'locations',
+    'directory', 'lite', 'search', 'tags', 'keyword', 'hashtag',
+    'login', 'signup', 'create', 'share', 'save', 'like', 'comment',
+    'follow', 'following', 'followers', 'activity', 'notifications',
+    'home', 'feed', 'profile', 'edit', 'archive', 'saved', 'close',
+    'instagram', 'meta', 'facebook', 'threads', 'messenger',
+    'static', 'assets', 'images', 'media', 'content', 'data',
+    'embed', 'oauth', 'graphql', 'ajax', 'web', 'app', 'download',
+    // Português — palavras comuns
+    'ser', 'ver', 'ter', 'por', 'para', 'com', 'sem', 'que', 'mais',
+    'como', 'isso', 'esta', 'este', 'esse', 'essa', 'aqui', 'ali',
+    'bem', 'bom', 'boa', 'mal', 'pra', 'pro', 'nos', 'nao', 'sim',
+    'novo', 'nova', 'real', 'link', 'foto', 'video', 'post', 'page',
+    'user', 'name', 'info', 'news', 'blog', 'shop', 'loja', 'site',
+    'voce', 'meu', 'minha', 'seu', 'sua', 'nosso', 'nossos', 'tudo',
+    'onde', 'quando', 'quem', 'qual', 'cada', 'todo', 'toda', 'todos',
+    'dia', 'ano', 'mes', 'hoje', 'agora', 'depois', 'antes', 'vida',
+    'muito', 'pouco', 'nada', 'algo', 'outra', 'outro', 'outras',
+    'apenas', 'ainda', 'sobre', 'entre', 'desde', 'entre', 'fazer',
+    'pode', 'deve', 'quer', 'sabe', 'tipo', 'forma', 'modo', 'caso',
+    'parte', 'pois', 'porque', 'conta', 'mundo', 'casa', 'coisa',
+    'gente', 'tempo', 'amor', 'deus', 'arte', 'moda', 'saude',
+    'beleza', 'viagem', 'festa', 'musica', 'comida', 'roupa',
+    'brasil', 'rio', 'paulo', 'bahia', 'minas', 'norte', 'sul',
+    // Inglês — palavras comuns curtas
+    'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can',
+    'had', 'her', 'was', 'one', 'our', 'out', 'has', 'his', 'how',
+    'its', 'let', 'may', 'new', 'now', 'old', 'see', 'way', 'who',
+    'did', 'get', 'got', 'him', 'use', 'ago', 'run', 'set', 'try',
+    'top', 'add', 'also', 'back', 'been', 'call', 'come', 'each',
+    'from', 'have', 'here', 'high', 'just', 'know', 'last', 'long',
+    'look', 'make', 'many', 'most', 'much', 'must', 'next', 'only',
+    'over', 'some', 'such', 'take', 'than', 'them', 'then', 'this',
+    'time', 'very', 'want', 'well', 'what', 'when', 'will', 'with',
+    'work', 'year', 'your', 'more', 'open', 'read', 'send', 'sent',
+    'text', 'view', 'show', 'hide', 'true', 'false', 'null', 'click',
+    'menu', 'list', 'item', 'icon', 'logo', 'photo', 'image', 'file',
+    // Termos de UI do Instagram
+    'enviar', 'mensagem', 'seguir', 'seguidores', 'seguindo',
+    'publicar', 'curtir', 'comentar', 'compartilhar', 'salvar',
+    'pesquisar', 'cancelar', 'confirmar', 'excluir', 'editar',
+    'voltar', 'proximo', 'anterior', 'inicio', 'fechar', 'abrir',
+    'entrar', 'sair', 'logout', 'config', 'ajuda', 'denunciar',
+    'bloquear', 'silenciar', 'restringir', 'desativar', 'ativar',
+    // Outras
+    'undefined', 'error', 'loading', 'please', 'wait', 'retry'
+  ]),
+
+  /**
+   * Valida se uma string é um username Instagram real e plausível
+   */
+  isValidUsername(str) {
+    if (!str || typeof str !== 'string') return false;
+    const u = str.toLowerCase().trim();
+    
+    // Regras do Instagram: 1-30 chars, letras, dígitos, pontos, underscores
+    if (u.length < 3 || u.length > 30) return false;
+    if (!/^[a-z0-9._]+$/.test(u)) return false;
+    
+    // Deve ter pelo menos uma letra
+    if (!/[a-z]/.test(u)) return false;
+    
+    // Não pode começar/terminar com ponto
+    if (u.startsWith('.') || u.endsWith('.')) return false;
+    
+    // Não pode ter pontos consecutivos
+    if (u.includes('..')) return false;
+    
+    // Blacklist
+    if (this._blacklist.has(u)) return false;
+    
+    // Muito curto sem caracteres especiais = provavelmente lixo
+    if (u.length < 4 && !u.includes('.') && !u.includes('_')) return false;
+    
+    return true;
+  },
+
+  // ==========================================
+  // DETECÇÃO DE PÁGINA ATUAL
+  // ==========================================
+
+  detectCurrentPage() {
+    const url = window.location.href.toLowerCase();
+    const path = window.location.pathname.toLowerCase();
+
+    // Páginas de busca / hashtag (todos os formatos que o Instagram usa)
+    if (url.includes('/explore/search/') || url.includes('/explore/tags/') || url.includes('q=%23')) {
+      return 'search';
+    }
+
+    // Post individual ou Reel
+    if (path.match(/^\/p\//) || path.match(/^\/reel\//)) {
+      return 'post';
+    }
+
+    // Direct / DMs
+    if (path.startsWith('/direct/')) {
+      return 'direct';
+    }
+
+    // Perfil de usuário
+    const segments = path.split('/').filter(Boolean);
+    const systemPaths = [
+      'explore', 'direct', 'stories', 'reels', 'accounts', 'p', 'reel',
+      'about', 'developer', 'legal', 'privacy', 'terms', 'api', 'help',
+      'nametag', 'settings', 'session', 'emails', 'challenge'
+    ];
+
+    if (segments.length >= 1 && segments.length <= 2 && !systemPaths.includes(segments[0])) {
+      return 'profile';
+    }
+
+    return 'feed';
+  },
+
+  getCurrentProfileUsername() {
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    if (segments.length >= 1) {
+      return segments[0].toLowerCase();
+    }
+    return null;
+  },
+
+  // ==========================================
+  // NAVEGAÇÃO SEGURA & MULTI-FONTE
+  // ==========================================
+
+  /**
+   * Navega para a fonte escolhida pelo usuário
+   * @param {'keyword' | 'hashtag' | 'reels' | 'followers'} source 
+   * @param {string} target 
+   */
+  navigateToSource(source, target) {
+    const clean = (target || '').trim();
+    if (!clean) return false;
+
+    let targetUrl = '';
+    const currentUrl = window.location.href.toLowerCase();
+
+    if (source === 'hashtag') {
+      const cleanTag = clean.replace(/^#/, '').toLowerCase();
+      targetUrl = `https://www.instagram.com/explore/tags/${encodeURIComponent(cleanTag)}/`;
+      if (currentUrl.includes(cleanTag) && (currentUrl.includes('/explore/tags/') || currentUrl.includes('q=%23'))) {
+        console.log('[Innflu] Já estamos na página da hashtag');
+        return false;
+      }
+    } else if (source === 'followers' || source === 'similar') {
+      const cleanUser = clean.replace(/^@/, '').toLowerCase();
+      targetUrl = `https://www.instagram.com/${encodeURIComponent(cleanUser)}/`;
+      if (this.getCurrentProfileUsername() === cleanUser) {
+        console.log('[Innflu] Já estamos no perfil do alvo');
+        return false;
+      }
+    } else {
+      // 'keyword' ou 'reels' (pesquisa geral do Instagram)
+      const cleanKw = clean.replace(/^#/, '').toLowerCase();
+      targetUrl = `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(cleanKw)}`;
+      if (currentUrl.includes(encodeURIComponent(cleanKw)) && this.detectCurrentPage() === 'search') {
+        console.log('[Innflu] Já estamos na página de busca');
+        return false;
+      }
+    }
+
+    console.log(`[Innflu] Navegando (${source}): ${targetUrl}`);
+    window.location.href = targetUrl;
+    return true;
+  },
+
+  /**
+   * Navega para busca de keyword SEM hashtag (retrocompatibilidade)
+   */
+  navigateToSearch(keyword) {
+    return this.navigateToSource('keyword', keyword);
+  },
+
+  openProfile(username) {
+    const clean = username.replace('@', '').replace(/[^a-z0-9._]/gi, '').trim().toLowerCase();
+    if (!clean) return false;
+
+    if (this.getCurrentProfileUsername() === clean) {
+      return false;
+    }
+
+    console.log(`[Innflu] Abrindo perfil: @${clean}`);
+    window.location.href = `https://www.instagram.com/${clean}/`;
+    return true;
+  },
+
+  /**
+   * Abre o modal de seguidores do perfil atual e extrai usernames
+   */
+  async extractFollowersFromModal(maxScrolls = 4) {
+    // 1. Procura botão ou link de seguidores
+    const followerBtn = document.querySelector('header a[href*="/followers"], a[href*="/followers/"]') ||
+                        Array.from(document.querySelectorAll('header a')).find(a => (a.innerText || '').toLowerCase().includes('seguidor') || (a.innerText || '').toLowerCase().includes('follower'));
+    
+    if (followerBtn) {
+      console.log('[Innflu] Clicando para abrir modal de seguidores...');
+      followerBtn.click();
+      await this.sleep(this.randomDelay(2000, 3500));
+    }
+
+    const dialog = document.querySelector('div[role="dialog"]');
+    if (!dialog) {
+      console.log('[Innflu] Modal de seguidores não abriu ou perfil é privado');
+      return [];
+    }
+
+    const usernames = new Set();
+
+    // Rola o container do diálogo para carregar mais seguidores
+    const scrollContainer = dialog.querySelector('div[style*="overflow"]') || dialog.querySelector('ul') || dialog;
+    for (let i = 0; i < maxScrolls; i++) {
+      // Coleta links dentro do dialog
+      const dialogLinks = dialog.querySelectorAll('a[href^="/"]');
+      for (const a of dialogLinks) {
+        const href = a.getAttribute('href') || '';
+        const parts = href.split('/').filter(Boolean);
+        if (parts.length === 1) {
+          const u = parts[0].toLowerCase();
+          if (this.isValidUsername(u)) {
+            usernames.add(u);
+          }
+        }
+      }
+
+      if (scrollContainer && scrollContainer.scrollBy) {
+        scrollContainer.scrollBy({ top: 400, behavior: 'smooth' });
+        await this.sleep(1200);
+      }
+    }
+
+    await this._closeModal();
+    const result = Array.from(usernames);
+    console.log(`[Innflu] Extraídos ${result.length} seguidores do modal:`, result);
+    return result;
+  },
+
+  /**
+   * Extrai contas semelhantes recomendadas pelo Instagram no perfil atual
+   * Clica no botão de sugestões se necessário e raspa o carrossel de recomendados
+   */
+  async extractSimilarAccounts() {
+    const currentUsername = this.getCurrentProfileUsername();
+    console.log(`[Innflu] Buscando perfis semelhantes a @${currentUsername}...`);
+    const usernames = new Set();
+
+    const collectFromDOM = () => {
+      // 1. Procura em containers que contenham títulos de sugestão
+      const allElements = Array.from(document.querySelectorAll('span, div, h2, h3, h4'));
+      const triggerHeadings = allElements.filter(el => {
+        const t = (el.innerText || '').toLowerCase().trim();
+        return t === 'sugeridos para você' || t === 'contas semelhantes' || t === 'sugestões para você' ||
+               t === 'suggested for you' || t.includes('semelhante') || t.includes('sugerid');
+      });
+
+      for (const h of triggerHeadings) {
+        let parent = h.closest('div[style*="overflow"]') || h.parentElement?.parentElement || h.closest('section') || h.closest('main');
+        if (parent) {
+          const links = parent.querySelectorAll('a[href^="/"]');
+          for (const a of links) {
+            const href = a.getAttribute('href') || '';
+            const parts = href.split('/').filter(Boolean);
+            if (parts.length === 1) {
+              const u = parts[0].toLowerCase();
+              if (u !== currentUsername && this.isValidUsername(u)) {
+                usernames.add(u);
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Procura em qualquer item de lista/carrossel que tenha botão "Seguir"
+      const listItems = document.querySelectorAll('li, div[role="listitem"]');
+      for (const item of listItems) {
+        const hasFollow = Array.from(item.querySelectorAll('button')).some(b => {
+          const t = (b.innerText || '').toLowerCase();
+          return t === 'seguir' || t === 'follow' || t === 'seguir de volta';
+        });
+        if (hasFollow) {
+          const a = item.querySelector('a[href^="/"]');
+          if (a) {
+            const parts = (a.getAttribute('href') || '').split('/').filter(Boolean);
+            if (parts.length === 1) {
+              const u = parts[0].toLowerCase();
+              if (u !== currentUsername && this.isValidUsername(u)) {
+                usernames.add(u);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    collectFromDOM();
+
+    // Se ainda tem poucas sugestões, clica no botão de sugestões do header
+    if (usernames.size < 3) {
+      const header = document.querySelector('header');
+      if (header) {
+        // Busca botão por aria-labels
+        let suggestBtn = header.querySelector([
+          'button[aria-label*="semelhante" i]',
+          'button[aria-label*="sugerid" i]',
+          'button[aria-label*="suggest" i]',
+          'button[aria-label*="similar" i]',
+          'button[aria-label*="descobrir pessoas" i]',
+          '[aria-label*="semelhante" i]',
+          '[aria-label*="sugerid" i]'
+        ].join(','));
+        
+        // Se não achou pelo label, procura botão no header que contenha ícone (SVG de user+plus ou seta)
+        // e que não seja Seguir, Mensagem, Opções (...), etc.
+        if (!suggestBtn) {
+          const allButtons = Array.from(header.querySelectorAll('button, div[role="button"]'));
+          suggestBtn = allButtons.find(b => {
+            const text = (b.innerText || '').toLowerCase();
+            if (text.includes('seguir') || text.includes('seguindo') || text.includes('mensagem') ||
+                text.includes('message') || text.includes('editar') || text.includes('edit')) {
+              return false;
+            }
+            // Não deve ser o botão de opções (três pontinhos)
+            const ariaLabel = (b.getAttribute('aria-label') || '').toLowerCase();
+            if (ariaLabel.includes('opções') || ariaLabel.includes('options') || ariaLabel.includes('menu')) {
+              return false;
+            }
+            // Tem SVG dentro
+            return !!b.querySelector('svg');
+          });
+        }
+
+        if (suggestBtn) {
+          console.log('[Innflu] Clicando no botão de sugestões/semelhantes do perfil...');
+          suggestBtn.click();
+          await this.sleep(this.randomDelay(2200, 3200));
+          collectFromDOM();
+        }
+      }
+    }
+
+    // Rola o carrossel de sugestões se existir para carregar mais
+    const carousels = document.querySelectorAll('div[style*="overflow"], ul[style*="overflow"], div[role="region"]');
+    for (const c of carousels) {
+      if ((c.innerText || '').toLowerCase().includes('seguir') || (c.innerText || '').toLowerCase().includes('sugerid')) {
+        if (c.scrollBy) {
+          c.scrollBy({ left: 500, behavior: 'smooth' });
+          await this.sleep(1000);
+          collectFromDOM();
+        }
+      }
+    }
+
+    // Se houver botão "Ver tudo" / "See all" nas sugestões, clica para abrir mais
+    const seeAllBtn = Array.from(document.querySelectorAll('a, button, span[role="button"]')).find(el => {
+      const t = (el.innerText || '').toLowerCase().trim();
+      return (t === 'ver tudo' || t === 'see all' || t === 'ver todos' || t === 'mostrar tudo') && !el.closest('header');
+    });
+
+    if (seeAllBtn) {
+      console.log('[Innflu] Clicando em "Ver tudo" das contas semelhantes...');
+      seeAllBtn.click();
+      await this.sleep(this.randomDelay(2500, 3500));
+      collectFromDOM();
+
+      const dialog = document.querySelector('div[role="dialog"]');
+      if (dialog) {
+        // Rola dialog para carregar mais
+        const dialogScroll = dialog.querySelector('div[style*="overflow"]') || dialog;
+        for (let i = 0; i < 3; i++) {
+          const dLinks = dialog.querySelectorAll('a[href^="/"]');
+          for (const a of dLinks) {
+            const parts = (a.getAttribute('href') || '').split('/').filter(Boolean);
+            if (parts.length === 1) {
+              const u = parts[0].toLowerCase();
+              if (u !== currentUsername && this.isValidUsername(u)) {
+                usernames.add(u);
+              }
+            }
+          }
+          if (dialogScroll.scrollBy) {
+            dialogScroll.scrollBy({ top: 400, behavior: 'smooth' });
+            await this.sleep(1000);
+          }
+        }
+        await this._closeModal();
+      }
+    }
+
+    const result = Array.from(usernames);
+    console.log(`[Innflu] Extraídos ${result.length} perfis semelhantes de @${currentUsername}:`, result);
+    return result;
+  },
+
+  // ==========================================
+  // EXTRAÇÃO DE USERNAMES — ESTRATÉGIAS PRECISAS
+  // ==========================================
+
+  /**
+   * ESTRATÉGIA 1 (PRIMÁRIA): Alt-text das imagens
+   * No Instagram, fotos/reels têm alt como:
+   *   "Foto de @username" / "Photo by @username on Instagram"
+   *   "Foto publicada por USERNAME"
+   *   "@username compartilhou uma foto"
+   */
+  _extractFromAltText() {
+    const usernames = new Set();
+    const allImages = document.querySelectorAll('img[alt]');
+    
+    for (const img of allImages) {
+      const alt = img.getAttribute('alt') || '';
+      if (alt.length < 5) continue;
+      
+      // Padrão 1: "@username" explícito (mais confiável)
+      const atMentions = alt.match(/@([a-zA-Z0-9._]{3,30})/g);
+      if (atMentions) {
+        for (const mention of atMentions) {
+          const u = mention.replace('@', '').toLowerCase();
+          if (this.isValidUsername(u)) {
+            usernames.add(u);
+          }
+        }
+      }
+      
+      // Padrão 2: "Foto de USERNAME" / "Photo by USERNAME" / "publicada por USERNAME"
+      const byPatterns = [
+        /(?:foto\s+(?:de|por)|photo\s+(?:by|shared\s+by))\s+([a-zA-Z0-9._]{3,30})/gi,
+        /(?:publicad[oa]\s+por|posted\s+by)\s+([a-zA-Z0-9._]{3,30})/gi,
+        /(?:v[íi]deo\s+(?:de|por))\s+([a-zA-Z0-9._]{3,30})/gi
+      ];
+      
+      for (const pattern of byPatterns) {
+        pattern.lastIndex = 0; // Reset regex state
+        let match;
+        while ((match = pattern.exec(alt)) !== null) {
+          const u = match[1].toLowerCase();
+          if (this.isValidUsername(u)) {
+            usernames.add(u);
+          }
+        }
+      }
+    }
+    
+    console.log(`[Innflu] Alt-text → ${usernames.size} usernames:`, Array.from(usernames));
+    return usernames;
+  },
+
+  /**
+   * ESTRATÉGIA 2: Links de perfil COM contexto visual obrigatório
+   * Só aceita link /username/ se tiver:
+   *   - Avatar (img) como descendente, OU
+   *   - Estar dentro de article/header (= autor de post), OU
+   *   - Texto do link = username (menção direta)
+   */
+  _extractFromContextualLinks() {
+    const usernames = new Set();
+    const links = document.querySelectorAll('a[href^="/"]');
+    
+    for (const a of links) {
+      const href = a.getAttribute('href') || '';
+      const parts = href.split('/').filter(Boolean);
+      
+      // Deve ser link de perfil: exatamente 1 segmento de path
+      if (parts.length !== 1) continue;
+      
+      const u = parts[0].toLowerCase();
+      if (!this.isValidUsername(u)) continue;
+      
+      // OBRIGATÓRIO: deve ter contexto que confirma que é um perfil
+      const hasAvatar = a.querySelector('img');
+      const inArticle = !!a.closest('article');
+      const inHeader = !!a.closest('header');
+      const textMatch = a.textContent.trim().toLowerCase().replace('@', '') === u;
+      
+      if (hasAvatar || inArticle || inHeader || textMatch) {
+        usernames.add(u);
+      }
+    }
+    
+    console.log(`[Innflu] Contextual links → ${usernames.size} usernames:`, Array.from(usernames));
+    return usernames;
+  },
+
+  /**
+   * MASTER: combina estratégias com validação
+   * Retorna apenas usernames que passaram por validação rigorosa
+   */
+  extractUsernamesFromPage() {
+    const combined = new Set();
+    
+    // Estratégia 1: Alt text (mais confiável em páginas de busca/explore)
+    this._extractFromAltText().forEach(u => combined.add(u));
+    
+    // Estratégia 2: Links com contexto visual
+    this._extractFromContextualLinks().forEach(u => combined.add(u));
+    
+    const result = Array.from(combined);
+    console.log(`[Innflu] ✅ Total extraído: ${result.length} usernames válidos:`, result);
+    return result;
+  },
+
+  // ==========================================
+  // CLICK-INTO-POSTS (FALLBACK CONFIÁVEL)
+  // ==========================================
+
+  /**
+   * Clica em posts na grid para descobrir autores
+   * Mais lento mas muito mais confiável que scraping de links
+   * @param {number} maxPosts Quantos posts clicar (padrão 3)
+   * @returns {Promise<string[]>}
+   */
+  async clickPostsAndExtractAuthors(maxPosts = 3) {
+    const postLinks = Array.from(
+      document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]')
+    );
+    
+    if (postLinks.length === 0) {
+      console.log('[Innflu] Nenhum post encontrado para clicar');
+      return [];
+    }
+
+    const usernames = new Set();
+    
+    // Seleciona posts aleatórios
+    const indices = Array.from({ length: Math.min(postLinks.length, maxPosts * 2) }, (_, i) => i)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, maxPosts);
+
+    for (const idx of indices) {
+      if (idx >= postLinks.length) continue;
+      
+      try {
+        console.log(`[Innflu] Clicando no post ${idx + 1}...`);
+        postLinks[idx].click();
+        await this.sleep(this.randomDelay(2500, 4000));
+        
+        // No modal do post, o autor aparece no header como link de perfil
+        const authorSelectors = [
+          'div[role="dialog"] header a[href^="/"]',
+          'div[role="dialog"] a[href^="/"]',
+          'article header a[href^="/"]',
+          'article a[href^="/"]'
+        ];
+        
+        let found = false;
+        for (const sel of authorSelectors) {
+          const authorLinks = document.querySelectorAll(sel);
+          for (const a of authorLinks) {
+            const href = a.getAttribute('href') || '';
+            const parts = href.split('/').filter(Boolean);
+            if (parts.length === 1) {
+              const u = parts[0].toLowerCase();
+              if (this.isValidUsername(u)) {
+                usernames.add(u);
+                console.log(`[Innflu] Autor do post: @${u}`);
+                found = true;
+                break;
+              }
+            }
+          }
+          if (found) break;
+        }
+        
+        // Também verifica alt text no modal
+        if (!found) {
+          this._extractFromAltText().forEach(u => usernames.add(u));
+        }
+        
+        // Fecha o modal
+        await this._closeModal();
+        await this.sleep(this.randomDelay(800, 1500));
+        
+      } catch (err) {
+        console.warn('[Innflu] Erro ao clicar post:', err);
+        await this._closeModal();
+        await this.sleep(500);
+      }
+    }
+    
+    const result = Array.from(usernames);
+    console.log(`[Innflu] Click-into-posts → ${result.length} autores:`, result);
+    return result;
+  },
+
+  /**
+   * Fecha modal aberto (post, stories, etc)
+   */
+  async _closeModal() {
+    const closeSelectors = [
+      'svg[aria-label="Fechar"]', 'svg[aria-label="Close"]',
+      '[aria-label="Fechar"]', '[aria-label="Close"]',
+      'button svg[aria-label*="close" i]', 'button svg[aria-label*="fechar" i]'
+    ];
+    
+    for (const sel of closeSelectors) {
+      const el = document.querySelector(sel);
+      if (el) {
+        const btn = el.closest('button') || el.closest('[role="button"]') || el;
+        btn.click();
+        await this.sleep(500);
+        return;
+      }
+    }
+    
+    // Fallback: Escape
+    document.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Escape', keyCode: 27, bubbles: true
+    }));
+    await this.sleep(500);
+  },
+
+  /**
+   * Rola o feed para carregar mais conteúdo
+   */
+  async scrollDown() {
+    window.scrollBy({
+      top: 600 + Math.random() * 400,
+      behavior: 'smooth'
+    });
+    await this.sleep(this.randomDelay(1500, 2500));
+  }
+};
