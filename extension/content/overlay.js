@@ -327,6 +327,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           requireContact: 'all',
           queue: [],
           visited: [],
+          visitedPosts: [],
           minedCount: 0,
           sentCount: 0,
           nextActionAt: 0,
@@ -598,6 +599,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       miningTarget: targetClean,
       keyword: targetClean,
       queue: [],
+      visitedPosts: [],
       nextActionAt: 0
     });
 
@@ -661,193 +663,247 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   }
 
   // ==========================================
-  // PASSO DE MINERAÇÃO (MULTI-FONTE)
+  // PASSO DE MINERAÇÃO (MULTI-FONTE & PROGRESSIVA)
   // ==========================================
   async function stepMiner(bot, apiBaseUrl, pageType) {
     const source = bot.miningSource || 'keyword';
-    const target = bot.miningTarget || 'maternidade';
+    const target = (bot.miningTarget || 'maternidade').trim();
+    const targetClean = target.replace(/^[@#]/, '').toLowerCase().trim();
+    const currentProfileUser = window.InnfluCrawler.getCurrentProfileUsername();
 
-    // 1. Se tem gente na fila de perfis descobertos, visita e extrai dados
-    if (bot.queue.length > 0) {
-      const next = bot.queue[0];
-      const rest = bot.queue.slice(1);
-      const visited = [...(bot.visited || []), next].slice(-300);
-      await saveBot({ queue: rest, visited });
-      hudQueueCount.innerText = rest.length;
+    // ========================================================
+    // 1. ESTAMOS NO PERFIL DE UMA INFLUENCIADORA (pageType === 'profile')
+    // ========================================================
+    if (pageType === 'profile' && currentProfileUser) {
+      const visited = bot.visited || [];
+      const hasBeenVisited = visited.includes(currentProfileUser);
 
-      if (pageType === 'profile' && window.InnfluCrawler.getCurrentProfileUsername() === next) {
-        // Já estamos no perfil certo -> extrai contatos completos
+      // A) Se ainda não analisou este perfil, analisa e salva no CRM agora!
+      if (!hasBeenVisited) {
         await analyzeAndMineProfile(bot, apiBaseUrl);
+        const updatedVisited = [...visited, currentProfileUser].slice(-400);
+        const updatedQueue = (bot.queue || []).filter(u => u !== currentProfileUser);
+        await saveBot({ visited: updatedVisited, queue: updatedQueue });
+        bot.visited = updatedVisited;
+        bot.queue = updatedQueue;
+        hudQueueCount.innerText = updatedQueue.length;
+        scheduleNext(window.InnfluCrawler.randomDelay(2000, 3500));
+        return;
+      }
 
-        // Se a fonte for 'similar' e a fila estiver ficando curta, descobre semelhantes desta influenciadora também!
-        if (source === 'similar' && rest.length < 5) {
-          hudCurrentAction.innerText = `Descobrindo mais semelhantes a partir de @${next}...`;
-          const moreSimilar = await window.InnfluCrawler.extractSimilarAccounts();
-          const visitedNow = [...visited, next];
-          const fresh = moreSimilar.filter(u => !visitedNow.includes(u) && !rest.includes(u));
-          if (fresh.length > 0) {
-            const updatedQueue = [...rest, ...fresh.slice(0, 30)];
-            await saveBot({ queue: updatedQueue });
-            hudQueueCount.innerText = updatedQueue.length;
+      // B) FONTE: ✨ Semelhantes a @
+      if (source === 'similar') {
+        // Se estamos no perfil de referência e a fila está vazia, extrai semelhantes!
+        if (currentProfileUser === targetClean && (bot.queue || []).length === 0) {
+          hudCurrentAction.innerText = `Buscando perfis semelhantes a @${currentProfileUser}...`;
+          const similarAccounts = await window.InnfluCrawler.extractSimilarAccounts();
+          const visitedNow = bot.visited || [];
+          const newCandidates = similarAccounts.filter(u => !visitedNow.includes(u) && u !== targetClean);
+
+          if (newCandidates.length > 0) {
+            await saveBot({ queue: newCandidates.slice(0, 50) });
+            hudQueueCount.innerText = Math.min(newCandidates.length, 50);
+            showToast({
+              type: 'success',
+              title: `${newCandidates.length} Semelhantes Encontradas!`,
+              message: newCandidates.slice(0, 3).map(u => `@${u}`).join(', ') + '...'
+            });
+            scheduleNext(2000);
+            return;
+          } else {
+            showToast({
+              type: 'info',
+              title: 'Sem Novas Sugestões',
+              message: `Não foram encontradas mais contas semelhantes a @${currentProfileUser}.`
+            });
+            scheduleNext(4000);
+            return;
           }
         }
 
-        scheduleNext(window.InnfluCrawler.randomDelay(2500, 4500));
-      } else {
-        hudCurrentAction.innerText = `Abrindo @${next}...`;
-        window.InnfluCrawler.openProfile(next);
-      }
-      return;
-    }
-
-    // 2. Se a fonte for "✨ Semelhantes a @" ou "👥 Seguindo de @" e NÃO estamos no perfil alvo, navega até ele primeiro!
-    const targetUser = (target || '').replace(/^@/, '').toLowerCase().trim();
-    const currentProfileUser = window.InnfluCrawler.getCurrentProfileUsername();
-
-    if ((source === 'similar' || source === 'following' || source === 'followers') && targetUser && currentProfileUser !== targetUser) {
-      hudCurrentAction.innerText = `Navegando até o perfil alvo @${targetUser}...`;
-      window.InnfluCrawler.openProfile(targetUser);
-      return;
-    }
-
-    // 3. Se estamos num perfil sem fila: analisa e extrai fontes (semelhantes, quem está seguindo ou volta para busca)
-    if (pageType === 'profile') {
-      // Primeiro, extrai os dados do perfil atual (WhatsApp, email, seguidores) e salva
-      await analyzeAndMineProfile(bot, apiBaseUrl);
-
-      // CASO A: Fonte é "✨ Semelhantes a @"
-      if (source === 'similar') {
-        hudCurrentAction.innerText = `Buscando perfis semelhantes a @${currentProfileUser}...`;
-        const similarAccounts = await window.InnfluCrawler.extractSimilarAccounts();
-        const visited = bot.visited || [];
-        const newCandidates = similarAccounts.filter(u => !visited.includes(u) && u !== currentProfileUser);
-
-        if (newCandidates.length > 0) {
-          await saveBot({ queue: newCandidates.slice(0, 50) });
-          hudQueueCount.innerText = Math.min(newCandidates.length, 50);
-          showToast({
-            type: 'success',
-            title: `${newCandidates.length} Semelhantes Encontradas!`,
-            message: newCandidates.slice(0, 3).map(u => `@${u}`).join(', ') + '...'
-          });
-          scheduleNext(2500);
-          return;
-        } else {
-          showToast({
-            type: 'info',
-            title: 'Sem Novas Sugestões',
-            message: `Não foram encontradas mais contas semelhantes a @${currentProfileUser}.`
-          });
-          scheduleNext(4000);
+        // Se ainda temos semelhantes na fila, abre o próximo!
+        const currentQueue = (bot.queue || []).filter(u => u !== currentProfileUser);
+        if (currentQueue.length > 0) {
+          const nextTarget = currentQueue[0];
+          hudCurrentAction.innerText = `Abrindo próxima semelhante: @${nextTarget}...`;
+          window.InnfluCrawler.openProfile(nextTarget);
           return;
         }
+
+        // Fila esgotada
+        hudCurrentAction.innerText = `Mineração de semelhantes concluída (${(bot.minedCount || 0)} salvas).`;
+        showToast({ type: 'success', title: 'Mineração Concluída', message: 'Todos os perfis semelhantes foram analisados.' });
+        await saveBot({ isRunning: false, activeMode: null });
+        syncUI({ ...bot, isRunning: false });
+        return;
       }
 
-      // CASO B: Fonte é "👥 Seguindo de @" (quem ela segue - parceiras/influenciadoras)
-      if ((source === 'following' || source === 'followers') && currentProfileUser === targetUser) {
-        hudCurrentAction.innerText = `Extraindo quem @${currentProfileUser} está seguindo...`;
-        const modalCandidates = source === 'following' 
-          ? await window.InnfluCrawler.extractFollowingFromModal(5)
-          : await window.InnfluCrawler.extractFollowersFromModal(5);
-        const visited = bot.visited || [];
-        const newCandidates = modalCandidates.filter(u => !visited.includes(u));
-        if (newCandidates.length > 0) {
-          await saveBot({ queue: newCandidates.slice(0, 50) });
-          hudQueueCount.innerText = Math.min(newCandidates.length, 50);
-          showToast({
-            type: 'success',
-            title: `${newCandidates.length} Perfis Encontrados!`,
-            message: `Fila preenchida com quem @${currentProfileUser} segue.`
-          });
-          scheduleNext(2000);
-          return;
-        } else {
-          showToast({
-            type: 'info',
-            title: 'Nenhum perfil extraído',
-            message: `Não foi possível extrair a lista de seguindo de @${currentProfileUser}.`
-          });
-          scheduleNext(4000);
+      // C) FONTE: 👥 Seguindo de @
+      if (source === 'following' || source === 'followers') {
+        if (currentProfileUser === targetClean && (bot.queue || []).length === 0) {
+          hudCurrentAction.innerText = `Extraindo quem @${currentProfileUser} está seguindo...`;
+          const modalCandidates = await window.InnfluCrawler.extractFollowingFromModal(6);
+          const visitedNow = bot.visited || [];
+          const newCandidates = modalCandidates.filter(u => !visitedNow.includes(u) && u !== targetClean);
+
+          if (newCandidates.length > 0) {
+            await saveBot({ queue: newCandidates.slice(0, 50) });
+            hudQueueCount.innerText = Math.min(newCandidates.length, 50);
+            showToast({
+              type: 'success',
+              title: `${newCandidates.length} Perfis Encontrados!`,
+              message: `Fila preenchida com quem @${currentProfileUser} segue.`
+            });
+            scheduleNext(2000);
+            return;
+          } else {
+            showToast({
+              type: 'warning',
+              title: 'Nenhum perfil extraído',
+              message: `Não foi possível extrair a lista de quem @${currentProfileUser} segue. Verifique se a conta é aberta.`
+            });
+            scheduleNext(4000);
+            return;
+          }
+        }
+
+        const currentQueue = (bot.queue || []).filter(u => u !== currentProfileUser);
+        if (currentQueue.length > 0) {
+          const nextTarget = currentQueue[0];
+          hudCurrentAction.innerText = `Abrindo influenciadora que ela segue: @${nextTarget}...`;
+          window.InnfluCrawler.openProfile(nextTarget);
           return;
         }
+
+        hudCurrentAction.innerText = `Mineração de quem ela segue concluída!`;
+        await saveBot({ isRunning: false, activeMode: null });
+        syncUI({ ...bot, isRunning: false });
+        return;
       }
 
-      // CASO C: Outras fontes (keyword/hashtag) -> volta para a página de busca/hashtag
-      hudCurrentAction.innerText = `Voltando para busca (${target})...`;
+      // D) FONTE: 🔍 Palavra-chave ou #️⃣ Hashtag
+      // Já analisamos este perfil atual. Se ainda há criadores na fila, abre a próxima!
+      const remainingQueue = (bot.queue || []).filter(u => u !== currentProfileUser);
+      if (remainingQueue.length > 0) {
+        const nextTarget = remainingQueue[0];
+        hudCurrentAction.innerText = `Abrindo próxima criadora da fila: @${nextTarget}...`;
+        window.InnfluCrawler.openProfile(nextTarget);
+        return;
+      }
+
+      // Fila de criadores esgotada -> volta para a grade de publicações para minerar mais posts!
+      hudCurrentAction.innerText = `Fila concluída! Voltando para busca (${target}) para minerar novas publicações...`;
       await window.InnfluCrawler.sleep(1500);
       window.InnfluCrawler.navigateToSource(source, target);
       return;
     }
 
-    // 3. Se estamos na página de busca / explore / hashtag
+    // ========================================================
+    // 2. SE TEMOS GENTE NA FILA E NÃO ESTAMOS NUM PERFIL: ABRE O PRIMEIRO!
+    // ========================================================
+    const pendingQueue = (bot.queue || []).filter(u => !(bot.visited || []).includes(u));
+    if (pendingQueue.length > 0) {
+      const nextUser = pendingQueue[0];
+      hudCurrentAction.innerText = `Abrindo influenciadora da fila: @${nextUser}...`;
+      window.InnfluCrawler.openProfile(nextUser);
+      return;
+    }
+
+    // ========================================================
+    // 3. FONTE: ✨ Semelhantes ou 👥 Seguindo -> se não está no perfil alvo, navega até ele
+    // ========================================================
+    if ((source === 'similar' || source === 'following' || source === 'followers') && targetClean) {
+      if (currentProfileUser !== targetClean) {
+        hudCurrentAction.innerText = `Navegando até o perfil de referência @${targetClean}...`;
+        window.InnfluCrawler.openProfile(targetClean);
+        return;
+      }
+    }
+
+    // ========================================================
+    // 4. ESTAMOS NA PÁGINA DE BUSCA / EXPLORE / HASHTAG (pageType === 'search')
+    // ========================================================
     if (pageType === 'search') {
       hudCurrentAction.innerText = `Varrendo influenciadoras de "${target}"...`;
       await window.InnfluCrawler.sleep(2000);
 
-      const visited = bot.visited || [];
+      const visitedUsers = new Set(bot.visited || []);
+      const visitedPosts = new Set(bot.visitedPosts || []);
       const candidateSet = new Set();
 
-      // Estratégia A: Sugestões de contas no dropdown/painel de busca
+      // Estratégia A: Sugestões de contas no dropdown de busca
       if (window.InnfluCrawler.extractFromSearchDropdown) {
         const fromDropdown = window.InnfluCrawler.extractFromSearchDropdown();
-        fromDropdown.forEach(u => candidateSet.add(u));
+        fromDropdown.forEach(u => {
+          if (!visitedUsers.has(u)) candidateSet.add(u);
+        });
       }
 
-      // Estratégia B: Usernames via Alt-text e links contextuais da página
+      // Estratégia B: Usernames via Alt-text nas imagens da grade
       const fromPage = window.InnfluCrawler.extractUsernamesFromPage();
-      fromPage.forEach(u => candidateSet.add(u));
+      fromPage.forEach(u => {
+        if (!visitedUsers.has(u)) candidateSet.add(u);
+      });
 
-      // Estratégia C (Principal): Clicar nas publicações/reels para extrair autor de cada vídeo
-      hudCurrentAction.innerText = `Inspecionando vídeos/posts para extrair criadores de "${target}"...`;
-      const fromPosts = await window.InnfluCrawler.clickPostsAndExtractAuthors(5);
-      fromPosts.forEach(u => candidateSet.add(u));
+      // Estratégia C (Principal do Usuário): Clicar nas publicações/reels AINDA NÃO INSPECIONADAS
+      hudCurrentAction.innerText = `Inspecionando novos vídeos/posts para extrair criadores de "${target}"...`;
+      const { authors, inspectedHrefs } = await window.InnfluCrawler.clickPostsAndExtractAuthors(6, Array.from(visitedPosts));
+      (authors || []).forEach(u => {
+        if (!visitedUsers.has(u)) candidateSet.add(u);
+      });
 
-      let newCandidates = Array.from(candidateSet).filter(u => !visited.includes(u));
+      // Atualiza lista de posts inspecionados para NUNCA clicar nos mesmos posts novamente
+      const updatedVisitedPosts = Array.from(new Set([...visitedPosts, ...(inspectedHrefs || [])])).slice(-600);
 
-      // Se ainda nenhum candidato, rola e tenta mais uma vez
+      let newCandidates = Array.from(candidateSet).filter(u => !visitedUsers.has(u));
+
+      // Se ainda nenhum candidato novo, rola a página para carregar novas publicações
       if (newCandidates.length === 0) {
-        hudCurrentAction.innerText = 'Rolando feed para carregar mais publicações...';
+        hudCurrentAction.innerText = 'Rolando feed para carregar novas publicações...';
         await window.InnfluCrawler.scrollDown();
-        await window.InnfluCrawler.sleep(1800);
-        const fromPostsRetry = await window.InnfluCrawler.clickPostsAndExtractAuthors(4);
-        fromPostsRetry.forEach(u => candidateSet.add(u));
-        newCandidates = Array.from(candidateSet).filter(u => !visited.includes(u));
+        await window.InnfluCrawler.sleep(2200);
+
+        const retry = await window.InnfluCrawler.clickPostsAndExtractAuthors(5, updatedVisitedPosts);
+        (retry.authors || []).forEach(u => {
+          if (!visitedUsers.has(u)) candidateSet.add(u);
+        });
+        (retry.inspectedHrefs || []).forEach(h => updatedVisitedPosts.push(h));
+        newCandidates = Array.from(candidateSet).filter(u => !visitedUsers.has(u));
       }
+
+      // Salva posts inspecionados no storage
+      await saveBot({ visitedPosts: updatedVisitedPosts });
 
       if (newCandidates.length > 0) {
         await saveBot({ queue: newCandidates.slice(0, 50) });
         hudQueueCount.innerText = Math.min(newCandidates.length, 50);
         showToast({
           type: 'success',
-          title: `${newCandidates.length} Influenciadoras Encontradas!`,
+          title: `${newCandidates.length} Novas Criadoras Encontradas!`,
           message: newCandidates.slice(0, 4).map(u => `@${u}`).join(', ') + '...'
         });
         scheduleNext(1500);
       } else {
-        hudCurrentAction.innerText = 'Nenhum novo criador encontrado nesta rolagem. Rolando mais...';
+        hudCurrentAction.innerText = 'Nenhuma criadora nova nesta rolagem. Rolando mais o feed...';
         await window.InnfluCrawler.scrollDown();
         scheduleNext(3500);
       }
       return;
     }
 
-    // Se estamos diretamente num post individual/reel
+    // ========================================================
+    // 5. SE ESTAMOS NUM POST DIRETO
+    // ========================================================
     if (pageType === 'post') {
-      hudCurrentAction.innerText = 'Extraindo criador do post/vídeo...';
-      const fromPosts = await window.InnfluCrawler.clickPostsAndExtractAuthors(1);
-      if (fromPosts.length > 0) {
-        const visited = bot.visited || [];
-        const fresh = fromPosts.filter(u => !visited.includes(u));
-        if (fresh.length > 0) {
-          await saveBot({ queue: [...(bot.queue || []), ...fresh] });
-        }
-      }
+      hudCurrentAction.innerText = 'Retornando para feed de publicações...';
       window.history.back();
       scheduleNext(2000);
       return;
     }
 
-    // 4. Qualquer outra página: vai para a fonte escolhida
+    // ========================================================
+    // 6. QUALQUER OUTRA PÁGINA (Feed inicial, etc.) -> vai para a fonte
+    // ========================================================
     hudCurrentAction.innerText = `Navegando para ${source}: "${target}"...`;
     window.InnfluCrawler.navigateToSource(source, target);
   }
