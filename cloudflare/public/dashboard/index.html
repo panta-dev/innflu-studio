@@ -1284,6 +1284,17 @@ Parcerias: assessoria@marialuiza.com.br
     }
 
     // ----------------------------------------------------
+    // AUTENTICAÇÃO & CABEÇALHOS DO USUÁRIO
+    // ----------------------------------------------------
+    function getAuthHeaders() {
+      const token = localStorage.getItem('innflu_token');
+      return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+    }
+
+    // ----------------------------------------------------
     // CARREGAMENTO CONSOLIDADO DE DADOS
     // ----------------------------------------------------
     async function loadAllData() {
@@ -1299,7 +1310,7 @@ Parcerias: assessoria@marialuiza.com.br
     // ----------------------------------------------------
     async function fetchStats() {
       try {
-        const res = await fetch(`${API_BASE}/api/stats`);
+        const res = await fetch(`${API_BASE}/api/stats`, { headers: getAuthHeaders() });
         const data = await res.json();
 
         document.getElementById('statSentToday').innerText = data.sentToday || 0;
@@ -1337,7 +1348,7 @@ Parcerias: assessoria@marialuiza.com.br
     // ----------------------------------------------------
     async function fetchLeads() {
       try {
-        const res = await fetch(`${API_BASE}/api/leads`);
+        const res = await fetch(`${API_BASE}/api/leads`, { headers: getAuthHeaders() });
         const data = await res.json();
         leadsData = data.leads || [];
         renderLeadsTable();
@@ -1510,7 +1521,7 @@ Parcerias: assessoria@marialuiza.com.br
     async function deleteLead(id) {
       if (!confirm('Deseja realmente remover esta influenciadora da base?')) return;
       try {
-        await fetch(`${API_BASE}/api/leads/${id}`, { method: 'DELETE' });
+        await fetch(`${API_BASE}/api/leads/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         showToast('Lead removido com sucesso.', 'info');
         loadAllData();
       } catch (e) {
@@ -1725,13 +1736,9 @@ Parcerias: assessoria@marialuiza.com.br
 
         showToast(`Lendo arquivo: ${leads.length} influenciadoras identificadas. Importando...`, 'info');
 
-        const token = localStorage.getItem('innflu_token');
         const res = await fetch(`${API_BASE}/api/leads/import`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ leads })
         });
 
@@ -1775,7 +1782,7 @@ Parcerias: assessoria@marialuiza.com.br
     // ----------------------------------------------------
     async function fetchCampaigns() {
       try {
-        const res = await fetch(`${API_BASE}/api/campaigns`);
+        const res = await fetch(`${API_BASE}/api/campaigns`, { headers: getAuthHeaders() });
         const data = await res.json();
         const grid = document.getElementById('campaignsCardGrid');
         if (!grid) return;
@@ -1966,7 +1973,7 @@ Parcerias: assessoria@marialuiza.com.br
     // ----------------------------------------------------
     async function fetchAuditLogs() {
       try {
-        const res = await fetch(`${API_BASE}/api/logs`);
+        const res = await fetch(`${API_BASE}/api/logs`, { headers: getAuthHeaders() });
         const data = await res.json();
         const tbody = document.getElementById('logsTableBody');
         const logs = data.logs || [];
@@ -1995,7 +2002,7 @@ Parcerias: assessoria@marialuiza.com.br
     // ----------------------------------------------------
     async function fetchBlacklist() {
       try {
-        const res = await fetch(`${API_BASE}/api/blacklist`);
+        const res = await fetch(`${API_BASE}/api/blacklist`, { headers: getAuthHeaders() });
         const data = await res.json();
         const tbody = document.getElementById('blacklistTableBody');
         const list = data.blacklist || [];
@@ -2023,7 +2030,7 @@ Parcerias: assessoria@marialuiza.com.br
       try {
         await fetch(`${API_BASE}/api/blacklist`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ username, reason })
         });
         showToast(`@${username} bloqueado na Blacklist!`, 'success');
@@ -2199,6 +2206,25 @@ Parcerias: assessoria@marialuiza.com.br
             localStorage.removeItem('innflu_token');
             localStorage.removeItem('innflu_user');
             currentUser = null;
+            leadsData = [];
+            renderLeadsTable([]);
+            renderOverviewRecentTable();
+
+            // Reseta contadores da interface
+            const zeroElements = [
+              'statSentToday', 'statTotalLeads', 'statWithWhatsapp',
+              'statWithEmail', 'statTotalSent', 'badgeSidebarLeads',
+              'statDailySentCount', 'statSentPercent'
+            ];
+            zeroElements.forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.innerText = '0';
+            });
+            const pendingEl = document.getElementById('statPendingCount');
+            if (pendingEl) pendingEl.innerText = '0 na fila';
+            const progressEl = document.getElementById('statProgressBar');
+            if (progressEl) progressEl.style.width = '0%';
+
             renderGuestProfile();
             showToast('Você saiu da sua conta.', 'info');
             openAuthModal();
@@ -2262,6 +2288,7 @@ Parcerias: assessoria@marialuiza.com.br
           renderUserProfile(currentUser);
           closeAuthModal();
           showToast(`Bem-vindo de volta, ${data.user.full_name}!`, 'success');
+          await loadAllData();
         } else {
           showToast(data.error || 'E-mail ou senha incorretos.', 'error');
         }
@@ -2295,6 +2322,7 @@ Parcerias: assessoria@marialuiza.com.br
           renderUserProfile(currentUser);
           closeAuthModal();
           showToast(`Conta SaaS criada com sucesso! Olá, ${data.user.full_name}!`, 'success');
+          await loadAllData();
         } else {
           showToast(data.error || 'Erro ao criar conta.', 'error');
         }

@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- Tabela de Campanhas de Prospecção
 CREATE TABLE IF NOT EXISTS campaigns (
     id TEXT PRIMARY KEY,
+    user_id TEXT DEFAULT 'usr_admin_01',
     name TEXT NOT NULL,
     keyword TEXT NOT NULL,
     target_gender TEXT DEFAULT 'female', -- 'female', 'male', 'all'
@@ -38,25 +39,29 @@ CREATE TABLE IF NOT EXISTS campaigns (
     min_delay_sec INTEGER DEFAULT 60,
     max_delay_sec INTEGER DEFAULT 180,
     status TEXT DEFAULT 'active', -- 'active', 'paused', 'completed'
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Tabela de Templates de Mensagens (com suporte a Spintax)
 CREATE TABLE IF NOT EXISTS templates (
     id TEXT PRIMARY KEY,
+    user_id TEXT DEFAULT 'usr_admin_01',
     campaign_id TEXT,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY(campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
 );
 
 -- Tabela de Leads / Influenciadores Minerados (Com WhatsApp e Email)
 CREATE TABLE IF NOT EXISTS leads (
     id TEXT PRIMARY KEY,
+    user_id TEXT DEFAULT 'usr_admin_01',
     campaign_id TEXT,
-    username TEXT UNIQUE NOT NULL,
+    username TEXT NOT NULL,
     full_name TEXT,
     followers_count INTEGER DEFAULT 0,
     detected_gender TEXT DEFAULT 'unknown',
@@ -68,26 +73,33 @@ CREATE TABLE IF NOT EXISTS leads (
     status TEXT DEFAULT 'pending', -- 'pending', 'minerada', 'sent', 'replied', 'skipped', 'blacklisted'
     discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_contacted_at DATETIME,
-    FOREIGN KEY(campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL,
+    UNIQUE(user_id, username)
 );
 
 -- Histórico de Disparos de DM (Persistente Anti-Repetição com Regra de 7 Dias)
 CREATE TABLE IF NOT EXISTS sent_logs (
     id TEXT PRIMARY KEY,
+    user_id TEXT DEFAULT 'usr_admin_01',
     campaign_id TEXT,
     username TEXT NOT NULL,
     message_text TEXT NOT NULL,
     status TEXT DEFAULT 'success', -- 'success', 'failed', 'blocked'
     error_message TEXT,
-    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Tabela de Blacklist
 CREATE TABLE IF NOT EXISTS blacklist (
     id TEXT PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
+    user_id TEXT DEFAULT 'usr_admin_01',
+    username TEXT NOT NULL,
     reason TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, username)
 );
 
 -- Configurações Gerais da Plataforma
@@ -100,14 +112,20 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_api_token ON users(api_token);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id);
 CREATE INDEX IF NOT EXISTS idx_leads_username ON leads(username);
+CREATE INDEX IF NOT EXISTS idx_leads_user_username ON leads(user_id, username);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_whatsapp ON leads(whatsapp);
 CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email);
 CREATE INDEX IF NOT EXISTS idx_leads_niche ON leads(niche);
+CREATE INDEX IF NOT EXISTS idx_campaigns_user_id ON campaigns(user_id);
+CREATE INDEX IF NOT EXISTS idx_templates_user_id ON templates(user_id);
+CREATE INDEX IF NOT EXISTS idx_sent_logs_user_id ON sent_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_sent_logs_username ON sent_logs(username);
 CREATE INDEX IF NOT EXISTS idx_sent_logs_sent_at ON sent_logs(sent_at);
-CREATE INDEX IF NOT EXISTS idx_blacklist_username ON blacklist(username);
+CREATE INDEX IF NOT EXISTS idx_blacklist_user_id ON blacklist(user_id);
+CREATE INDEX IF NOT EXISTS idx_blacklist_user_username ON blacklist(user_id, username);
 
 -- Dados Iniciais Padrão
 INSERT OR IGNORE INTO users (id, email, password_hash, full_name, company_name, plan, api_token) VALUES

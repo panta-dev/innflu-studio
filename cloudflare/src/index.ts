@@ -37,6 +37,36 @@ function generateToken(prefix: string = 'inf'): string {
   return `${prefix}_${str}`;
 }
 
+// Helper de autenticação multi-tenant: identifica o usuário por sessão Bearer ou API Token
+async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email: string; full_name: string; plan: string; api_token: string } | null> {
+  const authHeader = c.req.header('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim() || 
+                c.req.header('X-API-Key') || 
+                c.req.query('api_token') || 
+                c.req.query('token') || '';
+
+  if (token) {
+    const sessionUser = await db.prepare(`
+      SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token
+      FROM sessions s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.token = ? AND datetime(s.expires_at) > datetime('now')
+    `).bind(token).first<any>();
+    if (sessionUser) return sessionUser;
+
+    const apiUser = await db.prepare(`
+      SELECT id, email, full_name, company_name, plan, api_token
+      FROM users
+      WHERE api_token = ?
+    `).bind(token).first<any>();
+    if (apiUser) return apiUser;
+  }
+
+  // Fallback padrão para admin em modo visitante/demo local
+  const defaultAdmin = await db.prepare("SELECT id, email, full_name, company_name, plan, api_token FROM users WHERE id = 'usr_admin_01' OR email = 'admin@innflu.com.br' LIMIT 1").first<any>();
+  return defaultAdmin || null;
+}
+
 // Rota explícita para o dashboard
 app.get('/dashboard', (c) => {
   return c.redirect('/dashboard/');
@@ -81,6 +111,23 @@ app.post('/api/auth/register', async (c) => {
       INSERT INTO sessions (id, user_id, token, expires_at)
       VALUES (?, ?, ?, ?)
     `).bind('ses_' + Date.now(), userId, sessionToken, expiresAt).run();
+
+    // Cria campanha inicial individual para o novo usuário
+    await db.prepare(`
+      INSERT INTO campaigns (id, user_id, name, keyword, target_gender, min_followers, max_followers, require_active_stories, daily_limit, min_delay_sec, max_delay_sec, status)
+      VALUES (?, ?, 'Campanha Maternidade & Mamães', 'maternidade', 'female', 10000, 10000000, 1, 40, 60, 180, 'active')
+    `).bind('camp_' + userId + '_01', userId).run();
+
+    // Cria template inicial com Spintax para o novo usuário
+    await db.prepare(`
+      INSERT INTO templates (id, user_id, campaign_id, title, content, is_active)
+      VALUES (?, ?, ?, 'Convite Parceria Maternidade', ?, 1)
+    `).bind(
+      'tmpl_' + userId + '_01',
+      userId,
+      'camp_' + userId + '_01',
+      '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Espero que esteja tudo bem!}\n\nVi seu perfil e adorei o conteúdo que você compartilha sobre maternidade! {Estou muito encantada com sua rotina.|Achei suas publicações super autênticas e acolhedoras.}\n\nSomos uma marca e gostaríamos de te convidar para uma parceria com envio de produtos exclusivos sem nenhum custo. Você teria interesse em conhecer mais da nossa proposta?'
+    ).run();
 
     return c.json({
       success: true,
@@ -211,15 +258,18 @@ app.get('/api/stats', async (c) => {
     return c.json({ error: 'Database binding não configurado' }, 500);
   }
 
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   try {
-    const totalLeadsRes = await db.prepare("SELECT count(*) as count FROM leads").first<{ count: number }>();
-    const pendingLeadsRes = await db.prepare("SELECT count(*) as count FROM leads WHERE status IN ('pending', 'minerada')").first<{ count: number }>();
+    const totalLeadsRes = await db.prepare("SELECT count(*) as count FROM leads WHERE user_id = ?").bind(userId).first<{ count: number }>();
+    const pendingLeadsRes = await db.prepare("SELECT count(*) as count FROM leads WHERE user_id = ? AND status IN ('pending', 'minerada')").bind(userId).first<{ count: number }>();
     const sentTodayRes = await db.prepare(
-      "SELECT count(*) as count FROM sent_logs WHERE date(sent_at) = date('now') AND status = 'success'"
-    ).first<{ count: number }>();
-    const totalSentRes = await db.prepare("SELECT count(*) as count FROM sent_logs WHERE status = 'success'").first<{ count: number }>();
-    const withWhatsappRes = await db.prepare("SELECT count(*) as count FROM leads WHERE whatsapp IS NOT NULL AND whatsapp != ''").first<{ count: number }>();
-    const withEmailRes = await db.prepare("SELECT count(*) as count FROM leads WHERE email IS NOT NULL AND email != ''").first<{ count: number }>();
+      "SELECT count(*) as count FROM sent_logs WHERE user_id = ? AND date(sent_at) = date('now') AND status = 'success'"
+    ).bind(userId).first<{ count: number }>();
+    const totalSentRes = await db.prepare("SELECT count(*) as count FROM sent_logs WHERE user_id = ? AND status = 'success'").bind(userId).first<{ count: number }>();
+    const withWhatsappRes = await db.prepare("SELECT count(*) as count FROM leads WHERE user_id = ? AND whatsapp IS NOT NULL AND whatsapp != ''").bind(userId).first<{ count: number }>();
+    const withEmailRes = await db.prepare("SELECT count(*) as count FROM leads WHERE user_id = ? AND email IS NOT NULL AND email != ''").bind(userId).first<{ count: number }>();
 
     return c.json({
       totalLeads: totalLeadsRes?.count || 0,
@@ -229,6 +279,7 @@ app.get('/api/stats', async (c) => {
       withWhatsapp: withWhatsappRes?.count || 0,
       withEmail: withEmailRes?.count || 0,
       dailyLimit: 40,
+      userId
     });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
@@ -240,12 +291,16 @@ app.get('/api/stats', async (c) => {
 // ==========================================
 app.get('/api/campaigns', async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare("SELECT * FROM campaigns ORDER BY created_at DESC").all();
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+  const { results } = await db.prepare("SELECT * FROM campaigns WHERE user_id = ? ORDER BY created_at DESC").bind(userId).all();
   return c.json({ campaigns: results });
 });
 
 app.post('/api/campaigns', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
   const body = await c.req.json();
   const id = body.id || 'camp_' + Date.now();
   const name = body.name || 'Nova Campanha';
@@ -259,9 +314,9 @@ app.post('/api/campaigns', async (c) => {
   const maxDelaySec = Number(body.max_delay_sec || 180);
 
   await db.prepare(`
-    INSERT INTO campaigns (id, name, keyword, target_gender, min_followers, max_followers, require_active_stories, daily_limit, min_delay_sec, max_delay_sec, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-  `).bind(id, name, keyword, targetGender, minFollowers, maxFollowers, requireActiveStories, dailyLimit, minDelaySec, maxDelaySec).run();
+    INSERT INTO campaigns (id, user_id, name, keyword, target_gender, min_followers, max_followers, require_active_stories, daily_limit, min_delay_sec, max_delay_sec, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+  `).bind(id, userId, name, keyword, targetGender, minFollowers, maxFollowers, requireActiveStories, dailyLimit, minDelaySec, maxDelaySec).run();
 
   return c.json({ success: true, id });
 });
@@ -271,12 +326,16 @@ app.post('/api/campaigns', async (c) => {
 // ==========================================
 app.get('/api/templates', async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare("SELECT * FROM templates WHERE is_active = 1 ORDER BY created_at DESC").all();
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+  const { results } = await db.prepare("SELECT * FROM templates WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC").bind(userId).all();
   return c.json({ templates: results });
 });
 
 app.post('/api/templates', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
   const body = await c.req.json();
   const id = body.id || 'tmpl_' + Date.now();
   const campaignId = body.campaign_id || null;
@@ -284,10 +343,10 @@ app.post('/api/templates', async (c) => {
   const content = body.content || '';
 
   await db.prepare(`
-    INSERT INTO templates (id, campaign_id, title, content, is_active)
-    VALUES (?, ?, ?, ?, 1)
+    INSERT INTO templates (id, user_id, campaign_id, title, content, is_active)
+    VALUES (?, ?, ?, ?, ?, 1)
     ON CONFLICT(id) DO UPDATE SET title = excluded.title, content = excluded.content
-  `).bind(id, campaignId, title, content).run();
+  `).bind(id, userId, campaignId, title, content).run();
 
   return c.json({ success: true, id });
 });
@@ -297,34 +356,36 @@ app.post('/api/templates', async (c) => {
 // ==========================================
 app.get('/api/leads', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   const status = c.req.query('status');
   const niche = c.req.query('niche');
-  let query = "SELECT * FROM leads";
-  const params: any[] = [];
-  const conditions: string[] = [];
+  let query = "SELECT * FROM leads WHERE user_id = ?";
+  const params: any[] = [userId];
 
   if (status && status !== 'all') {
-    conditions.push("status = ?");
+    query += " AND status = ?";
     params.push(status);
   }
   if (niche && niche !== 'all') {
-    conditions.push("niche LIKE ?");
+    query += " AND niche LIKE ?";
     params.push(`%${niche}%`);
   }
 
-  if (conditions.length > 0) {
-    query += " WHERE " + conditions.join(" AND ");
-  }
   query += " ORDER BY discovered_at DESC LIMIT 300";
 
   const stmt = db.prepare(query);
-  const { results } = params.length > 0 ? await stmt.bind(...params).all() : await stmt.all();
-  return c.json({ leads: results });
+  const { results } = await stmt.bind(...params).all();
+  return c.json({ leads: results, userId });
 });
 
 // Salvar / Sincronizar lead minerado (com WhatsApp, Email, Nicho e seguidores)
 app.post('/api/leads', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
 
@@ -332,8 +393,8 @@ app.post('/api/leads', async (c) => {
     return c.json({ error: 'Username obrigatório' }, 400);
   }
 
-  // Verificar se o perfil está na blacklist
-  const isBlacklisted = await db.prepare("SELECT id FROM blacklist WHERE username = ?").bind(username).first();
+  // Verificar se o perfil está na blacklist do usuário
+  const isBlacklisted = await db.prepare("SELECT id FROM blacklist WHERE user_id = ? AND username = ?").bind(userId, username).first();
   if (isBlacklisted) {
     return c.json({ error: 'Perfil está na blacklist', blacklisted: true }, 400);
   }
@@ -352,9 +413,9 @@ app.post('/api/leads', async (c) => {
 
   try {
     await db.prepare(`
-      INSERT INTO leads (id, campaign_id, username, full_name, followers_count, detected_gender, has_active_stories, whatsapp, email, bio, niche, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(username) DO UPDATE SET
+      INSERT INTO leads (id, user_id, campaign_id, username, full_name, followers_count, detected_gender, has_active_stories, whatsapp, email, bio, niche, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, username) DO UPDATE SET
         followers_count = excluded.followers_count,
         has_active_stories = excluded.has_active_stories,
         whatsapp = COALESCE(excluded.whatsapp, leads.whatsapp),
@@ -362,9 +423,9 @@ app.post('/api/leads', async (c) => {
         bio = excluded.bio,
         niche = COALESCE(excluded.niche, leads.niche),
         status = CASE WHEN leads.status = 'sent' THEN 'sent' ELSE excluded.status END
-    `).bind(id, campaignId, username, fullName, followersCount, detectedGender, hasActiveStories, whatsapp, email, bio, niche, status).run();
+    `).bind(id, userId, campaignId, username, fullName, followersCount, detectedGender, hasActiveStories, whatsapp, email, bio, niche, status).run();
 
-    return c.json({ success: true, username, niche });
+    return c.json({ success: true, username, niche, userId });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
   }
@@ -375,6 +436,9 @@ app.post('/api/leads/import', async (c) => {
   const db = c.env.DB;
   if (!db) return c.json({ error: 'DB não configurado' }, 500);
 
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   try {
     const body = await c.req.json();
     const leads: any[] = Array.isArray(body) ? body : (body.leads || []);
@@ -383,8 +447,8 @@ app.post('/api/leads/import', async (c) => {
       return c.json({ error: 'Nenhum lead fornecido para importação' }, 400);
     }
 
-    // Carrega perfis na blacklist para evitar importar bloqueados
-    const blacklistRows = await db.prepare("SELECT username FROM blacklist").all();
+    // Carrega perfis na blacklist do usuário
+    const blacklistRows = await db.prepare("SELECT username FROM blacklist WHERE user_id = ?").bind(userId).all();
     const blacklistedSet = new Set((blacklistRows.results || []).map((r: any) => (r.username || '').toLowerCase()));
 
     let imported = 0;
@@ -417,9 +481,9 @@ app.post('/api/leads/import', async (c) => {
         const discoveredAt = lead.discovered_at || new Date().toISOString();
 
         statements.push(db.prepare(`
-          INSERT INTO leads (id, campaign_id, username, full_name, followers_count, detected_gender, has_active_stories, whatsapp, email, bio, niche, status, discovered_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(username) DO UPDATE SET
+          INSERT INTO leads (id, user_id, campaign_id, username, full_name, followers_count, detected_gender, has_active_stories, whatsapp, email, bio, niche, status, discovered_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(user_id, username) DO UPDATE SET
             full_name = CASE WHEN excluded.full_name != '' THEN excluded.full_name ELSE leads.full_name END,
             followers_count = CASE WHEN excluded.followers_count > 0 THEN excluded.followers_count ELSE leads.followers_count END,
             has_active_stories = excluded.has_active_stories,
@@ -428,7 +492,7 @@ app.post('/api/leads/import', async (c) => {
             bio = CASE WHEN excluded.bio != '' THEN excluded.bio ELSE leads.bio END,
             niche = COALESCE(excluded.niche, leads.niche),
             status = CASE WHEN leads.status = 'sent' THEN 'sent' ELSE excluded.status END
-        `).bind(id, campaignId, username, fullName, followersCount, detectedGender, hasActiveStories, whatsapp, email, bio, niche, status, discoveredAt));
+        `).bind(id, userId, campaignId, username, fullName, followersCount, detectedGender, hasActiveStories, whatsapp, email, bio, niche, status, discoveredAt));
       }
 
       if (statements.length > 0) {
@@ -442,7 +506,8 @@ app.post('/api/leads/import', async (c) => {
       message: `${imported} influenciadoras importadas com sucesso!`,
       imported,
       skipped,
-      total: leads.length
+      total: leads.length,
+      userId
     });
   } catch (err: any) {
     return c.json({ error: 'Erro ao importar leads: ' + err.message }, 500);
@@ -454,6 +519,9 @@ app.post('/api/leads/import', async (c) => {
 // ==========================================
 app.post('/api/check-lead', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
 
@@ -461,24 +529,23 @@ app.post('/api/check-lead', async (c) => {
     return c.json({ eligible: false, reason: 'Username inválido' });
   }
 
-  // 1. Checa Blacklist
-  const isBlacklisted = await db.prepare("SELECT id FROM blacklist WHERE username = ?").bind(username).first();
+  // 1. Checa Blacklist do usuário
+  const isBlacklisted = await db.prepare("SELECT id FROM blacklist WHERE user_id = ? AND username = ?").bind(userId, username).first();
   if (isBlacklisted) {
     return c.json({ eligible: false, reason: 'blacklisted' });
   }
 
-  // 2. Checa histórico de envio com a REGRA DE 7 DIAS
+  // 2. Checa histórico de envio com a REGRA DE 7 DIAS do usuário
   const lastSent = await db.prepare(`
     SELECT id, sent_at, 
       (julianday('now') - julianday(sent_at)) as days_ago
     FROM sent_logs 
-    WHERE username = ? AND status = 'success'
+    WHERE user_id = ? AND username = ? AND status = 'success'
     ORDER BY sent_at DESC LIMIT 1
-  `).bind(username).first<{ id: string; sent_at: string; days_ago: number }>();
+  `).bind(userId, username).first<{ id: string; sent_at: string; days_ago: number }>();
 
   if (lastSent) {
     const daysAgo = Math.floor(lastSent.days_ago || 0);
-    // Se foi contatada há MENOS de 7 dias: PULA!
     if (daysAgo < 7) {
       return c.json({
         eligible: false,
@@ -488,7 +555,6 @@ app.post('/api/check-lead', async (c) => {
         message: `Já recebeu mensagem há ${daysAgo} dia(s). Só poderá ser chamada após 7 dias.`
       });
     } else {
-      // Já se passaram 7 ou mais dias: Pode reenviar (follow-up)
       return c.json({
         eligible: true,
         reason: 'follow_up_eligible',
@@ -498,7 +564,6 @@ app.post('/api/check-lead', async (c) => {
     }
   }
 
-  // Nunca foi contatada: elegível!
   return c.json({ eligible: true, reason: 'never_contacted' });
 });
 
@@ -507,6 +572,9 @@ app.post('/api/check-lead', async (c) => {
 // ==========================================
 app.post('/api/log-sent', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
   const messageText = body.message_text || '';
@@ -517,17 +585,17 @@ app.post('/api/log-sent', async (c) => {
   const logId = 'log_' + Date.now();
 
   try {
-    // Registra no sent_logs
+    // Registra no sent_logs com user_id
     await db.prepare(`
-      INSERT INTO sent_logs (id, campaign_id, username, message_text, status, error_message)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(logId, campaignId, username, messageText, status, errorMessage).run();
+      INSERT INTO sent_logs (id, user_id, campaign_id, username, message_text, status, error_message)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(logId, userId, campaignId, username, messageText, status, errorMessage).run();
 
-    // Atualiza status na tabela de leads
+    // Atualiza status na tabela de leads do usuário
     if (status === 'success') {
       await db.prepare(`
-        UPDATE leads SET status = 'sent', last_contacted_at = CURRENT_TIMESTAMP WHERE username = ?
-      `).bind(username).run();
+        UPDATE leads SET status = 'sent', last_contacted_at = CURRENT_TIMESTAMP WHERE user_id = ? AND username = ?
+      `).bind(userId, username).run();
     }
 
     return c.json({ success: true, logId });
@@ -541,12 +609,18 @@ app.post('/api/log-sent', async (c) => {
 // ==========================================
 app.get('/api/blacklist', async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare("SELECT * FROM blacklist ORDER BY created_at DESC").all();
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
+  const { results } = await db.prepare("SELECT * FROM blacklist WHERE user_id = ? ORDER BY created_at DESC").bind(userId).all();
   return c.json({ blacklist: results });
 });
 
 app.post('/api/blacklist', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
   const reason = body.reason || 'Adicionado manualmente';
@@ -557,8 +631,8 @@ app.post('/api/blacklist', async (c) => {
 
   const id = 'blk_' + Date.now();
   await db.prepare(`
-    INSERT OR IGNORE INTO blacklist (id, username, reason) VALUES (?, ?, ?)
-  `).bind(id, username, reason).run();
+    INSERT OR IGNORE INTO blacklist (id, user_id, username, reason) VALUES (?, ?, ?, ?)
+  `).bind(id, userId, username, reason).run();
 
   return c.json({ success: true, username });
 });
@@ -568,8 +642,11 @@ app.post('/api/blacklist', async (c) => {
 // ==========================================
 app.get('/api/logs', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   const limit = Number(c.req.query('limit') || 100);
-  const { results } = await db.prepare("SELECT * FROM sent_logs ORDER BY sent_at DESC LIMIT ?").bind(limit).all();
+  const { results } = await db.prepare("SELECT * FROM sent_logs WHERE user_id = ? ORDER BY sent_at DESC LIMIT ?").bind(userId, limit).all();
   return c.json({ logs: results });
 });
 
@@ -578,24 +655,24 @@ app.get('/api/logs', async (c) => {
 // ==========================================
 app.get('/api/analytics', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
+
   try {
-    // Leads agrupados por status
-    const byStatus = await db.prepare("SELECT status, count(*) as count FROM leads GROUP BY status").all();
+    const byStatus = await db.prepare("SELECT status, count(*) as count FROM leads WHERE user_id = ? GROUP BY status").bind(userId).all();
     
-    // Disparos dos últimos 7 dias
     const last7Days = await db.prepare(`
       SELECT date(sent_at) as date, count(*) as count
       FROM sent_logs
-      WHERE sent_at >= date('now', '-7 days')
+      WHERE user_id = ? AND sent_at >= date('now', '-7 days')
       GROUP BY date(sent_at)
       ORDER BY date(sent_at) ASC
-    `).all();
+    `).bind(userId).all();
 
-    // Distribuição de canais de contato
-    const totalLeads = (await db.prepare("SELECT count(*) as c FROM leads").first<{ c: number }>())?.c || 0;
-    const withWhatsapp = (await db.prepare("SELECT count(*) as c FROM leads WHERE whatsapp IS NOT NULL AND whatsapp != ''").first<{ c: number }>())?.c || 0;
-    const withEmail = (await db.prepare("SELECT count(*) as c FROM leads WHERE email IS NOT NULL AND email != ''").first<{ c: number }>())?.c || 0;
-    const withBoth = (await db.prepare("SELECT count(*) as c FROM leads WHERE whatsapp IS NOT NULL AND whatsapp != '' AND email IS NOT NULL AND email != ''").first<{ c: number }>())?.c || 0;
+    const totalLeads = (await db.prepare("SELECT count(*) as c FROM leads WHERE user_id = ?").bind(userId).first<{ c: number }>())?.c || 0;
+    const withWhatsapp = (await db.prepare("SELECT count(*) as c FROM leads WHERE user_id = ? AND whatsapp IS NOT NULL AND whatsapp != ''").bind(userId).first<{ c: number }>())?.c || 0;
+    const withEmail = (await db.prepare("SELECT count(*) as c FROM leads WHERE user_id = ? AND email IS NOT NULL AND email != ''").bind(userId).first<{ c: number }>())?.c || 0;
+    const withBoth = (await db.prepare("SELECT count(*) as c FROM leads WHERE user_id = ? AND whatsapp IS NOT NULL AND whatsapp != '' AND email IS NOT NULL AND email != ''").bind(userId).first<{ c: number }>())?.c || 0;
 
     return c.json({
       totalLeads,
@@ -635,17 +712,21 @@ app.post('/api/qualify', async (c) => {
 // ==========================================
 app.delete('/api/leads/:id', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
   const id = c.req.param('id');
-  await db.prepare("DELETE FROM leads WHERE id = ? OR username = ?").bind(id, id).run();
+  await db.prepare("DELETE FROM leads WHERE user_id = ? AND (id = ? OR username = ?)").bind(userId, id, id).run();
   return c.json({ success: true });
 });
 
 app.post('/api/leads/:id/status', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  const userId = user?.id || 'usr_admin_01';
   const id = c.req.param('id');
   const body = await c.req.json();
   const status = body.status || 'minerada';
-  await db.prepare("UPDATE leads SET status = ? WHERE id = ? OR username = ?").bind(status, id, id).run();
+  await db.prepare("UPDATE leads SET status = ? WHERE user_id = ? AND (id = ? OR username = ?)").bind(status, userId, id, id).run();
   return c.json({ success: true, status });
 });
 
