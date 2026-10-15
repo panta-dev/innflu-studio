@@ -121,6 +121,33 @@
       align-items: center;
       gap: 0.35rem;
     }
+
+    /* Scroll Horizontal & Pan com Botão Direito */
+    .crm-table-container {
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(139, 92, 246, 0.45) rgba(15, 23, 42, 0.6);
+    }
+    .crm-table-container.is-panning {
+      cursor: grabbing !important;
+    }
+    .crm-table-container::-webkit-scrollbar {
+      height: 8px;
+    }
+    .crm-table-container::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 999px;
+    }
+    .crm-table-container::-webkit-scrollbar-thumb {
+      background: rgba(139, 92, 246, 0.4);
+      border-radius: 999px;
+      border: 2px solid rgba(15, 23, 42, 0.6);
+    }
+    .crm-table-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(139, 92, 246, 0.7);
+    }
   </style>
 </head>
 
@@ -260,7 +287,7 @@
   <div class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
 
     <!-- Topbar Sticky com Busca Global & Ações Rápidas -->
-    <header class="h-16 border-b border-surface-border bg-surface-base/80 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between px-8">
+    <header class="h-16 border-b border-surface-border bg-surface-base/80 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6">
       <div class="flex items-center gap-4 flex-1 max-w-xl">
         <div class="relative w-full">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
@@ -294,8 +321,8 @@
       </div>
     </header>
 
-    <!-- ÁREA DE VIEWS (SPA DINÂMICO) -->
-    <main class="flex-1 p-8 space-y-8 max-w-7xl w-full mx-auto">
+    <!-- ÁREA DE VIEWS (SPA DINÂMICO EXPANDIDO - FULL WIDTH) -->
+    <main class="flex-1 px-3 sm:px-6 py-6 space-y-6 w-full max-w-none">
 
       <!-- ====================================================
            VIEW 1: OVERVIEW & DASHBOARD ANALYTICS
@@ -479,20 +506,20 @@
             </button>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
+          <div id="overviewRecentScrollContainer" class="crm-table-container overflow-x-auto select-none">
+            <table class="w-full text-left text-xs whitespace-nowrap min-w-max">
               <thead class="text-[10px] uppercase bg-surface-card/60 text-slate-400 border-b border-surface-border">
-                <tr>
-                  <th class="px-4 py-3">Influenciadora</th>
-                  <th class="px-4 py-3">Seguidores</th>
-                  <th class="px-4 py-3">WhatsApp</th>
-                  <th class="px-4 py-3">E-mail</th>
-                  <th class="px-4 py-3">Stories</th>
-                  <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3 text-right">Ação</th>
+                <tr class="whitespace-nowrap">
+                  <th class="px-5 py-3 whitespace-nowrap font-bold">Influenciadora</th>
+                  <th class="px-5 py-3 whitespace-nowrap font-bold">Seguidores</th>
+                  <th class="px-5 py-3 whitespace-nowrap font-bold">WhatsApp</th>
+                  <th class="px-5 py-3 whitespace-nowrap font-bold">E-mail</th>
+                  <th class="px-5 py-3 whitespace-nowrap font-bold">Stories</th>
+                  <th class="px-5 py-3 whitespace-nowrap font-bold">Status</th>
+                  <th class="px-5 py-3 whitespace-nowrap font-bold text-right">Ação</th>
                 </tr>
               </thead>
-              <tbody id="overviewRecentTable" class="divide-y divide-surface-border">
+              <tbody id="overviewRecentTable" class="divide-y divide-surface-border whitespace-nowrap">
                 <tr>
                   <td colspan="7" class="text-center py-6 text-slate-500">Carregando leads recentes...</td>
                 </tr>
@@ -562,25 +589,36 @@
         </div>
 
         <!-- Tabela Completa de Leads -->
-        <div class="glass-panel rounded-2xl overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="text-[10px] uppercase bg-surface-card/80 text-slate-400 border-b border-surface-border">
-                <tr>
-                  <th class="px-4 py-3.5">Influenciadora</th>
-                  <th class="px-4 py-3.5">Nicho</th>
-                  <th class="px-4 py-3.5">Seguidores</th>
-                  <th class="px-4 py-3.5">WhatsApp</th>
-                  <th class="px-4 py-3.5">E-mail Comercial</th>
-                  <th class="px-4 py-3.5">Stories Ativos</th>
-                  <th class="px-4 py-3.5">Status</th>
-                  <th class="px-4 py-3.5">Data Descoberta</th>
-                  <th class="px-4 py-3.5 text-right">Ações</th>
+        <div class="glass-panel rounded-2xl overflow-hidden border border-surface-border shadow-2xl">
+          <!-- Banner Dica de Navegação com botão direito -->
+          <div class="px-4 py-2.5 bg-gradient-to-r from-purple-900/25 via-purple-800/10 to-transparent border-b border-surface-border/60 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300 select-none">
+            <span class="flex items-center gap-2 text-purple-300 font-medium">
+              <i class="fa-solid fa-arrow-pointer text-xs text-pink-400"></i>
+              <span>Segure o <b>botão direito do mouse</b> e arraste para os lados para navegar por todo o CRM</span>
+            </span>
+            <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-slate-400">
+              <i class="fa-solid fa-arrows-left-right text-purple-400"></i> Tabela esticada (100% linear, sem quebras)
+            </span>
+          </div>
+
+          <div id="leadsTableScrollContainer" class="crm-table-container overflow-x-auto select-none">
+            <table class="w-full text-left text-xs whitespace-nowrap min-w-max">
+              <thead class="text-[10px] uppercase bg-surface-card/90 text-slate-400 border-b border-surface-border sticky top-0 z-10">
+                <tr class="whitespace-nowrap">
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold">Influenciadora</th>
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold">Nicho</th>
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold">Seguidores</th>
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold">WhatsApp</th>
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold">E-mail Comercial</th>
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold">Stories Ativos</th>
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold">Status</th>
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold">Data Descoberta</th>
+                  <th class="px-5 py-3.5 whitespace-nowrap font-bold text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody id="fullLeadsTableBody" class="divide-y divide-surface-border">
+              <tbody id="fullLeadsTableBody" class="divide-y divide-surface-border whitespace-nowrap">
                 <tr>
-                  <td colspan="9" class="text-center py-8 text-slate-500">Nenhuma influenciadora minerada encontrada.</td>
+                  <td colspan="9" class="text-center py-8 text-slate-500 whitespace-nowrap">Nenhuma influenciadora minerada encontrada.</td>
                 </tr>
               </tbody>
             </table>
@@ -1241,6 +1279,8 @@ Parcerias: assessoria@marialuiza.com.br
       syncAuthUI();
       loadAllData();
       testSpintaxWeb();
+      setupRightClickPan('leadsTableScrollContainer');
+      setupRightClickPan('overviewRecentScrollContainer');
     });
 
     // ----------------------------------------------------
@@ -1365,6 +1405,57 @@ Parcerias: assessoria@marialuiza.com.br
       return num.toLocaleString('pt-BR');
     }
 
+    // ----------------------------------------------------
+    // ARRASTAR COM BOTÃO DIREITO DO MOUSE (PANNING LATERAL)
+    // ----------------------------------------------------
+    function setupRightClickPan(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      let isDown = false;
+      let startX = 0;
+      let scrollLeft = 0;
+
+      container.addEventListener('mousedown', (e) => {
+        // e.button === 2 representa o botão direito do mouse
+        if (e.button === 2) {
+          isDown = true;
+          startX = e.clientX;
+          scrollLeft = container.scrollLeft;
+          container.classList.add('is-panning');
+          document.body.style.userSelect = 'none';
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        const dx = e.clientX - startX;
+        // Arrasto natural: mover para a esquerda rola para a direita
+        container.scrollLeft = scrollLeft - dx;
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (isDown && e.button === 2) {
+          isDown = false;
+          container.classList.remove('is-panning');
+          document.body.style.userSelect = '';
+        }
+      });
+
+      window.addEventListener('blur', () => {
+        if (isDown) {
+          isDown = false;
+          container.classList.remove('is-panning');
+          document.body.style.userSelect = '';
+        }
+      });
+
+      // Previne menu de contexto do navegador sobre a tabela para permitir arrasto livre
+      container.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+      });
+    }
+
     function renderLeadsTable(filtered = null) {
       const list = filtered || leadsData;
       const tbody = document.getElementById('fullLeadsTableBody');
@@ -1372,7 +1463,7 @@ Parcerias: assessoria@marialuiza.com.br
       if (countEl) countEl.innerText = list.length;
 
       if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500">Nenhuma influenciadora encontrada para os filtros selecionados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-500 whitespace-nowrap">Nenhuma influenciadora encontrada para os filtros selecionados.</td></tr>`;
         return;
       }
 
@@ -1382,68 +1473,68 @@ Parcerias: assessoria@marialuiza.com.br
         const emailLink = l.email ? `mailto:${l.email}` : null;
 
         return `
-          <tr class="hover:bg-surface-hover/50 transition">
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-3">
-                <div class="story-ring">
+          <tr class="hover:bg-surface-hover/50 transition whitespace-nowrap">
+            <td class="px-5 py-3.5 whitespace-nowrap">
+              <div class="flex items-center gap-3 whitespace-nowrap">
+                <div class="story-ring shrink-0">
                   <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-purple-300">
                     ${(l.username || 'I').substring(0, 2).toUpperCase()}
                   </div>
                 </div>
-                <div>
-                  <a href="https://instagram.com/${l.username}" target="_blank" class="font-bold text-white hover:text-purple-400 transition flex items-center gap-1">
+                <div class="whitespace-nowrap">
+                  <a href="https://instagram.com/${l.username}" target="_blank" class="font-bold text-white hover:text-purple-400 transition inline-flex items-center gap-1 whitespace-nowrap">
                     @${l.username} <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-500"></i>
                   </a>
-                  <span class="text-[11px] text-slate-400 block">${l.full_name || 'Sem nome informado'}</span>
+                  <span class="text-[11px] text-slate-400 block whitespace-nowrap">${l.full_name || 'Sem nome informado'}</span>
                 </div>
               </div>
             </td>
-            <td class="px-4 py-3">
-              <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold uppercase">
+            <td class="px-5 py-3.5 whitespace-nowrap">
+              <span class="text-[10px] font-mono px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold uppercase whitespace-nowrap inline-block">
                 ${l.niche || 'Maternidade'}
               </span>
             </td>
-            <td class="px-4 py-3 font-mono font-semibold text-slate-200">
+            <td class="px-5 py-3.5 font-mono font-semibold text-slate-200 whitespace-nowrap">
               ${formatNumber(l.followers_count)}
             </td>
-            <td class="px-4 py-3 font-mono">
+            <td class="px-5 py-3.5 font-mono whitespace-nowrap">
               ${waLink ? `
-                <a href="${waLink}" target="_blank" class="inline-flex items-center gap-1.5 text-emerald-400 hover:underline font-semibold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
-                  <i class="fa-brands fa-whatsapp text-xs"></i> ${l.whatsapp}
+                <a href="${waLink}" target="_blank" class="inline-flex items-center gap-1.5 text-emerald-400 hover:underline font-semibold bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 whitespace-nowrap">
+                  <i class="fa-brands fa-whatsapp text-xs shrink-0"></i> <span class="whitespace-nowrap">${l.whatsapp}</span>
                 </a>
               ` : '<span class="text-slate-600 font-sans">—</span>'}
             </td>
-            <td class="px-4 py-3 font-mono">
+            <td class="px-5 py-3.5 font-mono whitespace-nowrap">
               ${emailLink ? `
-                <a href="${emailLink}" class="inline-flex items-center gap-1.5 text-sky-400 hover:underline bg-sky-500/10 px-2 py-1 rounded-lg border border-sky-500/20">
-                  <i class="fa-solid fa-envelope text-xs"></i> ${l.email}
+                <a href="${emailLink}" class="inline-flex items-center gap-1.5 text-sky-400 hover:underline font-semibold bg-sky-500/10 px-3 py-1.5 rounded-lg border border-sky-500/20 whitespace-nowrap">
+                  <i class="fa-solid fa-envelope text-xs shrink-0"></i> <span class="whitespace-nowrap">${l.email}</span>
                 </a>
               ` : '<span class="text-slate-600 font-sans">—</span>'}
             </td>
-            <td class="px-4 py-3">
+            <td class="px-5 py-3.5 whitespace-nowrap">
               ${l.has_active_stories ? `
-                <span class="status-badge bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                <span class="status-badge bg-pink-500/10 text-pink-400 border border-pink-500/20 whitespace-nowrap inline-flex items-center gap-1">
                   <i class="fa-solid fa-fire text-[9px]"></i> Ativos
                 </span>
-              ` : '<span class="text-slate-500 text-[11px]">Inativo</span>'}
+              ` : '<span class="text-slate-500 text-[11px] whitespace-nowrap">Inativo</span>'}
             </td>
-            <td class="px-4 py-3">
+            <td class="px-5 py-3.5 whitespace-nowrap">
               ${l.status === 'sent' ? `
-                <span class="status-badge bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                <span class="status-badge bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap inline-flex items-center gap-1">
                   <i class="fa-solid fa-check text-[9px]"></i> DM Enviada
                 </span>
               ` : `
-                <span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap inline-flex items-center gap-1">
                   <i class="fa-solid fa-circle text-[6px]"></i> Minerada
                 </span>
               `}
             </td>
-            <td class="px-4 py-3 text-slate-400 text-[11px]">
+            <td class="px-5 py-3.5 text-slate-400 text-[11px] font-mono whitespace-nowrap">
               ${(l.discovered_at || '').substring(0, 16)}
             </td>
-            <td class="px-4 py-3 text-right">
-              <div class="flex items-center justify-end gap-1.5">
-                <button onclick="deleteLead('${l.id}')" title="Excluir Lead" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+            <td class="px-5 py-3.5 text-right whitespace-nowrap">
+              <div class="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                <button onclick="deleteLead('${l.id}')" title="Excluir Lead" class="p-1.5 text-slate-500 hover:text-rose-400 transition rounded-lg hover:bg-rose-500/10">
                   <i class="fa-solid fa-trash-can text-xs"></i>
                 </button>
               </div>
@@ -1459,24 +1550,48 @@ Parcerias: assessoria@marialuiza.com.br
       const recent = leadsData.slice(0, 5);
 
       if (recent.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500">Nenhum perfil minerado ainda. Inicie a mineração pelo hub ou extensão!</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 whitespace-nowrap">Nenhum perfil minerado ainda. Inicie a mineração pelo hub ou extensão!</td></tr>`;
         return;
       }
 
       tbody.innerHTML = recent.map(l => {
+        const waClean = (l.whatsapp || '').replace(/[^0-9]/g, '');
+        const waLink = waClean ? `https://wa.me/${waClean}` : null;
+        const emailLink = l.email ? `mailto:${l.email}` : null;
+
         return `
-          <tr class="hover:bg-surface-hover/50 transition">
-            <td class="px-4 py-2.5">
-              <a href="https://instagram.com/${l.username}" target="_blank" class="font-bold text-white hover:text-purple-400">@${l.username}</a>
-              <span class="text-[10px] text-slate-400 block">${l.full_name || ''}</span>
+          <tr class="hover:bg-surface-hover/50 transition whitespace-nowrap">
+            <td class="px-5 py-3 whitespace-nowrap">
+              <a href="https://instagram.com/${l.username}" target="_blank" class="font-bold text-white hover:text-purple-400 inline-flex items-center gap-1 whitespace-nowrap">
+                @${l.username} <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-500"></i>
+              </a>
+              <span class="text-[10px] text-slate-400 block whitespace-nowrap">${l.full_name || 'Sem nome informado'}</span>
             </td>
-            <td class="px-4 py-2.5 font-mono">${formatNumber(l.followers_count)}</td>
-            <td class="px-4 py-2.5 text-emerald-400 font-mono">${l.whatsapp || '—'}</td>
-            <td class="px-4 py-2.5 text-sky-400 font-mono">${l.email || '—'}</td>
-            <td class="px-4 py-2.5">${l.has_active_stories ? '🔥 Sim' : 'Não'}</td>
-            <td class="px-4 py-2.5"><span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${l.status}</span></td>
-            <td class="px-4 py-2.5 text-right">
-              <a href="https://instagram.com/${l.username}" target="_blank" class="text-purple-400 hover:text-purple-300 text-xs font-semibold">Abrir</a>
+            <td class="px-5 py-3 font-mono text-slate-200 whitespace-nowrap">${formatNumber(l.followers_count)}</td>
+            <td class="px-5 py-3 font-mono whitespace-nowrap">
+              ${waLink ? `
+                <a href="${waLink}" target="_blank" class="inline-flex items-center gap-1 text-emerald-400 hover:underline font-semibold bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 whitespace-nowrap text-[11px]">
+                  <i class="fa-brands fa-whatsapp text-[11px]"></i> <span class="whitespace-nowrap">${l.whatsapp}</span>
+                </a>
+              ` : '<span class="text-slate-600 font-sans">—</span>'}
+            </td>
+            <td class="px-5 py-3 font-mono whitespace-nowrap">
+              ${emailLink ? `
+                <a href="${emailLink}" class="inline-flex items-center gap-1 text-sky-400 hover:underline font-semibold bg-sky-500/10 px-2.5 py-1 rounded border border-sky-500/20 whitespace-nowrap text-[11px]">
+                  <i class="fa-solid fa-envelope text-[11px]"></i> <span class="whitespace-nowrap">${l.email}</span>
+                </a>
+              ` : '<span class="text-slate-600 font-sans">—</span>'}
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              ${l.has_active_stories ? `
+                <span class="status-badge bg-pink-500/10 text-pink-400 border border-pink-500/20 whitespace-nowrap inline-flex items-center gap-1"><i class="fa-solid fa-fire text-[8px]"></i> Ativos</span>
+              ` : '<span class="text-slate-500 text-[11px] whitespace-nowrap">Inativo</span>'}
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              <span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">${l.status}</span>
+            </td>
+            <td class="px-5 py-3 text-right whitespace-nowrap">
+              <a href="https://instagram.com/${l.username}" target="_blank" class="text-purple-400 hover:text-purple-300 text-xs font-semibold whitespace-nowrap">Abrir</a>
             </td>
           </tr>
         `;
