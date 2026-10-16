@@ -80,7 +80,7 @@ app.get('/dashboard', (c) => {
 // ==========================================
 app.post('/api/auth/register', async (c) => {
   const db = c.env.DB;
-  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+  if (!db) return c.json({ error: 'Banco de dados D1 não configurado. Vincule o banco D1 (com a variável DB) nas configurações do Cloudflare Pages.' }, 500);
 
   const body = await c.req.json();
   const email = (body.email || '').trim().toLowerCase();
@@ -153,7 +153,7 @@ app.post('/api/auth/register', async (c) => {
 
 app.post('/api/auth/login', async (c) => {
   const db = c.env.DB;
-  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+  if (!db) return c.json({ error: 'Banco de dados D1 não configurado. Vincule o banco D1 (com a variável DB) nas configurações do Cloudflare Pages.' }, 500);
 
   const body = await c.req.json();
   const email = (body.email || '').trim().toLowerCase();
@@ -1086,6 +1086,20 @@ app.post('/api/settings', async (c) => {
     `).bind(key, String(val)).run();
   }
   return c.json({ success: true, settings: body });
+});
+
+// Fallback para arquivos estáticos no Cloudflare Pages / Workers com ASSETS
+app.notFound(async (c) => {
+  if (c.env?.ASSETS) {
+    return c.env.ASSETS.fetch(c.req.raw);
+  }
+  return c.text('Not Found', 404);
+});
+
+// Tratamento global de erros para retornar sempre JSON informativo
+app.onError((err, c) => {
+  console.error('Unhandled Server Error:', err);
+  return c.json({ error: 'Erro no servidor: ' + (err.message || 'Desconhecido') }, 500);
 });
 
 export default app;

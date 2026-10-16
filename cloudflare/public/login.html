@@ -352,7 +352,14 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-        const data = await res.json();
+        
+        let data = {};
+        const text = await res.text();
+        try {
+          data = JSON.parse(text);
+        } catch(e) {
+          data = { error: 'O servidor retornou HTTP ' + res.status + ': ' + (text ? text.substring(0, 150) : res.statusText) };
+        }
 
         if (res.ok && data.success && data.token) {
           localStorage.setItem('innflu_token', data.token);
@@ -367,7 +374,7 @@
           btn.innerHTML = '<span>Acessar Painel do Innflu</span> <i class="fa-solid fa-arrow-right"></i>';
         }
       } catch (err) {
-        showError('Erro de conexão ao acessar. Verifique sua conexão com o servidor.');
+        showError('Erro de conexão ao acessar: ' + (err.message || 'Verifique sua conexão.'));
         btn.disabled = false;
         btn.innerHTML = '<span>Acessar Painel do Innflu</span> <i class="fa-solid fa-arrow-right"></i>';
       }
@@ -398,7 +405,14 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ full_name, company_name, email, password })
         });
-        const data = await res.json();
+
+        let data = {};
+        const text = await res.text();
+        try {
+          data = JSON.parse(text);
+        } catch(e) {
+          data = { error: 'O servidor retornou HTTP ' + res.status + ': ' + (text ? text.substring(0, 150) : res.statusText) };
+        }
 
         if (res.ok && data.success && data.token) {
           localStorage.setItem('innflu_token', data.token);
@@ -413,7 +427,7 @@
           btn.innerHTML = '<span>Criar Minha Conta SaaS</span> <i class="fa-solid fa-check"></i>';
         }
       } catch (err) {
-        showError('Erro de conexão ao criar conta. Tente novamente.');
+        showError('Erro de conexão ao criar conta: ' + (err.message || 'Tente novamente.'));
         btn.disabled = false;
         btn.innerHTML = '<span>Criar Minha Conta SaaS</span> <i class="fa-solid fa-check"></i>';
       }

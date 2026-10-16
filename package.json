@@ -4,7 +4,8 @@
   "description": "Innflu - Automated Instagram Influencer Discovery & Outreach SaaS",
   "scripts": {
     "dev": "npm --prefix cloudflare run dev",
-    "deploy": "npm --prefix cloudflare run deploy"
+    "deploy": "npm --prefix cloudflare run deploy",
+    "build": "npm --prefix cloudflare run build"
   },
   "keywords": [
     "instagram",

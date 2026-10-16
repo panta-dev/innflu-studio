@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "build": "esbuild src/index.ts --bundle --format=esm --target=es2022 --outfile=public/_worker.js",
     "db:init:local": "wrangler d1 execute innflu-db --local --file=./schema.sql",
     "db:init:remote": "wrangler d1 execute innflu-db --remote --file=./schema.sql"
   },
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241230.0",
+    "esbuild": "^0.25.0",
     "typescript": "^5.7.2",
     "wrangler": "^3.99.0"
   }
