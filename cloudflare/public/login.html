@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Obrigatório — Innflu Studio SaaS</title>
+  <meta name="description" content="Acesse sua conta no Innflu Studio para gerenciar prospecção, mineração e CRM de influenciadores.">
+  
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              purple: '#8B5CF6',
+              pink: '#EC4899',
+              dark: '#0B0E14',
+              card: '#121722',
+              border: '#1E2638',
+              hover: '#192030'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #07090E;
+      color: #E2E8F0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .gradient-btn {
+      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      transition: all 0.25s ease;
+    }
+    .gradient-btn:hover {
+      box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.45);
+      transform: translateY(-1px);
+    }
+    .glass-card {
+      background: rgba(18, 23, 34, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .ambient-glow {
+      position: absolute;
+      width: 450px;
+      height: 450px;
+      border-radius: 50%;
+      filter: blur(140px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.25;
+    }
+  </style>
+
+  <!-- Verificação instantânea: se já tiver sessão válida, redireciona ao painel -->
+  <script>
+    (function() {
+      var token = localStorage.getItem('innflu_token');
+      if (token) {
+        fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.authenticated && data.user) {
+              window.location.replace('/dashboard/');
+            } else {
+              localStorage.removeItem('innflu_token');
+              localStorage.removeItem('innflu_user');
+            }
+          })
+          .catch(function() {});
+      }
+    })();
+  </script>
+</head>
+<body class="flex flex-col justify-between items-center relative p-4 sm:p-6">
+
+  <!-- Luzes ambiente de fundo -->
+  <div class="ambient-glow bg-purple-600 top-[-100px] left-[-100px]"></div>
+  <div class="ambient-glow bg-pink-600 bottom-[-100px] right-[-100px]"></div>
+
+  <!-- Header minimalista -->
+  <header class="w-full max-w-5xl flex items-center justify-between py-4 z-10">
+    <a href="/" class="flex items-center gap-3 group">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center font-black text-white shadow-lg shadow-purple-500/25 group-hover:scale-105 transition">
+        <i class="fa-solid fa-bolt text-sm"></i>
+      </div>
+      <div>
+        <span class="text-lg font-black text-white tracking-tight">Innflu<span class="text-purple-400">.</span>Studio</span>
+        <span class="block text-[10px] text-slate-400 font-medium">SaaS de Mineração & CRM</span>
+      </div>
+    </a>
+    
+    <a href="/" class="text-xs text-slate-400 hover:text-white flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition bg-slate-900/50">
+      <i class="fa-solid fa-arrow-left text-[11px]"></i>
+      <span class="hidden sm:inline">Página Inicial</span>
+    </a>
+  </header>
+
+  <!-- Container Central de Autenticação -->
+  <main class="w-full max-w-md my-auto py-8 z-10">
+
+    <!-- Alerta de Sessão Expirada / Acesso Não Autorizado -->
+    <div id="alertSession" class="hidden mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-start gap-3 shadow-lg">
+      <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 text-amber-400"></i>
+      <div>
+        <p class="font-bold text-amber-200">Acesso Restrito</p>
+        <p class="text-[11px] text-amber-300/90 mt-0.5" id="alertSessionText">O acesso ao dashboard requer e-mail e senha cadastrados. Por favor, faça login para continuar.</p>
+      </div>
+    </div>
+
+    <!-- Card de Login & Cadastro -->
+    <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl relative border border-purple-500/20">
+      
+      <!-- Cabeçalho do Card -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xl mb-3 shadow-inner">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h1 class="text-xl font-black text-white" id="authTitle">Acessar Minha Conta</h1>
+        <p class="text-xs text-slate-400 mt-1" id="authSubtitle">Insira suas credenciais para gerenciar suas influenciadoras</p>
+      </div>
+
+      <!-- Tabs de Alternância (Entrar / Criar Conta) -->
+      <div class="flex rounded-xl bg-slate-950/60 p-1 border border-white/10 mb-6">
+        <button type="button" onclick="switchAuthTab('login')" id="tabBtnLogin" class="flex-1 py-2 text-xs font-bold rounded-lg text-white bg-purple-600 transition shadow-sm">
+          <i class="fa-solid fa-right-to-bracket mr-1.5"></i> Entrar
+        </button>
+        <button type="button" onclick="switchAuthTab('register')" id="tabBtnRegister" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-user-plus mr-1.5"></i> Criar Conta
+        </button>
+      </div>
+
+      <!-- Alerta de Erro de Validação -->
+      <div id="authErrorBox" class="hidden mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
+        <i class="fa-solid fa-circle-exclamation text-rose-400"></i>
+        <span id="authErrorMsg">E-mail ou senha inválidos.</span>
+      </div>
+
+      <!-- ==========================================
+           FORMULÁRIO DE LOGIN (OBRIGATÓRIO)
+      ========================================== -->
+      <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">
+            E-mail Cadastrado
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-xs">
+              <i class="fa-solid fa-envelope"></i>
+            </span>
+            <input type="email" id="loginEmail" required autofocus placeholder="seu@email.com" class="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-[11px] font-semibold text-slate-300">
+              Senha
+            </label>
+          </div>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-xs">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition">
+            <button type="button" onclick="togglePasswordVisibility('loginPassword', 'eyeIconLogin')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 text-xs transition">
+              <i id="eyeIconLogin" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="btnLoginSubmit" class="w-full py-3.5 rounded-xl gradient-btn text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 mt-2">
+          <span>Acessar Painel do Innflu</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <!-- ==========================================
+           FORMULÁRIO DE CADASTRO (NOVA CONTA SAAS)
+      ========================================== -->
+      <form id="formRegister" onsubmit="handleRegister(event)" class="space-y-3.5 hidden">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">Nome Completo</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-xs">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <input type="text" id="regName" required placeholder="Seu Nome Completo" class="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">Nome da Empresa ou Agência (Opcional)</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-xs">
+              <i class="fa-solid fa-building"></i>
+            </span>
+            <input type="text" id="regCompany" placeholder="Ex: Agência Glow" class="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">E-mail Profissional</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-xs">
+              <i class="fa-solid fa-envelope"></i>
+            </span>
+            <input type="email" id="regEmail" required placeholder="seu@email.com" class="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">Senha (Mínimo 6 caracteres)</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-xs">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input type="password" id="regPassword" required minlength="6" placeholder="••••••••" class="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition">
+            <button type="button" onclick="togglePasswordVisibility('regPassword', 'eyeIconReg')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 text-xs transition">
+              <i id="eyeIconReg" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="btnRegisterSubmit" class="w-full py-3.5 rounded-xl gradient-btn text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 mt-2">
+          <span>Criar Minha Conta SaaS</span>
+          <i class="fa-solid fa-check"></i>
+        </button>
+      </form>
+
+      <!-- Segurança e Criptografia -->
+      <div class="mt-6 pt-5 border-t border-white/5 flex items-center justify-center gap-2 text-[11px] text-slate-500">
+        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+        <span>Ambiente seguro com criptografia SHA-256 e D1 Serverless</span>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="w-full max-w-5xl py-4 text-center text-xs text-slate-500 z-10">
+    <p>© 2026 Innflu Studio. Todos os direitos reservados. Mineração e CRM Inteligente.</p>
+  </footer>
+
+  <!-- Lógica JavaScript do Login e Cadastro -->
+  <script>
+    const API_BASE = window.location.origin;
+
+    // Detectar parâmetros na URL (ex: ?expired=1 ou ?unauthorized=1)
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const alertBox = document.getElementById('alertSession');
+      const alertText = document.getElementById('alertSessionText');
+
+      if (urlParams.has('expired')) {
+        alertBox.classList.remove('hidden');
+        alertText.innerText = 'Sua sessão expirou por inatividade. Faça login novamente com seu e-mail e senha.';
+      } else if (urlParams.has('unauthorized')) {
+        alertBox.classList.remove('hidden');
+        alertText.innerText = 'Login e senha obrigatórios para acessar o painel de controle e mineração.';
+      }
+    });
+
+    // Alternador de Abas
+    function switchAuthTab(tab) {
+      const tabLogin = document.getElementById('tabBtnLogin');
+      const tabReg = document.getElementById('tabBtnRegister');
+      const formLogin = document.getElementById('formLogin');
+      const formReg = document.getElementById('formRegister');
+      const authTitle = document.getElementById('authTitle');
+      const authSubtitle = document.getElementById('authSubtitle');
+      hideError();
+
+      if (tab === 'login') {
+        tabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-lg text-white bg-purple-600 transition shadow-sm';
+        tabReg.className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+        formLogin.classList.remove('hidden');
+        formReg.classList.add('hidden');
+        authTitle.innerText = 'Acessar Minha Conta';
+        authSubtitle.innerText = 'Insira suas credenciais para gerenciar suas influenciadoras';
+        document.getElementById('loginEmail').focus();
+      } else {
+        tabReg.className = 'flex-1 py-2 text-xs font-bold rounded-lg text-white bg-purple-600 transition shadow-sm';
+        tabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+        formReg.classList.remove('hidden');
+        formLogin.classList.add('hidden');
+        authTitle.innerText = 'Criar Nova Conta';
+        authSubtitle.innerText = 'Tenha seu banco individual de mineração e CRM exclusivo';
+        document.getElementById('regName').focus();
+      }
+    }
+
+    // Alternar visibilidade de senha
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+      }
+    }
+
+    // Exibir erro
+    function showError(msg) {
+      const box = document.getElementById('authErrorBox');
+      const txt = document.getElementById('authErrorMsg');
+      txt.innerText = msg;
+      box.classList.remove('hidden');
+    }
+
+    function hideError() {
+      document.getElementById('authErrorBox').classList.add('hidden');
+    }
+
+    // Submit de Login
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideError();
+
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('btnLoginSubmit');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Entrando...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success && data.token) {
+          localStorage.setItem('innflu_token', data.token);
+          localStorage.setItem('innflu_user', JSON.stringify(data.user));
+          btn.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>Redirecionando...</span>';
+          setTimeout(() => {
+            window.location.replace('/dashboard/');
+          }, 300);
+        } else {
+          showError(data.error || 'E-mail ou senha incorretos.');
+          btn.disabled = false;
+          btn.innerHTML = '<span>Acessar Painel do Innflu</span> <i class="fa-solid fa-arrow-right"></i>';
+        }
+      } catch (err) {
+        showError('Erro de conexão ao acessar. Verifique sua conexão com o servidor.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Acessar Painel do Innflu</span> <i class="fa-solid fa-arrow-right"></i>';
+      }
+    }
+
+    // Submit de Cadastro
+    async function handleRegister(e) {
+      e.preventDefault();
+      hideError();
+
+      const full_name = document.getElementById('regName').value.trim();
+      const company_name = document.getElementById('regCompany').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const btn = document.getElementById('btnRegisterSubmit');
+
+      if (password.length < 6) {
+        showError('A senha deve ter no mínimo 6 caracteres.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Criando conta...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name, company_name, email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success && data.token) {
+          localStorage.setItem('innflu_token', data.token);
+          localStorage.setItem('innflu_user', JSON.stringify(data.user));
+          btn.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>Conta criada! Redirecionando...</span>';
+          setTimeout(() => {
+            window.location.replace('/dashboard/');
+          }, 400);
+        } else {
+          showError(data.error || 'Erro ao criar conta.');
+          btn.disabled = false;
+          btn.innerHTML = '<span>Criar Minha Conta SaaS</span> <i class="fa-solid fa-check"></i>';
+        }
+      } catch (err) {
+        showError('Erro de conexão ao criar conta. Tente novamente.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Criar Minha Conta SaaS</span> <i class="fa-solid fa-check"></i>';
+      }
+    }
+  </script>
+</body>
+</html>

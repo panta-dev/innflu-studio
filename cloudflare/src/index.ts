@@ -62,12 +62,15 @@ async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email:
     if (apiUser) return apiUser;
   }
 
-  // Fallback padrão para admin em modo visitante/demo local
-  const defaultAdmin = await db.prepare("SELECT id, email, full_name, company_name, plan, api_token, avatar_url FROM users WHERE id = 'usr_admin_01' OR email = 'admin@innflu.com.br' LIMIT 1").first<any>();
-  return defaultAdmin || null;
+  // Acesso sem autenticação estritamente bloqueado (Login e senha obrigatórios)
+  return null;
 }
 
-// Rota explícita para o dashboard
+// Rotas explícitas de navegação
+app.get('/login', (c) => {
+  return c.redirect('/login.html');
+});
+
 app.get('/dashboard', (c) => {
   return c.redirect('/dashboard/');
 });
@@ -380,7 +383,10 @@ app.get('/api/stats', async (c) => {
   }
 
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   try {
     const totalLeadsRes = await db.prepare("SELECT count(*) as count FROM leads WHERE user_id = ?").bind(userId).first<{ count: number }>();
@@ -413,7 +419,10 @@ app.get('/api/stats', async (c) => {
 app.get('/api/campaigns', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
   const { results } = await db.prepare("SELECT * FROM campaigns WHERE user_id = ? ORDER BY created_at DESC").bind(userId).all();
   return c.json({ campaigns: results });
 });
@@ -421,7 +430,10 @@ app.get('/api/campaigns', async (c) => {
 app.post('/api/campaigns', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
   const body = await c.req.json();
   const id = body.id || 'camp_' + Date.now();
   const name = body.name || 'Nova Campanha';
@@ -448,7 +460,10 @@ app.post('/api/campaigns', async (c) => {
 app.get('/api/templates', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
   const { results } = await db.prepare("SELECT * FROM templates WHERE user_id = ? AND is_active = 1 ORDER BY id ASC").bind(userId).all();
   return c.json({ templates: results, userId });
 });
@@ -456,7 +471,10 @@ app.get('/api/templates', async (c) => {
 app.post('/api/templates', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
   const body = await c.req.json();
 
   // Suporte a salvar múltiplos templates em lote (ex: os 5 modelos)
@@ -495,7 +513,10 @@ app.post('/api/templates', async (c) => {
 app.get('/api/leads', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const status = c.req.query('status');
   const niche = c.req.query('niche');
@@ -522,7 +543,10 @@ app.get('/api/leads', async (c) => {
 app.post('/api/leads', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
@@ -575,7 +599,10 @@ app.post('/api/leads/import', async (c) => {
   if (!db) return c.json({ error: 'DB não configurado' }, 500);
 
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   try {
     const body = await c.req.json();
@@ -658,7 +685,10 @@ app.post('/api/leads/import', async (c) => {
 app.post('/api/check-lead', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
@@ -711,7 +741,10 @@ app.post('/api/check-lead', async (c) => {
 app.post('/api/log-sent', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
@@ -748,7 +781,10 @@ app.post('/api/log-sent', async (c) => {
 app.get('/api/blacklist', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const { results } = await db.prepare("SELECT * FROM blacklist WHERE user_id = ? ORDER BY created_at DESC").bind(userId).all();
   return c.json({ blacklist: results, userId });
@@ -757,7 +793,10 @@ app.get('/api/blacklist', async (c) => {
 app.post('/api/blacklist', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const body = await c.req.json();
   const username = (body.username || '').replace('@', '').trim().toLowerCase();
@@ -783,7 +822,10 @@ app.post('/api/blacklist', async (c) => {
 app.post('/api/blacklist/bulk', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const body = await c.req.json();
   const usernames: string[] = body.usernames || [];
@@ -822,7 +864,10 @@ app.post('/api/blacklist/bulk', async (c) => {
 app.delete('/api/blacklist/:username', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const username = c.req.param('username').replace('@', '').trim().toLowerCase();
   await db.prepare("DELETE FROM blacklist WHERE user_id = ? AND username = ?").bind(userId, username).run();
@@ -839,7 +884,10 @@ app.delete('/api/blacklist/:username', async (c) => {
 app.get('/api/logs', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   const limit = Number(c.req.query('limit') || 100);
   const { results } = await db.prepare("SELECT * FROM sent_logs WHERE user_id = ? ORDER BY sent_at DESC LIMIT ?").bind(userId, limit).all();
@@ -852,7 +900,10 @@ app.get('/api/logs', async (c) => {
 app.get('/api/analytics', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
 
   try {
     const byStatus = await db.prepare("SELECT status, count(*) as count FROM leads WHERE user_id = ? GROUP BY status").bind(userId).all();
@@ -890,6 +941,12 @@ app.get('/api/analytics', async (c) => {
 // 10. QUALIFICAÇÃO DE PERFIL COM AI
 // ==========================================
 app.post('/api/qualify', async (c) => {
+  const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+
   try {
     const body = await c.req.json();
     const fullName = body.full_name || '';
@@ -909,7 +966,10 @@ app.post('/api/qualify', async (c) => {
 app.delete('/api/leads/:id', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
   const id = c.req.param('id');
   await db.prepare("DELETE FROM leads WHERE user_id = ? AND (id = ? OR username = ?)").bind(userId, id, id).run();
   return c.json({ success: true });
@@ -918,7 +978,10 @@ app.delete('/api/leads/:id', async (c) => {
 app.post('/api/leads/:id/status', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
   const id = c.req.param('id');
   const body = await c.req.json();
   const status = body.status || 'minerada';
@@ -930,7 +993,10 @@ app.post('/api/leads/:id/status', async (c) => {
 app.post('/api/leads/bulk-status', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
   const body = await c.req.json();
   const ids: string[] = body.ids || [];
   const status: string = body.status || 'partner';
@@ -951,7 +1017,10 @@ app.post('/api/leads/bulk-status', async (c) => {
 app.post('/api/leads/bulk-delete', async (c) => {
   const db = c.env.DB;
   const user = await getAuthUser(db, c);
-  const userId = user?.id || 'usr_admin_01';
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+  const userId = user.id;
   const body = await c.req.json();
   const ids: string[] = body.ids || [];
 
@@ -972,6 +1041,11 @@ app.post('/api/leads/bulk-delete', async (c) => {
 // ==========================================
 app.get('/api/settings', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+
   const { results } = await db.prepare("SELECT * FROM settings").all();
   const settingsObj: Record<string, string> = {};
   results.forEach((row: any) => {
@@ -982,6 +1056,11 @@ app.get('/api/settings', async (c) => {
 
 app.put('/api/settings', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+
   const body = await c.req.json();
   for (const [key, val] of Object.entries(body)) {
     await db.prepare(`
@@ -994,6 +1073,11 @@ app.put('/api/settings', async (c) => {
 
 app.post('/api/settings', async (c) => {
   const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ error: 'Não autorizado. Login e senha obrigatórios.', authenticated: false }, 401);
+  }
+
   const body = await c.req.json();
   for (const [key, val] of Object.entries(body)) {
     await db.prepare(`

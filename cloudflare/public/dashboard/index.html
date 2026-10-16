@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Innflu Studio | Prospecção & Captação Inteligente de Influenciadores</title>
   
+  <!-- GUARDA DE AUTENTICAÇÃO OBRIGATÓRIA (ZERO BYPASS) -->
+  <script>
+    (function() {
+      var token = localStorage.getItem('innflu_token');
+      if (!token) {
+        window.location.replace('/login.html?unauthorized=1');
+      }
+    })();
+  </script>
+  
   <!-- Tailwind CSS & FontAwesome Pro Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -1661,9 +1671,6 @@ Parcerias: assessoria@marialuiza.com.br
         <button onclick="switchAuthTab('register')" id="tabBtnRegister" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">
           Criar Conta
         </button>
-        <button onclick="switchAuthTab('demo')" id="tabBtnDemo" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">
-          Acesso Demo
-        </button>
       </div>
 
       <!-- Formulário de Login -->
@@ -1705,22 +1712,6 @@ Parcerias: assessoria@marialuiza.com.br
           <i class="fa-solid fa-check"></i>
         </button>
       </form>
-
-      <!-- Acesso Demo Rápido -->
-      <div id="tabContentDemo" class="space-y-4 hidden">
-        <div class="p-4 rounded-2xl bg-surface-card/80 border border-purple-500/20 space-y-2">
-          <p class="text-xs text-purple-300 font-bold flex items-center gap-2">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Acesso Imediato com 1 Clique
-          </p>
-          <p class="text-[11px] text-slate-400 leading-relaxed">
-            Entre instantaneamente com o perfil de Administrador Master (<code>admin@innflu.com.br</code>) para testar a mineração e todas as funcionalidades agora mesmo.
-          </p>
-        </div>
-        <button onclick="loginWithDemoAdmin()" class="w-full py-3.5 rounded-xl gradient-btn text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/30">
-          <i class="fa-solid fa-bolt"></i>
-          <span>Entrar como Administrador Demo</span>
-        </button>
-      </div>
 
     </div>
   </div>
@@ -1829,6 +1820,7 @@ Parcerias: assessoria@marialuiza.com.br
     async function fetchStats() {
       try {
         const res = await fetch(`${API_BASE}/api/stats`, { headers: getAuthHeaders() });
+        if (handleUnauthorizedResponse(res)) return;
         const data = await res.json();
 
         document.getElementById('statSentToday').innerText = data.sentToday || 0;
@@ -1867,6 +1859,7 @@ Parcerias: assessoria@marialuiza.com.br
     async function fetchLeads() {
       try {
         const res = await fetch(`${API_BASE}/api/leads`, { headers: getAuthHeaders() });
+        if (handleUnauthorizedResponse(res)) return;
         const data = await res.json();
         leadsData = data.leads || [];
         renderLeadsTable();
@@ -2615,6 +2608,7 @@ Parcerias: assessoria@marialuiza.com.br
     async function fetchCampaigns() {
       try {
         const res = await fetch(`${API_BASE}/api/campaigns`, { headers: getAuthHeaders() });
+        if (handleUnauthorizedResponse(res)) return;
         const data = await res.json();
         const grid = document.getElementById('campaignsCardGrid');
         if (!grid) return;
@@ -2702,6 +2696,7 @@ Parcerias: assessoria@marialuiza.com.br
     async function fetchTemplates() {
       try {
         const res = await fetch(`${API_BASE}/api/templates`, { headers: getAuthHeaders() });
+        if (handleUnauthorizedResponse(res)) return;
         const data = await res.json();
         if (data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
           data.templates.forEach((t, i) => {
@@ -3004,6 +2999,7 @@ Parcerias: assessoria@marialuiza.com.br
     async function fetchAuditLogs() {
       try {
         const res = await fetch(`${API_BASE}/api/logs`, { headers: getAuthHeaders() });
+        if (handleUnauthorizedResponse(res)) return;
         const data = await res.json();
         const tbody = document.getElementById('logsTableBody');
         const logs = data.logs || [];
@@ -3033,6 +3029,7 @@ Parcerias: assessoria@marialuiza.com.br
     async function fetchBlacklist() {
       try {
         const res = await fetch(`${API_BASE}/api/blacklist`, { headers: getAuthHeaders() });
+        if (handleUnauthorizedResponse(res)) return;
         const data = await res.json();
         const tbody = document.getElementById('blacklistTableBody');
         const list = data.blacklist || [];
@@ -3192,10 +3189,25 @@ Parcerias: assessoria@marialuiza.com.br
     // ----------------------------------------------------
     let currentUser = null;
 
+    function handleUnauthorizedResponse(res) {
+      if (res && res.status === 401) {
+        localStorage.removeItem('innflu_token');
+        localStorage.removeItem('innflu_user');
+        currentUser = null;
+        window.location.replace('/login.html?expired=1');
+        return true;
+      }
+      return false;
+    }
+
     async function syncAuthUI() {
       const storedToken = localStorage.getItem('innflu_token');
-      const storedUser = localStorage.getItem('innflu_user');
+      if (!storedToken) {
+        window.location.replace('/login.html?unauthorized=1');
+        return;
+      }
 
+      const storedUser = localStorage.getItem('innflu_user');
       if (storedUser) {
         try {
           currentUser = JSON.parse(storedUser);
@@ -3203,29 +3215,27 @@ Parcerias: assessoria@marialuiza.com.br
         } catch (e) {}
       }
 
-      // Valida token com o backend
-      if (storedToken) {
-        try {
-          const res = await fetch(`${API_BASE}/api/auth/me`, {
-            headers: { 'Authorization': `Bearer ${storedToken}` }
-          });
-          const data = await res.json();
-          if (data.authenticated && data.user) {
-            currentUser = data.user;
-            localStorage.setItem('innflu_user', JSON.stringify(currentUser));
-            renderUserProfile(currentUser);
-          } else {
-            // Sessão expirada
-            localStorage.removeItem('innflu_token');
-            localStorage.removeItem('innflu_user');
-            currentUser = null;
-            renderGuestProfile();
-          }
-        } catch (err) {
-          console.warn('Erro ao verificar sessão com a nuvem:', err);
+      // Valida token com o backend Cloudflare D1
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${storedToken}` }
+        });
+        if (handleUnauthorizedResponse(res)) return;
+
+        const data = await res.json();
+        if (res.ok && data.authenticated && data.user) {
+          currentUser = data.user;
+          localStorage.setItem('innflu_user', JSON.stringify(currentUser));
+          renderUserProfile(currentUser);
+        } else {
+          // Sessão expirada ou revogada
+          localStorage.removeItem('innflu_token');
+          localStorage.removeItem('innflu_user');
+          currentUser = null;
+          window.location.replace('/login.html?expired=1');
         }
-      } else {
-        renderGuestProfile();
+      } catch (err) {
+        console.warn('Erro ao verificar sessão com a nuvem:', err);
       }
     }
 
@@ -3244,7 +3254,7 @@ Parcerias: assessoria@marialuiza.com.br
       }
       localStorage.removeItem('innflu_token');
       localStorage.removeItem('innflu_user');
-      window.location.href = '/';
+      window.location.replace('/login.html');
     }
 
     // ----------------------------------------------------
@@ -3647,28 +3657,21 @@ Parcerias: assessoria@marialuiza.com.br
     function switchAuthTab(tab) {
       const tabLogin = document.getElementById('tabBtnLogin');
       const tabReg = document.getElementById('tabBtnRegister');
-      const tabDemo = document.getElementById('tabBtnDemo');
       const formLogin = document.getElementById('formLogin');
       const formReg = document.getElementById('formRegister');
-      const contentDemo = document.getElementById('tabContentDemo');
 
-      tabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
-      tabReg.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
-      tabDemo.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+      if (tabLogin) tabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+      if (tabReg) tabReg.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
 
-      formLogin.classList.add('hidden');
-      formReg.classList.add('hidden');
-      contentDemo.classList.add('hidden');
+      if (formLogin) formLogin.classList.add('hidden');
+      if (formReg) formReg.classList.add('hidden');
 
       if (tab === 'login') {
-        tabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition';
-        formLogin.classList.remove('hidden');
-      } else if (tab === 'register') {
-        tabReg.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition';
-        formReg.classList.remove('hidden');
+        if (tabLogin) tabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition';
+        if (formLogin) formLogin.classList.remove('hidden');
       } else {
-        tabDemo.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition';
-        contentDemo.classList.remove('hidden');
+        if (tabReg) tabReg.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition';
+        if (formReg) formReg.classList.remove('hidden');
       }
     }
 
@@ -3736,13 +3739,6 @@ Parcerias: assessoria@marialuiza.com.br
       } finally {
         btn.innerHTML = '<span>Criar Minha Conta SaaS</span> <i class="fa-solid fa-check"></i>';
       }
-    }
-
-    async function loginWithDemoAdmin() {
-      document.getElementById('loginEmail').value = 'admin@innflu.com.br';
-      document.getElementById('loginPassword').value = 'admin123';
-      switchAuthTab('login');
-      document.getElementById('formLogin').requestSubmit();
     }
 
     // Modal de Extensão & Conexão
