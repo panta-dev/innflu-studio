@@ -11,7 +11,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "innflu-db"
-database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # Substitua pelo ID gerado pelo wrangler d1 create
+database_id = "03290e99-4ad0-4c83-8291-402104b05a4f"
 
 # Módulo de Inteligência Artificial para classificação de perfil
 [ai]
