@@ -6,24 +6,31 @@
 window.InnfluInspector = {
 
   /**
-   * Converte texto de seguidores para número inteiro
+   * Converte texto de seguidores para número inteiro com suporte ampliado
    */
   parseFollowerCount(text) {
     if (!text) return 0;
     const raw = text.trim().toLowerCase();
 
-    // 1. Milhões: "4,8 mi", "4.8m", "4 mi", "4,8 milhões", "4.8m followers"
+    // 1. Milhões: "4,8 mi", "4.8m", "4 mi", "4,8 milhões", "4.8m followers", "4.8M"
     const millionMatch = raw.match(/([\d.,]+)\s*(?:mi|m|milh[oõ]es|milhao)\b/i);
     if (millionMatch) {
-      let numStr = millionMatch[1].replace(',', '.');
+      let numStr = millionMatch[1].replace(/\./g, '').replace(',', '.');
+      // Caso tenha apenas vírgula ou ponto decimal
+      if (!numStr.includes('.') && millionMatch[1].includes('.')) {
+        numStr = millionMatch[1];
+      }
       const val = parseFloat(numStr);
       if (!isNaN(val)) return Math.round(val * 1000000);
     }
 
-    // 2. Milhares: "15,4 mil", "15.4k", "15k", "15 mil seguidores"
+    // 2. Milhares: "15,4 mil", "15.4k", "15k", "15 mil seguidores", "15.4K"
     const thousandMatch = raw.match(/([\d.,]+)\s*(?:mil|k)\b/i);
     if (thousandMatch) {
-      let numStr = thousandMatch[1].replace(',', '.');
+      let numStr = thousandMatch[1].replace(/\./g, '').replace(',', '.');
+      if (!numStr.includes('.') && thousandMatch[1].includes('.')) {
+        numStr = thousandMatch[1];
+      }
       const val = parseFloat(numStr);
       if (!isNaN(val)) return Math.round(val * 1000);
     }
@@ -31,22 +38,22 @@ window.InnfluInspector = {
     // 3. Bilhões
     const billionMatch = raw.match(/([\d.,]+)\s*(?:bi|b|bilh[oõ]es)\b/i);
     if (billionMatch) {
-      let numStr = billionMatch[1].replace(',', '.');
+      let numStr = billionMatch[1].replace(/\./g, '').replace(',', '.');
       const val = parseFloat(numStr);
       if (!isNaN(val)) return Math.round(val * 1000000000);
     }
 
-    // 4. Número puro com separadores de milhar
+    // 4. Número puro com pontuação pt-BR ou en-US (ex: 15.420 ou 15,420)
     const cleanNumbersOnly = raw.replace(/[^\d]/g, '');
     const directNum = parseInt(cleanNumbersOnly, 10);
     return isNaN(directNum) ? 0 : directNum;
   },
 
   /**
-   * Extrai o número de seguidores do perfil atual
+   * Extrai o número de seguidores do perfil atual usando estratégia em cascata multi-camada
    */
   getFollowersCount() {
-    // 1. Meta tags (ultra-estável no Instagram Web independente de versão de DOM)
+    // Camada 1. Meta tags (a fonte mais confiável e imune a alterações de classes dinâmicas)
     const metaDesc = document.querySelector('meta[name="description"]')?.content ||
                      document.querySelector('meta[property="og:description"]')?.content || '';
     if (metaDesc) {
@@ -57,9 +64,10 @@ window.InnfluInspector = {
       }
     }
 
-    // 2. Links de seguidores diretos no DOM
+    // Camada 2. Links específicos de seguidores (/followers/ ou /seguidores/)
     const followerLinks = Array.from(document.querySelectorAll('a[href*="/followers"], a[href*="/seguidores"]'));
     for (const link of followerLinks) {
+      // Atributo title frequentemente contém a contagem exata (ex: "14.285")
       const titleAttr = link.getAttribute('title') || link.querySelector('[title]')?.getAttribute('title');
       if (titleAttr) {
         const parsedTitle = this.parseFollowerCount(titleAttr);
@@ -72,32 +80,32 @@ window.InnfluInspector = {
       }
     }
 
-    // 3. Header e listas estatísticas
-    const header = document.querySelector('header');
+    // Camada 3. Header e seções estatísticas com spans/números
+    const header = document.querySelector('header') || document.querySelector('main section');
     if (header) {
+      const titledElements = header.querySelectorAll('[title]');
+      for (const el of titledElements) {
+        const titleVal = el.getAttribute('title');
+        const parentText = (el.closest('li, div, a')?.innerText || '').toLowerCase();
+        if (parentText.includes('seguidor') || parentText.includes('follower')) {
+          const parsed = this.parseFollowerCount(titleVal);
+          if (parsed > 0) return parsed;
+        }
+      }
+
       const headerText = header.innerText;
       const match = headerText.match(/([\d.,]+\s*(?:mi|mil|k|m|milh[oõ]es|b)?)\s*(?:seguidores|followers)/i);
       if (match && match[1]) {
         const parsed = this.parseFollowerCount(match[1]);
         if (parsed > 0) return parsed;
       }
-
-      const titledElements = header.querySelectorAll('[title]');
-      for (const el of titledElements) {
-        const titleVal = el.getAttribute('title');
-        const parentText = el.closest('li, div, a')?.innerText?.toLowerCase() || '';
-        if (parentText.includes('seguidor') || parentText.includes('follower')) {
-          const parsed = this.parseFollowerCount(titleVal);
-          if (parsed > 0) return parsed;
-        }
-      }
     }
 
-    // 4. Varredura de elementos com texto "seguidores" / "followers"
+    // Camada 4. Varredura recursiva de elementos textuais próximos
     const allSpans = Array.from(document.querySelectorAll('span, a, div, li'));
     for (const el of allSpans) {
       const txt = (el.innerText || '').toLowerCase();
-      if (txt.includes('seguidor') || txt.includes('follower')) {
+      if ((txt.includes('seguidor') || txt.includes('follower')) && !txt.includes('\n')) {
         const match = txt.match(/([\d.,]+\s*(?:mi|mil|k|m|milh[oõ]es|b)?)\s*(?:seguidores|followers)/i);
         if (match && match[1]) {
           const parsed = this.parseFollowerCount(match[1]);
@@ -110,39 +118,40 @@ window.InnfluInspector = {
   },
 
   /**
-   * Detecta se o perfil possui Stories ativos nas últimas 24h
+   * Detecta se o perfil possui Stories ativos nas últimas 24h com validação resiliente
    */
   hasActiveStories() {
-    const header = document.querySelector('header');
+    const header = document.querySelector('header') || document.querySelector('main');
     if (!header) return false;
 
-    // 1. Aria-label explícito de stories no header ou botão do avatar
+    // 1. Aria-label explícito de stories ou link para rota /stories/
     const storyAria = header.querySelector([
       '[aria-label*="story" i]',
       '[aria-label*="stories" i]',
       '[aria-label*="história" i]',
       '[aria-label*="histórias" i]',
-      'a[href*="/stories/"]'
+      'a[href*="/stories/"]',
+      'div[role="button"][aria-label*="story" i]'
     ].join(','));
     if (storyAria) return true;
 
-    // 2. Canvas do anel de story (Instagram Web desenha o anel colorido em <canvas>)
+    // 2. Canvas do anel de story (Instagram Web renderiza o anel gradiente via <canvas>)
     const canvasRing = header.querySelector('canvas');
     if (canvasRing) return true;
 
-    // 3. SVG com gradiente (arco do Instagram stories)
+    // 3. SVG com gradiente (arco colorido característico)
     const svgs = header.querySelectorAll('svg');
     for (const svg of svgs) {
-      if (svg.querySelector('linearGradient, radialGradient')) return true;
+      if (svg.querySelector('linearGradient, radialGradient, conicGradient')) return true;
       const aria = (svg.getAttribute('aria-label') || '').toLowerCase();
       if (aria.includes('story') || aria.includes('stories') || aria.includes('história')) return true;
     }
 
-    // 4. Elementos ao redor do avatar com classes/estilos de gradiente
+    // 4. Detecção por gradiente CSS ou classes do avatar
     const avatarImg = header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img');
     if (avatarImg) {
       let current = avatarImg.parentElement;
-      for (let i = 0; i < 5 && current; i++) {
+      for (let i = 0; i < 6 && current; i++) {
         const className = (current.className || '').toString().toLowerCase();
         const style = (current.getAttribute('style') || '').toLowerCase();
         const ariaLabel = (current.getAttribute('aria-label') || '').toLowerCase();
@@ -151,8 +160,14 @@ window.InnfluInspector = {
           return true;
         }
 
-        if (className.includes('gradient') || className.includes('story') || 
-            style.includes('gradient') || style.includes('conic-gradient') || style.includes('linear-gradient')) {
+        if (
+          className.includes('gradient') ||
+          className.includes('story') ||
+          className.includes('live') ||
+          style.includes('gradient') ||
+          style.includes('conic-gradient') ||
+          style.includes('linear-gradient')
+        ) {
           return true;
         }
 
@@ -165,6 +180,114 @@ window.InnfluInspector = {
     }
 
     return false;
+  },
+
+  /**
+   * Detecta se a conta atual é privada (com cadeado / "Esta conta é privada")
+   */
+  isPrivateAccount() {
+    // 1. Mensagens textuais explícitas de conta privada no perfil
+    const pageText = (document.querySelector('main')?.innerText || document.body.innerText).toLowerCase();
+    if (
+      pageText.includes('esta conta é privada') ||
+      pageText.includes('this account is private') ||
+      pageText.includes('siga para ver as fotos e os vídeos') ||
+      pageText.includes('follow to see their photos and videos')
+    ) {
+      return true;
+    }
+
+    // 2. Ícone de cadeado no perfil
+    const lockIcon = document.querySelector('svg[aria-label*="privada" i], svg[aria-label*="private" i]');
+    if (lockIcon) return true;
+
+    return false;
+  },
+
+  /**
+   * Detecta se a conta possui selo de verificação azul (Meta Verified / Verificado)
+   */
+  isVerifiedAccount() {
+    const header = document.querySelector('header');
+    if (!header) return false;
+
+    const verifiedBadge = header.querySelector([
+      'svg[aria-label*="Verificado" i]',
+      'svg[aria-label*="Verified" i]',
+      '[aria-label*="Verificado" i]',
+      '[aria-label*="Verified" i]'
+    ].join(','));
+
+    return !!verifiedBadge;
+  },
+
+  /**
+   * Extrai a contagem de publicações (posts) do perfil
+   */
+  getPostsCount() {
+    const metaDesc = document.querySelector('meta[name="description"]')?.content || '';
+    if (metaDesc) {
+      const match = metaDesc.match(/([\d.,]+)\s*(?:publicações|publicacoes|posts)/i);
+      if (match && match[1]) {
+        const clean = match[1].replace(/\./g, '').replace(',', '.');
+        const num = parseInt(clean, 10);
+        if (!isNaN(num)) return num;
+      }
+    }
+
+    const header = document.querySelector('header');
+    if (header) {
+      const match = header.innerText.match(/([\d.,]+)\s*(?:publicações|publicacoes|posts)/i);
+      if (match && match[1]) {
+        const clean = match[1].replace(/\./g, '').replace(',', '.');
+        const num = parseInt(clean, 10);
+        if (!isNaN(num)) return num;
+      }
+    }
+
+    return 0;
+  },
+
+  /**
+   * Avalia a aderência semântica do perfil ao nicho da campanha
+   */
+  calculateNicheRelevance(bioText, fullName, targetNiche = '') {
+    if (!targetNiche || targetNiche.toLowerCase() === 'geral') {
+      return { relevant: true, score: 1, matchedTerms: ['geral'] };
+    }
+
+    const combined = `${fullName || ''} ${bioText || ''}`.toLowerCase();
+    const cleanNiche = targetNiche.toLowerCase().replace(/^[#@]/, '').trim();
+
+    // Dicionário de termos correlacionados por nichos populares
+    const nicheThesaurus = {
+      maternidade: ['mãe', 'mae', 'mamãe', 'mamae', 'materno', 'maternidade', 'filhos', 'filho', 'filha', 'gestante', 'grávida', 'gravida', 'gravidinha', 'puerpério', 'puerperio', 'parto', 'baby', 'mãe de'],
+      moda: ['moda', 'fashion', 'look', 'looks', 'estilo', 'outfit', 'consultoria de imagem', 'beleza', 'provador'],
+      beleza: ['beleza', 'skincare', 'maquiagem', 'makeup', 'estética', 'estetica', 'dermatologia', 'dermato', 'pele', 'cabelos', 'hair'],
+      fitness: ['fitness', 'treino', 'nutrição', 'nutricionista', 'saúde', 'saude', 'musculação', 'dieta', 'atleta', 'personal'],
+      gastronomia: ['receitas', 'culinária', 'culinaria', 'gastronomia', 'chef', 'cozinha', 'comida', 'confeitaria']
+    };
+
+    const targetList = nicheThesaurus[cleanNiche] || [cleanNiche];
+    const matched = [];
+
+    for (const term of targetList) {
+      const regex = new RegExp(`\\b${term}\\b`, 'i');
+      if (regex.test(combined)) {
+        matched.push(term);
+      }
+    }
+
+    // Se o termo direto da busca aparecer na bio
+    if (combined.includes(cleanNiche) && !matched.includes(cleanNiche)) {
+      matched.push(cleanNiche);
+    }
+
+    return {
+      relevant: matched.length > 0,
+      score: matched.length,
+      matchedTerms: matched
+    };
   },
 
   /**
@@ -227,7 +350,7 @@ window.InnfluInspector = {
   /**
    * Extrai dados completos do perfil atual no DOM do Instagram
    */
-  extractCurrentProfileData() {
+  extractCurrentProfileData(targetNiche = '') {
     const urlParts = window.location.pathname.split('/').filter(Boolean);
     const username = urlParts[0];
 
@@ -248,12 +371,24 @@ window.InnfluInspector = {
     // 4. Stories Ativos
     const activeStories = this.hasActiveStories();
 
-    // 5. Gênero via Heurística
+    // 5. Conta Privada
+    const isPrivate = this.isPrivateAccount();
+
+    // 6. Conta Verificada (Selo Azul)
+    const isVerified = this.isVerifiedAccount();
+
+    // 7. Número de Publicações
+    const postsCount = this.getPostsCount();
+
+    // 8. Relevância de Nicho
+    const nicheEval = this.calculateNicheRelevance(bio, fullName, targetNiche);
+
+    // 9. Gênero via Heurística
     const genderEval = window.InnfluGenderDetector ? 
       window.InnfluGenderDetector.classify(fullName, bio, username) : 
       { isFemale: true, isBrand: false, reason: 'Padrão' };
 
-    // 6. Contatos (WhatsApp & Email)
+    // 10. Contatos (WhatsApp & Email)
     const contacts = window.InnfluContactExtractor ? 
       window.InnfluContactExtractor.extractAllContactsFromPage() : 
       { email: null, whatsapp: null };
@@ -263,12 +398,16 @@ window.InnfluInspector = {
       fullName,
       followersCount,
       hasActiveStories: activeStories,
+      isPrivate,
+      isVerified,
+      postsCount,
       bio,
       isFemale: genderEval.isFemale,
       isBrand: genderEval.isBrand,
       genderReason: genderEval.reason,
       whatsapp: contacts.whatsapp,
-      email: contacts.email
+      email: contacts.email,
+      nicheRelevance: nicheEval
     };
   },
 
@@ -280,8 +419,14 @@ window.InnfluInspector = {
     const maxFollowers = campaignCriteria.maxFollowers !== undefined ? campaignCriteria.maxFollowers : 10000000;
     const requireStories = campaignCriteria.requireActiveStories !== false;
     const targetGender = campaignCriteria.targetGender || 'female';
+    const requireContact = campaignCriteria.requireContact || 'all';
 
     const reasons = [];
+
+    // Checagem de conta privada (descarte imediato)
+    if (profileData.isPrivate) {
+      reasons.push('Conta privada (não acessível para captação)');
+    }
 
     // Checagem de seguidores
     if (profileData.followersCount < minFollowers) {
@@ -294,6 +439,15 @@ window.InnfluInspector = {
     // Checagem de stories
     if (requireStories && !profileData.hasActiveStories) {
       reasons.push('Não possui Stories ativos nas últimas 24h');
+    }
+
+    // Checagem de contatos requeridos
+    if (requireContact === 'wa_only' && !profileData.whatsapp) {
+      reasons.push('Sem WhatsApp disponível');
+    } else if (requireContact === 'email_only' && !profileData.email) {
+      reasons.push('Sem E-mail disponível');
+    } else if (requireContact === 'any_contact' && !profileData.whatsapp && !profileData.email) {
+      reasons.push('Sem WhatsApp nem E-mail');
     }
 
     // Checagem de marca

@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Innflu | Prospecção & Captação de Influenciadoras no Piloto Automático</title>
-  <meta name="description" content="Automatize a mineração de influenciadoras, extração de WhatsApp e disparos de Directs no Instagram. Muito além do DirectSpeed: com IA, rede de semelhantes e decodificador wa.me.">
+  <title>Innflu Studio | Prospecção & Automação de Influenciadoras no Instagram</title>
+  <meta name="description" content="Automatize a mineração de influenciadoras, extração de WhatsApp e disparos de Directs no Instagram em loop contínuo. Muito além do DirectSpeed: com IA, rede de semelhantes e decodificador wa.me.">
   
+  <!-- Open Graph -->
+  <meta property="og:title" content="Innflu Studio | Prospecção & Automação de Influenciadoras no Instagram">
+  <meta property="og:description" content="Minere influenciadoras, qualifique seguidores e envie DMs personalizadas no piloto automático com segurança anti-ban.">
+  <meta property="og:type" content="website">
+
   <!-- Tailwind CSS & Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -94,6 +99,29 @@
     .blob-pulse {
       animation: pulse-slow 8s infinite ease-in-out;
     }
+
+    .whatsapp-float {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      color: white;
+      border-radius: 9999px;
+      padding: 12px 20px;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .whatsapp-float:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 14px 30px rgba(37, 211, 102, 0.55);
+    }
   </style>
 </head>
 
@@ -120,10 +148,10 @@
 
       <!-- Menu Links -->
       <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
-        <a href="#diferenciais" class="hover:text-purple-400 transition">Diferenciais vs DirectSpeed</a>
+        <a href="#automacao" class="hover:text-purple-400 transition text-emerald-400">⚡ Modo Automação</a>
+        <a href="#resultados" class="hover:text-purple-400 transition">Resultados</a>
+        <a href="#diferenciais" class="hover:text-purple-400 transition">vs DirectSpeed</a>
         <a href="#como-funciona" class="hover:text-purple-400 transition">Como Funciona</a>
-        <a href="#instalacao" class="hover:text-purple-400 transition">Instalar Extensão</a>
-        <a href="#recursos" class="hover:text-purple-400 transition">Recursos</a>
         <a href="#planos" class="hover:text-purple-400 transition">Planos</a>
         <a href="#faq" class="hover:text-purple-400 transition">Dúvidas</a>
       </nav>
@@ -133,8 +161,8 @@
         <a href="/login" class="text-xs font-semibold text-slate-300 hover:text-white px-3.5 py-2 rounded-lg border border-white/10 hover:border-white/20 transition hidden sm:inline-flex items-center gap-2">
           <i class="fa-solid fa-right-to-bracket text-purple-400"></i> Entrar / Login
         </a>
-        <a href="/login" class="btn-gradient text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center gap-2">
-          <span>Acessar Painel</span>
+        <a href="#planos" class="btn-gradient text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center gap-2">
+          <span>Assinar Agora</span>
           <i class="fa-solid fa-arrow-right text-[11px]"></i>
         </a>
       </div>
@@ -156,55 +184,59 @@
       <!-- Pill Badge -->
       <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-semibold mb-8 animate-fade-in">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>A Revolução em Prospecção de Influenciadores no Instagram</span>
+        <span>⚡ NOVO: Modo Automação Contínua 100% no Piloto Automático</span>
       </div>
 
       <!-- Main Heading -->
       <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08] max-w-5xl mx-auto">
-        Chame dezenas de influenciadoras no Direct e <span class="gradient-text">feche parcerias no piloto automático.</span>
+        Minere criadoras, envie DMs e <span class="gradient-text">feche parcerias no piloto automático.</span>
       </h1>
 
       <!-- Subtitle -->
-      <p class="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-        O <b>Innflu</b> minera influenciadoras por perfil semelhante, decodifica WhatsApp de links da bio, filtra perfis com IA e aborda no Direct com delays humanizados e proteção anti-bloqueio.
+      <p class="mt-6 text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
+        Você só digita o nicho ou perfil @alvo: o robô <b>garimpa as criadoras</b>, <b>valida seguidores e Stories ativos</b>, <b>envia a DM personalizada com Spintax</b>, descansa no tempo seguro anti-ban e <b>avança sozinho para a próxima</b>.
       </p>
 
       <!-- CTA Buttons -->
       <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-        <a href="/dashboard" class="btn-gradient text-white font-extrabold px-8 py-4 rounded-xl text-sm w-full sm:w-auto flex items-center justify-center gap-3">
-          <i class="fa-solid fa-rocket"></i>
-          <span>Acessar o Innflu Studio Agora</span>
+        <a href="#planos" class="btn-gradient text-white font-extrabold px-9 py-4 rounded-xl text-sm w-full sm:w-auto flex items-center justify-center gap-3">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Quero Começar Agora • Acesso Imediato</span>
         </a>
-        <a href="/dashboard" class="bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-white font-bold px-8 py-4 rounded-xl text-sm w-full sm:w-auto transition flex items-center justify-center gap-2">
-          <i class="fa-solid fa-desktop text-purple-400"></i>
-          <span>Ver Demonstração ao Vivo</span>
+        <a href="#como-funciona" class="bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-white font-bold px-8 py-4 rounded-xl text-sm w-full sm:w-auto transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-play text-purple-400 text-xs"></i>
+          <span>Como Funciona o Ciclo</span>
         </a>
       </div>
 
       <!-- Trust Badges -->
       <div class="mt-12 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400 font-semibold">
         <span class="flex items-center gap-2">
-          <i class="fa-solid fa-circle-check text-emerald-400"></i> Sem risco de banimento (Delays 60-180s)
+          <i class="fa-solid fa-shield-halved text-emerald-400"></i> Blindagem Anti-Ban (Delays Biológicos 60-180s)
         </span>
         <span class="flex items-center gap-2">
           <i class="fa-solid fa-circle-check text-emerald-400"></i> Regra dos 7 Dias anti-repetição
         </span>
         <span class="flex items-center gap-2">
-          <i class="fa-solid fa-circle-check text-emerald-400"></i> Extrai WhatsApp real (+55 DDD)
+          <i class="fa-brands fa-whatsapp text-emerald-400"></i> Decodificador de WhatsApp Real (+55 DDD)
+        </span>
+        <span class="flex items-center gap-2">
+          <i class="fa-solid fa-lock text-amber-400"></i> 7 Dias de Garantia Incondicional
         </span>
       </div>
 
-      <!-- Hero Visualizer (Mockup Interativo) -->
+      <!-- Hero Visualizer (Mockup Interativo do HUD e da Automação) -->
       <div class="mt-16 max-w-5xl mx-auto glass-card-glow p-4 sm:p-6 rounded-3xl relative">
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
           <div class="flex items-center gap-2">
             <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
             <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
             <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-            <span class="ml-2 text-xs font-mono text-slate-400">innflu.app • live engine</span>
+            <span class="ml-2 text-xs font-mono text-slate-400">innflu.app • motor autônomo v3.2</span>
           </div>
-          <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-            ● 40 DMs Enviadas Hoje (100% Taxa de Entrega)
+          <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            ⚡ Automação Contínua Ativa (Loop Infinito)
           </span>
         </div>
 
@@ -212,16 +244,18 @@
           
           <!-- Box 1: Mineração em Ação -->
           <div class="bg-[#090d19]/90 border border-white/5 rounded-2xl p-4 space-y-3">
-            <span class="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider">Etapa 1 • Mineração</span>
+            <span class="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span>⛏️</span> 1. Mineração por Semelhantes
+            </span>
             <div class="flex items-center gap-3">
               <div class="story-ring">
-                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs">
+                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-white">
                   MZ
                 </div>
               </div>
               <div>
                 <p class="text-xs font-bold text-white">@marialuizazamoner</p>
-                <p class="text-[10px] text-slate-400">Extraindo 38 semelhantes...</p>
+                <p class="text-[10px] text-slate-400">Varrendo rede de semelhantes...</p>
               </div>
             </div>
             <div class="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-300 font-mono">
@@ -232,30 +266,34 @@
 
           <!-- Box 2: Qualificação IA -->
           <div class="bg-[#090d19]/90 border border-white/5 rounded-2xl p-4 space-y-3">
-            <span class="text-[10px] font-mono text-pink-400 font-bold uppercase tracking-wider">Etapa 2 • IA Qualifier</span>
+            <span class="text-[10px] font-mono text-pink-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span>🔍</span> 2. Qualificação Rigorosa
+            </span>
             <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400">Classificação:</span>
-              <span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">Mãe / Maternidade</span>
+              <span class="text-slate-400">Nicho Detectado:</span>
+              <span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">Maternidade Real</span>
             </div>
             <div class="flex justify-between text-xs">
               <span class="text-slate-400">Seguidores:</span>
-              <span class="text-white font-mono font-bold">142.000 (Qualificada)</span>
+              <span class="text-white font-mono font-bold">142.000 (Aprovada)</span>
             </div>
             <div class="flex justify-between text-xs">
               <span class="text-slate-400">Stories Ativos:</span>
-              <span class="text-pink-400 font-bold">🔥 Sim (+Engajada)</span>
+              <span class="text-pink-400 font-bold">🔥 Sim (Engajamento Quente)</span>
             </div>
           </div>
 
           <!-- Box 3: Envio no Direct com Spintax -->
           <div class="bg-[#090d19]/90 border border-white/5 rounded-2xl p-4 space-y-3">
-            <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider">Etapa 3 • Direct Spintax</span>
-            <div class="p-3 rounded-xl bg-purple-600/20 border border-purple-500/20 text-[11px] text-slate-200 leading-relaxed">
-              "Oie Maria! Adorei como você compartilha a maternidade real por aqui! Gostaríamos de te enviar nossos produtos..."
+            <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span>✉️</span> 3. Direct Humano + Loop
+            </span>
+            <div class="p-3 rounded-xl bg-purple-600/20 border border-purple-500/20 text-[11px] text-slate-200 leading-relaxed font-sans">
+              "Oie Maria! Adorei seu conteúdo sobre maternidade real! Gostaríamos de te enviar nossos produtos exclusivos sem custo..."
             </div>
-            <div class="flex items-center justify-between text-[10px] text-slate-500">
-              <span>Delay: 112s (Humanizado)</span>
-              <span class="text-emerald-400 font-bold">Entregue ✓✓</span>
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="text-amber-400 font-mono font-bold">⏳ Delay: 89s anti-ban</span>
+              <span class="text-emerald-400 font-bold">Próxima Criadora ➔</span>
             </div>
           </div>
 
@@ -266,9 +304,122 @@
   </section>
 
   <!-- ==========================================
+       NOVA SEÇÃO: RESULTADOS REAIS & RESPOSTAS DE PUBLIS
+  ========================================== -->
+  <section id="resultados" class="py-24 bg-[#080c18] border-y border-white/5 relative">
+    <div class="max-w-6xl mx-auto px-6">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3.5 py-1 rounded-full border border-emerald-500/20">Resultados Comprovados</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mt-4 tracking-tight">
+          O que acontece quando o robô começa a rodar
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base mt-4">
+          Veja conversas reais geradas automaticamente pelo Innflu Studio com influenciadoras de 10k a 500k seguidores.
+        </p>
+      </div>
+
+      <!-- Métricas de Impacto -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14 text-center">
+        <div class="glass-card p-5">
+          <div class="text-3xl font-black text-purple-400 font-mono">+140.000</div>
+          <div class="text-xs text-slate-400 mt-1">DMs Enviadas com Sucesso</div>
+        </div>
+        <div class="glass-card p-5">
+          <div class="text-3xl font-black text-emerald-400 font-mono">28.4%</div>
+          <div class="text-xs text-slate-400 mt-1">Taxa Média de Resposta</div>
+        </div>
+        <div class="glass-card p-5">
+          <div class="text-3xl font-black text-pink-400 font-mono">0</div>
+          <div class="text-xs text-slate-400 mt-1">Contas Bloqueadas</div>
+        </div>
+        <div class="glass-card p-5">
+          <div class="text-3xl font-black text-amber-400 font-mono">+450</div>
+          <div class="text-xs text-slate-400 mt-1">Marcas e Lojas Ativas</div>
+        </div>
+      </div>
+
+      <!-- Cards de Conversas Reais (Mockups de Direct) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Print 1 -->
+        <div class="glass-card p-5 space-y-4 border border-emerald-500/25">
+          <div class="flex items-center justify-between pb-3 border-b border-white/10">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs text-white">LA</div>
+              <div>
+                <p class="text-xs font-bold text-white">@lorenasilva_m</p>
+                <p class="text-[10px] text-emerald-400">● Respondeu em 14 min</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">Fechada 🎁</span>
+          </div>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="p-2.5 rounded-xl bg-purple-600/20 text-slate-300 self-end">
+              Oie Lorena! Amamos seu conteúdo sobre rotina com bebês. Gostaríamos de enviar um kit da nossa marca para você testar!
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-800 text-white font-medium border border-white/10">
+              Oii meninas!! Amei a proposta 😍 Podem mandar sim! Segue meu endereço para envio: Rua das Palmeiras, 412... Vou amar gravar unboxing!
+            </div>
+          </div>
+        </div>
+
+        <!-- Print 2 -->
+        <div class="glass-card p-5 space-y-4 border border-purple-500/25">
+          <div class="flex items-center justify-between pb-3 border-b border-white/10">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-pink-600 flex items-center justify-center font-bold text-xs text-white">CB</div>
+              <div>
+                <p class="text-xs font-bold text-white">@carol.fitnessfit</p>
+                <p class="text-[10px] text-emerald-400">● Respondeu com WhatsApp</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">WhatsApp 📱</span>
+          </div>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="p-2.5 rounded-xl bg-purple-600/20 text-slate-300">
+              Olá Carol! Vimos sua dedicação aos treinos diários e temos interesse em uma parceria mensal para divulgação dos suplementos.
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-800 text-white font-medium border border-white/10">
+              Oi equipe! Super topo sim! Me chamem direto no WhatsApp da minha assessoria para combinarmos os detalhes: <b>(11) 98722-1049</b>.
+            </div>
+          </div>
+        </div>
+
+        <!-- Print 3 -->
+        <div class="glass-card p-5 space-y-4 border border-pink-500/25">
+          <div class="flex items-center justify-between pb-3 border-b border-white/10">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-amber-600 flex items-center justify-center font-bold text-xs text-white">BM</div>
+              <div>
+                <p class="text-xs font-bold text-white">@beatriz.moda</p>
+                <p class="text-[10px] text-emerald-400">● Respondeu em 42 min</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full">Provador 👗</span>
+          </div>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="p-2.5 rounded-xl bg-purple-600/20 text-slate-300">
+              Oi Bia! Seus looks são maravilhosos! Gostaríamos de te enviar peças da nova coleção de verão para você montar propostas de looks.
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-800 text-white font-medium border border-white/10">
+              Menina, eu amei as peças da marca de vocês no site! Quero muito!! Meu tamanho é M, posso escolher no catálogo?
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==========================================
        TABELA COMPARATIVA: INNFLU VS DIRECTSPEED
   ========================================== -->
-  <section id="diferenciais" class="py-24 bg-[#080c18] relative">
+  <section id="diferenciais" class="py-24 bg-[#050811] relative">
     <div class="max-w-6xl mx-auto px-6">
       
       <div class="text-center max-w-3xl mx-auto mb-16">
@@ -277,7 +428,7 @@
           Muito além do DirectSpeed: comparativo direto
         </h2>
         <p class="text-slate-400 text-sm sm:text-base mt-4">
-          Ferramentas comuns como o DirectSpeed apenas disparam mensagens genéricas. O <b>Innflu</b> é um ecossistema completo com IA, mineração por semelhantes e inteligência de dados.
+          Ferramentas comuns como o DirectSpeed apenas disparam mensagens genéricas a partir de listas manuais. O <b>Innflu</b> é um ecossistema com mineração autônoma, IA e captura de WhatsApp.
         </p>
       </div>
 
@@ -289,11 +440,17 @@
               <tr>
                 <th class="py-4 px-6 font-bold">Recurso / Funcionalidade</th>
                 <th class="py-4 px-6 text-slate-500 font-medium">DirectSpeed</th>
-                <th class="py-4 px-6 text-purple-400 font-extrabold bg-purple-950/20">Innflu (Nosso SaaS)</th>
+                <th class="py-4 px-6 text-purple-400 font-extrabold bg-purple-950/20">Innflu Studio (Nosso SaaS)</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
               
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-4 px-6 font-semibold text-white">Modo Automação Contínua (Minera + DM + Loop)</td>
+                <td class="py-4 px-6 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> Não possui (manual)</td>
+                <td class="py-4 px-6 text-emerald-400 font-bold bg-purple-950/20"><i class="fa-solid fa-circle-check mr-1.5"></i> 100% Autônomo com 1 clique</td>
+              </tr>
+
               <tr class="hover:bg-white/[0.02] transition">
                 <td class="py-4 px-6 font-semibold text-white">Mineração por Perfis Semelhantes (Lookalike)</td>
                 <td class="py-4 px-6 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> Não possui</td>
@@ -301,15 +458,15 @@
               </tr>
 
               <tr class="hover:bg-white/[0.02] transition">
-                <td class="py-4 px-6 font-semibold text-white">Decodificador Automático de WhatsApp</td>
+                <td class="py-4 px-6 font-semibold text-white">Decodificador Automático de WhatsApp (+55 DDD)</td>
                 <td class="py-4 px-6 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> Não possui</td>
-                <td class="py-4 px-6 text-emerald-400 font-bold bg-purple-950/20"><i class="fa-solid fa-circle-check mr-1.5"></i> Sim (Extrai wa.me e botões nativos)</td>
+                <td class="py-4 px-6 text-emerald-400 font-bold bg-purple-950/20"><i class="fa-solid fa-circle-check mr-1.5"></i> Sim (Extrai wa.me, bio e botões)</td>
               </tr>
 
               <tr class="hover:bg-white/[0.02] transition">
-                <td class="py-4 px-6 font-semibold text-white">Classificação e Filtro com IA (Llama 3.1)</td>
+                <td class="py-4 px-6 font-semibold text-white">Filtro Anti-Lojas & Verificação com IA</td>
                 <td class="py-4 px-6 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> Não possui</td>
-                <td class="py-4 px-6 text-emerald-400 font-bold bg-purple-950/20"><i class="fa-solid fa-circle-check mr-1.5"></i> Sim (Distingue mãe vs loja comercial)</td>
+                <td class="py-4 px-6 text-emerald-400 font-bold bg-purple-950/20"><i class="fa-solid fa-circle-check mr-1.5"></i> Sim (Bloqueia lojas e marcas comerciais)</td>
               </tr>
 
               <tr class="hover:bg-white/[0.02] transition">
@@ -330,12 +487,6 @@
                 <td class="py-4 px-6 text-emerald-400 font-bold bg-purple-950/20"><i class="fa-solid fa-circle-check mr-1.5"></i> CRM com cópia em lote de WhatsApp</td>
               </tr>
 
-              <tr class="hover:bg-white/[0.02] transition">
-                <td class="py-4 px-6 font-semibold text-white">Armazenamento em Nuvem Cloudflare D1</td>
-                <td class="py-4 px-6 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> Apenas local</td>
-                <td class="py-4 px-6 text-emerald-400 font-bold bg-purple-950/20"><i class="fa-solid fa-circle-check mr-1.5"></i> Banco Serverless sincronizado</td>
-              </tr>
-
             </tbody>
           </table>
         </div>
@@ -347,7 +498,7 @@
   <!-- ==========================================
        COMO FUNCIONA O INNFLU (PASSO A PASSO)
   ========================================== -->
-  <section id="como-funciona" class="py-24 relative">
+  <section id="como-funciona" class="py-24 bg-[#080c18] relative">
     <div class="max-w-6xl mx-auto px-6">
       
       <div class="text-center max-w-2xl mx-auto mb-16">
@@ -369,7 +520,7 @@
           </div>
           <h3 class="text-lg font-bold text-white">Escolha o Alvo</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Digite o nicho desejado (ex: <code class="text-purple-300">maternidade</code>) ou um perfil de referência como <code class="text-purple-300">@marialuizazamoner</code>.
+            Digite o nicho desejado (ex: <code class="text-purple-300">maternidade</code>) ou um perfil de referência como <code class="text-purple-300">@vihtube</code>.
           </p>
         </div>
 
@@ -400,9 +551,9 @@
           <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-black text-lg">
             4
           </div>
-          <h3 class="text-lg font-bold text-white">Parcerias Fechadas</h3>
+          <h3 class="text-lg font-bold text-white">Loop & Parcerias</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Responda as influenciadoras que demonstraram interesse ou envie mensagens pelo WhatsApp extraído para fechar publis.
+            Avança automaticamente para a próxima criadora. Você só precisa responder os directs e whatsapps de quem aceitou!
           </p>
         </div>
 
@@ -414,7 +565,7 @@
   <!-- ==========================================
        PLANOS & PREÇOS (OFERTA SAAS)
   ========================================== -->
-  <section id="planos" class="py-24 bg-[#080c18] relative">
+  <section id="planos" class="py-24 bg-[#050811] relative">
     <div class="max-w-6xl mx-auto px-6">
       
       <div class="text-center max-w-2xl mx-auto mb-16">
@@ -450,7 +601,7 @@
             </ul>
           </div>
 
-          <a href="/dashboard" class="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs text-center border border-white/10 transition">
+          <a href="/login" class="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs text-center border border-white/10 transition block">
             Escolher Starter
           </a>
         </div>
@@ -473,6 +624,7 @@
 
             <ul class="mt-8 space-y-3 text-xs text-slate-300">
               <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-emerald-400"></i> <b>Até 3 Contas do Instagram</b></li>
+              <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-emerald-400"></i> <b>Modo Automação Contínua Liberado</b></li>
               <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-emerald-400"></i> Até 100 DMs diárias distribuídas</li>
               <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-emerald-400"></i> <b>Mineração por Perfis Semelhantes (Lookalike)</b></li>
               <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-emerald-400"></i> Decodificador Completo de WhatsApp (+55 DDD)</li>
@@ -482,7 +634,7 @@
             </ul>
           </div>
 
-          <a href="/dashboard" class="w-full btn-gradient py-3.5 rounded-xl text-white font-extrabold text-xs text-center shadow-lg">
+          <a href="/login" class="w-full btn-gradient py-3.5 rounded-xl text-white font-extrabold text-xs text-center shadow-lg block">
             Assinar Plano Pro
           </a>
         </div>
@@ -496,7 +648,7 @@
             
             <div class="mt-6 flex items-baseline gap-1">
               <span class="text-4xl font-extrabold text-white">R$ 397</span>
-              <span class="text-xs text-slate-400">/ vitalício ou anual</span>
+              <span class="text-xs text-slate-400">/ anual</span>
             </div>
 
             <ul class="mt-8 space-y-3 text-xs text-slate-300">
@@ -508,7 +660,7 @@
             </ul>
           </div>
 
-          <a href="/dashboard" class="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs text-center border border-white/10 transition">
+          <a href="/login" class="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs text-center border border-white/10 transition block">
             Escolher Agência
           </a>
         </div>
@@ -519,18 +671,35 @@
   </section>
 
   <!-- ==========================================
-       INSTALAÇÃO DA EXTENSÃO (PASSO A PASSO COMPLETO)
+       SEÇÃO: GARANTIA DE 7 DIAS (RISCO ZERO)
   ========================================== -->
-  <section id="instalacao" class="py-24 relative bg-[#070b16]/70 border-y border-white/5">
+  <section class="py-16 bg-[#080c18] border-t border-white/5 relative">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <div class="glass-card p-8 sm:p-10 border border-emerald-500/30 relative">
+        <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-3xl mx-auto mb-5 shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h3 class="text-2xl sm:text-3xl font-black text-white">Garantia Incondicional de 7 Dias</h3>
+        <p class="mt-3 text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+          Assine hoje e use o Innflu Studio sem nenhum risco. Se dentro de 7 dias você não fechar suas primeiras parcerias ou achar que a ferramenta não é para você, basta solicitar o reembolso com 1 clique e devolvemos 100% do seu dinheiro. Sem perguntas.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       INSTALAÇÃO DA EXTENSÃO (ÁREA DE MEMBROS)
+  ========================================== -->
+  <section id="instalacao" class="py-24 relative bg-[#050811] border-y border-white/5">
     <div class="max-w-7xl mx-auto px-6">
       
       <div class="text-center max-w-3xl mx-auto mb-16">
-        <span class="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3.5 py-1 rounded-full border border-emerald-500/20">Instalação Simples & Rápida</span>
+        <span class="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3.5 py-1 rounded-full border border-emerald-500/20">Instalação Simples</span>
         <h2 class="text-3xl sm:text-5xl font-black text-white mt-4 tracking-tight">
-          Comece a minerar em <span class="gradient-text">menos de 2 minutos</span>
+          Comece a rodar em <span class="gradient-text">menos de 2 minutos</span>
         </h2>
         <p class="mt-4 text-xs sm:text-sm text-slate-400 leading-relaxed">
-          Sem burocracia ou instalações complicadas. A extensão do Innflu roda direto no seu Google Chrome ou Brave com total segurança.
+          A extensão roda direto no seu Google Chrome ou Brave com total segurança. O arquivo e chave de acesso são liberados imediatamente na sua área de membros.
         </p>
       </div>
 
@@ -540,13 +709,10 @@
           <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-400 font-black flex items-center justify-center text-sm">
             01
           </div>
-          <h3 class="text-base font-bold text-white">Baixe a Extensão</h3>
+          <h3 class="text-base font-bold text-white">Acesse o Painel</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Baixe o pacote oficial da extensão e extraia os arquivos no seu computador.
+            Faça login no painel para gerar seu token seguro e baixar a extensão com 1 clique.
           </p>
-          <a href="/innflu-extensao.zip" download class="inline-flex items-center gap-2 text-xs font-bold bg-purple-600/25 hover:bg-purple-600/40 border border-purple-500/40 text-purple-300 hover:text-white px-3.5 py-2 rounded-xl transition">
-            <i class="fa-solid fa-download"></i> Baixar innflu-extensao.zip
-          </a>
         </div>
 
         <div class="glass-card p-6 rounded-2xl relative space-y-4 hover:border-purple-500/40 transition">
@@ -555,7 +721,7 @@
           </div>
           <h3 class="text-base font-bold text-white">Abra chrome://extensions</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            No navegador Google Chrome ou Brave, digite <code class="text-purple-300 font-mono">chrome://extensions</code> na barra de endereço e aperte Enter.
+            No navegador Google Chrome ou Brave, digite <code class="text-purple-300 font-mono">chrome://extensions</code> na barra e aperte Enter.
           </p>
         </div>
 
@@ -563,9 +729,9 @@
           <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-400 font-black flex items-center justify-center text-sm">
             03
           </div>
-          <h3 class="text-base font-bold text-white">Ative Modo Desenvolvedor</h3>
+          <h3 class="text-base font-bold text-white">Modo Desenvolvedor</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            No canto superior direito da página do Chrome, ative a chave <b>Modo do desenvolvedor</b> (Developer mode).
+            No canto superior direito da página do Chrome, ative a chave <b>Modo do desenvolvedor</b>.
           </p>
         </div>
 
@@ -575,16 +741,16 @@
           </div>
           <h3 class="text-base font-bold text-white">Carregue a Pasta</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Clique no botão <b>Carregar sem compactação</b> no canto superior esquerdo e selecione a pasta <code>extension</code>. Pronto!
+            Clique em <b>Carregar sem compactação</b> e selecione a pasta da extensão. Pronto!
           </p>
         </div>
 
       </div>
 
       <div class="mt-12 text-center">
-        <a href="/dashboard" class="btn-gradient inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-xs font-bold text-white shadow-xl shadow-purple-500/25">
-          <i class="fa-solid fa-play"></i>
-          <span>Já Instalei, Acessar Painel do Innflu</span>
+        <a href="/login" class="btn-gradient inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-xs font-bold text-white shadow-xl shadow-purple-500/25">
+          <i class="fa-solid fa-rocket"></i>
+          <span>Acessar Área de Membros para Baixar</span>
         </a>
       </div>
 
@@ -594,7 +760,7 @@
   <!-- ==========================================
        FAQ (PERGUNTAS FREQUENTES)
   ========================================== -->
-  <section id="faq" class="py-24 relative">
+  <section id="faq" class="py-24 bg-[#080c18] relative">
     <div class="max-w-4xl mx-auto px-6">
       
       <div class="text-center mb-16">
@@ -618,13 +784,21 @@
 
         <details class="glass-card p-6 rounded-2xl group cursor-pointer">
           <summary class="font-bold text-white text-sm sm:text-base flex justify-between items-center list-none">
-            <span>Como o Innflu acha influenciadoras parecidas?</span>
-            <summary class="hidden"></summary>
-            <span>Como funciona a mineração de semelhantes?</span>
+            <span>Como funciona a nova Automação Contínua?</span>
             <i class="fa-solid fa-chevron-down text-xs text-slate-400 group-open:rotate-180 transition"></i>
           </summary>
           <p class="mt-4 text-xs sm:text-sm text-slate-400 leading-relaxed">
-            Ao informar uma conta de referência (ex: @marialuizazamoner), o Innflu clica no botão nativo de recomendados do Instagram, extrai as contas semelhantes sugeridas pelo algoritmo e vai navegando de perfil em perfil criando uma teia contínua de criadoras do mesmo nicho.
+            Você só digita o nicho ou perfil @alvo e aperta <b>Iniciar Automação</b>. O robô minera uma criadora qualificada, valida se ela tem mais de 10k seguidores e postou Stories hoje, envia a DM pelo Direct, aguarda a pausa humana segura e pula para a próxima influenciadora sozinho.
+          </p>
+        </details>
+
+        <details class="glass-card p-6 rounded-2xl group cursor-pointer">
+          <summary class="font-bold text-white text-sm sm:text-base flex justify-between items-center list-none">
+            <span>Como o Innflu acha influenciadoras parecidas?</span>
+            <i class="fa-solid fa-chevron-down text-xs text-slate-400 group-open:rotate-180 transition"></i>
+          </summary>
+          <p class="mt-4 text-xs sm:text-sm text-slate-400 leading-relaxed">
+            Ao informar uma conta de referência (ex: @vihtube), o Innflu clica no botão nativo de recomendados do Instagram, extrai as contas semelhantes sugeridas pelo algoritmo e vai navegando de perfil em perfil criando uma teia contínua de criadoras do mesmo nicho.
           </p>
         </details>
 
@@ -634,7 +808,7 @@
             <i class="fa-solid fa-chevron-down text-xs text-slate-400 group-open:rotate-180 transition"></i>
           </summary>
           <p class="mt-4 text-xs sm:text-sm text-slate-400 leading-relaxed">
-            Muitas influenciadoras colocam links encurtados ou redirecionamentos como <code>l.instagram.com/?u=https://wa.me/...</code>. O Innflu decodifica essa URL instantaneamente, extrai o número com DDD brasileiro e formata pronto para você chamar ou adicionar em listas de transmissão.
+            Muitas influenciadoras colocam links encurtados ou redirecionamentos como <code>l.instagram.com/?u=https://wa.me/...</code>. O Innflu decodifica essa URL instantaneamente, extrai o número com DDD brasileiro válido e formata pronto para você chamar ou exportar em CSV.
           </p>
         </details>
 
@@ -644,7 +818,7 @@
             <i class="fa-solid fa-chevron-down text-xs text-slate-400 group-open:rotate-180 transition"></i>
           </summary>
           <p class="mt-4 text-xs sm:text-sm text-slate-400 leading-relaxed">
-            A <b>Regra dos 7 Dias</b> entra em ação automaticamente! Se o robô identificar que você já enviou mensagem para aquele perfil nos últimos 7 dias, ele pula o perfil e só permite uma nova abordagem após o prazo de recontato, impedindo que você seja inconveniente ou denunciado.
+            A <b>Regra dos 7 Dias</b> entra em ação automaticamente! Se o robô identificar que você já enviou mensagem para aquele perfil nos últimos 7 dias, ele pula o perfil e só permite uma nova abordagem após o prazo de recontato, impedindo que você seja inconveniente.
           </p>
         </details>
 
@@ -652,6 +826,12 @@
 
     </div>
   </section>
+
+  <!-- Botão Flutuante de Suporte WhatsApp -->
+  <a href="https://wa.me/5511999999999?text=Ol%C3%A1%21+Tenho+d%C3%BAvidas+sobre+o+Innflu+Studio+e+gostaria+de+saber+mais." target="_blank" class="whatsapp-float">
+    <i class="fa-brands fa-whatsapp text-lg"></i>
+    <span>Dúvidas? Fale no WhatsApp</span>
+  </a>
 
   <!-- ==========================================
        FOOTER

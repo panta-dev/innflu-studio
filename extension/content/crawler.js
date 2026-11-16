@@ -647,6 +647,19 @@ window.InnfluCrawler = {
    * @returns {string | null}
    */
   extractPostAuthor() {
+    // 1. Prioridade: Imagem do Avatar do Autor no cabeçalho do post (alt text ultra-estável)
+    const avatarImgs = document.querySelectorAll('div[role="dialog"] header img[alt], article header img[alt], main header img[alt]');
+    for (const img of avatarImgs) {
+      const alt = (img.getAttribute('alt') || '').toLowerCase();
+      // Formatos: "foto do perfil de usuario", "profile picture of user", "user's profile picture"
+      const match = alt.match(/(?:foto do perfil de|profile picture of|foto de)\s+([a-z0-9._]+)/i) ||
+                    alt.match(/^([a-z0-9._]+)'s profile picture/i);
+      if (match && match[1] && this.isValidUsername(match[1])) {
+        return match[1].toLowerCase();
+      }
+    }
+
+    // 2. Seletores multi-camadas de link do autor
     const authorSelectors = [
       'div[role="dialog"] header a[href^="/"]',
       'div[role="dialog"] a[role="link"][href^="/"]',
@@ -654,7 +667,9 @@ window.InnfluCrawler = {
       'article a[role="link"][href^="/"]',
       'header a[href^="/"]',
       'main header a[href^="/"]',
-      'h2 a[href^="/"]'
+      'h2 a[href^="/"]',
+      'h3 a[href^="/"]',
+      'span[dir="auto"] a[href^="/"]'
     ];
 
     for (const sel of authorSelectors) {
@@ -671,7 +686,7 @@ window.InnfluCrawler = {
       }
     }
 
-    // Fallback: alt-text no modal/página
+    // 3. Fallback: alt-text no modal/página
     const altUsers = Array.from(this._extractFromAltText());
     if (altUsers.length > 0) {
       return altUsers[0];

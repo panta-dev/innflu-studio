@@ -369,14 +369,14 @@
           <div class="absolute -left-10 -top-10 w-64 h-64 bg-pink-600/10 rounded-full blur-3xl pointer-events-none"></div>
         </div>
 
-        <!-- Grid de 4 Cards Principais de Métricas -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Grid de 5 Cards Principais de Métricas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           
           <!-- Card 1: DMs Hoje & Quota -->
           <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-purple-500/40 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DMs Enviadas Hoje</p>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DMs Hoje</p>
                 <h3 id="statSentToday" class="text-3xl font-extrabold text-white mt-1.5 font-mono">0</h3>
               </div>
               <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
@@ -385,7 +385,7 @@
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border">
               <div class="flex justify-between text-[11px] text-slate-400 mb-1.5">
-                <span>Limite Diário Seguro</span>
+                <span>Limite Seguro</span>
                 <span class="font-mono text-slate-300"><span id="statSentPercent">0</span>% (<span id="statDailySentCount">0</span>/40)</span>
               </div>
               <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
@@ -398,7 +398,7 @@
           <div class="glass-panel p-5 rounded-2xl group hover:border-pink-500/40 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Influenciadoras Mineradas</p>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Mineradas</p>
                 <h3 id="statTotalLeads" class="text-3xl font-extrabold text-white mt-1.5 font-mono">0</h3>
               </div>
               <div class="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center">
@@ -407,36 +407,17 @@
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
               <span class="text-emerald-400 flex items-center gap-1">
-                <i class="fa-solid fa-circle-check text-[10px]"></i> Qualificadas +10k
+                <i class="fa-solid fa-circle-check text-[10px]"></i> Qualificadas
               </span>
               <span id="statPendingCount" class="text-slate-400 font-mono">0 na fila</span>
             </div>
           </div>
 
-          <!-- Card 3: WhatsApps Capturados -->
-          <div class="glass-panel p-5 rounded-2xl group hover:border-emerald-500/40 transition">
-            <div class="flex justify-between items-start">
-              <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">WhatsApps Diretos</p>
-                <h3 id="statWithWhatsapp" class="text-3xl font-extrabold text-emerald-400 mt-1.5 font-mono">0</h3>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <i class="fa-brands fa-whatsapp text-base"></i>
-              </div>
-            </div>
-            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
-              <span class="text-slate-400 flex items-center gap-1">
-                <i class="fa-solid fa-envelope text-sky-400"></i> <b id="statWithEmail" class="text-slate-200">0</b> com e-mail
-              </span>
-              <button onclick="copyAllWhatsApps()" class="text-emerald-400 hover:underline font-semibold">Copiar Todos</button>
-            </div>
-          </div>
-
-          <!-- Card 4: Taxa de Resposta / DMs Totais -->
+          <!-- Card 3: Total Abordagens Realizadas -->
           <div class="glass-panel p-5 rounded-2xl group hover:border-amber-500/40 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Abordagens Realizadas</p>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total DMs</p>
                 <h3 id="statTotalSent" class="text-3xl font-extrabold text-amber-300 mt-1.5 font-mono">0</h3>
               </div>
               <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
@@ -445,9 +426,47 @@
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
               <span class="text-slate-400 flex items-center gap-1">
-                <i class="fa-solid fa-shield-halved text-amber-400"></i> Proteção Ativa
+                <i class="fa-solid fa-shield-halved text-amber-400"></i> Anti-Ban Ativo
               </span>
-              <span class="text-purple-400 font-semibold font-mono">Intervalos 60-180s</span>
+              <span class="text-purple-400 font-semibold font-mono">60-180s</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Respostas de Influenciadoras -->
+          <div class="glass-panel p-5 rounded-2xl group hover:border-cyan-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Responderam</p>
+                <h3 id="statTotalReplied" class="text-3xl font-extrabold text-cyan-400 mt-1.5 font-mono">0</h3>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                <i class="fa-solid fa-comments text-sm"></i>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
+              <span class="text-cyan-400 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-bolt text-[10px]"></i> Taxa de Resposta
+              </span>
+              <span class="text-slate-200 font-mono font-bold"><span id="statReplyRate">0.0</span>%</span>
+            </div>
+          </div>
+
+          <!-- Card 5: WhatsApps Capturados -->
+          <div class="glass-panel p-5 rounded-2xl group hover:border-emerald-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">WhatsApps</p>
+                <h3 id="statWithWhatsapp" class="text-3xl font-extrabold text-emerald-400 mt-1.5 font-mono">0</h3>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i class="fa-brands fa-whatsapp text-base"></i>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
+              <span class="text-slate-400 flex items-center gap-1">
+                <i class="fa-solid fa-envelope text-sky-400"></i> <b id="statWithEmail" class="text-slate-200">0</b> emails
+              </span>
+              <button onclick="copyAllWhatsApps()" class="text-emerald-400 hover:underline font-semibold">Copiar</button>
             </div>
           </div>
 
@@ -1828,6 +1847,12 @@ Parcerias: assessoria@marialuiza.com.br
         document.getElementById('statWithWhatsapp').innerText = data.withWhatsapp || 0;
         document.getElementById('statWithEmail').innerText = data.withEmail || 0;
         document.getElementById('statTotalSent').innerText = data.totalSent || 0;
+        if (document.getElementById('statTotalReplied')) {
+          document.getElementById('statTotalReplied').innerText = data.totalReplied || 0;
+        }
+        if (document.getElementById('statReplyRate')) {
+          document.getElementById('statReplyRate').innerText = data.replyRate || '0.0';
+        }
         document.getElementById('badgeSidebarLeads').innerText = data.totalLeads || 0;
         document.getElementById('statPendingCount').innerText = `${data.pendingLeads || 0} na fila`;
         document.getElementById('statDailySentCount').innerText = data.sentToday || 0;
@@ -3628,7 +3653,7 @@ Parcerias: assessoria@marialuiza.com.br
             // Reseta contadores da interface
             const zeroElements = [
               'statSentToday', 'statTotalLeads', 'statWithWhatsapp',
-              'statWithEmail', 'statTotalSent', 'badgeSidebarLeads',
+              'statWithEmail', 'statTotalSent', 'statTotalReplied', 'badgeSidebarLeads',
               'statDailySentCount', 'statSentPercent'
             ];
             zeroElements.forEach(id => {

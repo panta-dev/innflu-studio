@@ -17,14 +17,35 @@
           <span class="innflu-brand-text">Innflu</span>
         </div>
         <div class="innflu-actions">
-          <span class="innflu-status-badge" id="hudGlobalBadge">
+          <span class="innflu-status-badge status-idle" id="hudGlobalBadge">
             <span class="innflu-status-pulse"></span>
             <span id="hudStatusBadgeText">Parado</span>
           </span>
+          <span class="innflu-header-countdown" id="hudHeaderCountdown" style="display:none;"></span>
+          <button class="innflu-btn-icon" id="btnHeaderPauseResume" title="Pausar / Retomar Operação" style="display:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="iconHeaderPause"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="iconHeaderResume" style="display:none;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
           <button class="innflu-btn-icon" id="btnMinimize" title="Minimizar">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
           </button>
         </div>
+      </div>
+
+      <!-- Barra de Progresso de Delay Anti-Ban -->
+      <div class="innflu-delay-bar-container" id="hudDelayBarContainer" style="display:none;">
+        <div class="innflu-delay-bar-fill" id="hudDelayBarFill"></div>
+        <div class="innflu-delay-bar-text" id="hudDelayBarText">Aguardando delay humano seguro...</div>
+      </div>
+
+      <!-- Banner de Alerta Anti-Ban -->
+      <div class="innflu-alert-banner" id="hudSafetyAlertBanner" style="display:none;">
+        <span class="innflu-alert-icon">🛡️</span>
+        <div class="innflu-alert-body">
+          <strong id="hudAlertTitle">Pausa Preventiva de Segurança</strong>
+          <p id="hudAlertDesc">Aviso do Instagram detectado. Automação pausada para proteger sua conta.</p>
+        </div>
+        <button class="innflu-alert-dismiss" id="btnDismissAlert" title="Fechar aviso">&times;</button>
       </div>
 
       <!-- Toasts Notificações Internas -->
@@ -32,7 +53,8 @@
 
       <!-- Navegação de Abas -->
       <div class="innflu-nav-tabs">
-        <button class="innflu-nav-btn active" id="tabBtnMine">⛏️ Minerar</button>
+        <button class="innflu-nav-btn active" id="tabBtnAuto">⚡ Automação</button>
+        <button class="innflu-nav-btn" id="tabBtnMine">⛏️ Minerar</button>
         <button class="innflu-nav-btn" id="tabBtnLeads">📋 Leads (<span id="tabLeadsCount">0</span>)</button>
         <button class="innflu-nav-btn" id="tabBtnSender">✉️ Captação</button>
         <button class="innflu-nav-btn" id="tabBtnLive">🎯 Ao Vivo</button>
@@ -42,9 +64,57 @@
       <div class="innflu-hud-body">
         
         <!-- ==========================================
+             ABA 0: AUTOMAÇÃO COMPLETA (MINERA -> ENVIA DM -> REPETE)
+             ========================================== -->
+        <div id="viewAuto" class="innflu-tab-content">
+          <div class="innflu-section-title">⚡ Automação Contínua (Mineração + DM)</div>
+          <div style="font-size:10.5px;color:#94a3b8;line-height:1.4;margin-bottom:10px;background:rgba(99,102,241,0.12);padding:8px 10px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);">
+            O robô <b>minera</b> a criadora, <b>valida os filtros</b>, <b>envia a mensagem</b>, aguarda o delay humano e <b>segue minerando automaticamente</b>.
+          </div>
+
+          <div class="innflu-form-group">
+            <label class="innflu-form-label">Nicho / Palavra-chave ou Perfil @:</label>
+            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: maternidade, @vihtube, #modafeminina" value="maternidade" />
+          </div>
+
+          <div class="innflu-filters-row">
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Mín. Seguidores:</label>
+              <select class="innflu-select" id="selAutoMinFollowers">
+                <option value="1000">1.000+ seg.</option>
+                <option value="5000">5.000+ seg.</option>
+                <option value="10000" selected>10.000+ (Ideal)</option>
+                <option value="20000">20.000+ seg.</option>
+                <option value="50000">50.000+ seg.</option>
+              </select>
+            </div>
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Stories Ativos:</label>
+              <select class="innflu-select" id="selAutoStories">
+                <option value="true" selected>⚡ Apenas c/ Stories</option>
+                <option value="false">Todos</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div class="innflu-btn-group-actions">
+              <button class="innflu-cta-btn start" id="btnToggleAuto" style="background:linear-gradient(135deg, #10b981, #6366f1);flex:2;">
+                <span>⚡</span>
+                <span id="btnAutoLabel">Iniciar Automação</span>
+              </button>
+              <button class="innflu-btn-pause" id="btnPauseAuto" style="display:none;" title="Pausar ou retomar automação">
+                <span id="btnPauseAutoIcon">⏸️</span>
+                <span id="btnPauseAutoLabel">Pausar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
              ABA 1: PAINEL DE MINERAÇÃO (ONDE ESCOLHE COMO MINERAR)
              ========================================== -->
-        <div id="viewMine" class="innflu-tab-content">
+        <div id="viewMine" class="innflu-tab-content" style="display:none;">
           <div class="innflu-section-title">1. Escolha Onde Minerar</div>
           <div class="innflu-sources-grid">
             <button class="innflu-source-btn active" data-source="similar" id="srcBtnSimilar">
@@ -128,10 +198,16 @@
           </div>
 
           <div style="margin-top:10px;">
-            <button class="innflu-cta-btn start" id="btnToggleMining">
-              <span>🚀</span>
-              <span id="btnMiningLabel">Iniciar Mineração</span>
-            </button>
+            <div class="innflu-btn-group-actions">
+              <button class="innflu-cta-btn start" id="btnToggleMining" style="flex:2;">
+                <span>🚀</span>
+                <span id="btnMiningLabel">Iniciar Mineração</span>
+              </button>
+              <button class="innflu-btn-pause" id="btnPauseMining" style="display:none;" title="Pausar ou retomar sem perder a fila">
+                <span id="btnPauseMiningIcon">⏸️</span>
+                <span id="btnPauseMiningLabel">Pausar</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -208,10 +284,16 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           </div>
 
           <div style="margin-top:12px;">
-            <button class="innflu-cta-btn start" id="btnToggleSender" style="background:linear-gradient(135deg, #ec4899, #8b5cf6);">
-              <span>✉️</span>
-              <span id="btnSenderLabel">Iniciar Envio de DMs (Captação)</span>
-            </button>
+            <div class="innflu-btn-group-actions">
+              <button class="innflu-cta-btn start" id="btnToggleSender" style="background:linear-gradient(135deg, #ec4899, #8b5cf6);flex:2;">
+                <span>✉️</span>
+                <span id="btnSenderLabel">Iniciar Envio de DMs (Captação)</span>
+              </button>
+              <button class="innflu-btn-pause" id="btnPauseSender" style="display:none;" title="Pausar ou retomar envios">
+                <span id="btnPauseSenderIcon">⏸️</span>
+                <span id="btnPauseSenderLabel">Pausar</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -276,6 +358,18 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   const hudToastContainer = $('hudToastContainer');
   const hudStatusBadgeText = $('hudStatusBadgeText');
   const hudGlobalBadge = $('hudGlobalBadge');
+  const hudHeaderCountdown = $('hudHeaderCountdown');
+  const btnHeaderPauseResume = $('btnHeaderPauseResume');
+  const iconHeaderPause = $('iconHeaderPause');
+  const iconHeaderResume = $('iconHeaderResume');
+  const hudDelayBarContainer = $('hudDelayBarContainer');
+  const hudDelayBarFill = $('hudDelayBarFill');
+  const hudDelayBarText = $('hudDelayBarText');
+  const hudSafetyAlertBanner = $('hudSafetyAlertBanner');
+  const hudAlertTitle = $('hudAlertTitle');
+  const hudAlertDesc = $('hudAlertDesc');
+  const btnDismissAlert = $('btnDismissAlert');
+
   const hudLiveStatusText = $('hudLiveStatusText');
   const hudCurrentAction = $('hudCurrentAction');
   const hudPageType = $('hudPageType');
@@ -291,6 +385,16 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   const sumEmailLeads = $('sumEmailLeads');
   const leadsCardsContainer = $('leadsCardsContainer');
 
+  // Controles de Automação Contínua
+  const inputAutoTarget = $('inputAutoTarget');
+  const selAutoMinFollowers = $('selAutoMinFollowers');
+  const selAutoStories = $('selAutoStories');
+  const btnToggleAuto = $('btnToggleAuto');
+  const btnAutoLabel = $('btnAutoLabel');
+  const btnPauseAuto = $('btnPauseAuto');
+  const btnPauseAutoIcon = $('btnPauseAutoIcon');
+  const btnPauseAutoLabel = $('btnPauseAutoLabel');
+
   // Controles de Mineração
   const inputMiningTarget = $('inputMiningTarget');
   const lblMiningTarget = $('lblMiningTarget');
@@ -300,8 +404,16 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   const selTargetGender = $('selTargetGender');
   const btnToggleMining = $('btnToggleMining');
   const btnMiningLabel = $('btnMiningLabel');
+  const btnPauseMining = $('btnPauseMining');
+  const btnPauseMiningIcon = $('btnPauseMiningIcon');
+  const btnPauseMiningLabel = $('btnPauseMiningLabel');
+
+  // Controles de Envio / Captação
   const btnToggleSender = $('btnToggleSender');
   const btnSenderLabel = $('btnSenderLabel');
+  const btnPauseSender = $('btnPauseSender');
+  const btnPauseSenderIcon = $('btnPauseSenderIcon');
+  const btnPauseSenderLabel = $('btnPauseSenderLabel');
 
   // Botões de Fonte
   const sourceButtons = {
@@ -318,7 +430,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   let knownCRMUsersCache = new Set();
 
   // ==========================================
-  // NOTIFICAÇÕES (TOASTS INTERNOS)
+  // NOTIFICAÇÕES (TOASTS INTERNOS) & BANNER
   // ==========================================
   function showToast({ type = 'info', title = '', message = '', duration = 4000 }) {
     const toast = document.createElement('div');
@@ -337,6 +449,18 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     if (duration > 0) setTimeout(() => { if (toast.parentElement) toast.remove(); }, duration);
   }
 
+  function showSafetyBanner(title, desc) {
+    if (hudAlertTitle) hudAlertTitle.innerText = title;
+    if (hudAlertDesc) hudAlertDesc.innerText = desc;
+    if (hudSafetyAlertBanner) hudSafetyAlertBanner.style.display = 'flex';
+  }
+
+  if (btnDismissAlert) {
+    btnDismissAlert.onclick = () => {
+      if (hudSafetyAlertBanner) hudSafetyAlertBanner.style.display = 'none';
+    };
+  }
+
   // ==========================================
   // STORAGE PERSISTENTE (COM PROTEÇÃO ANTI-INVALIDATED CONTEXT)
   // ==========================================
@@ -351,6 +475,8 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       const fallback = {
         bot: {
           isRunning: false,
+          isPaused: false,
+          actionBlocked: false,
           activeMode: null,
           miningSource: 'similar',
           miningTarget: 'anaclaralopes',
@@ -388,6 +514,8 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           if (!bot.queue) bot.queue = [];
           if (!bot.visited) bot.visited = [];
           if (!bot.visitedPosts) bot.visitedPosts = [];
+          if (bot.isPaused === undefined) bot.isPaused = false;
+          if (bot.actionBlocked === undefined) bot.actionBlocked = false;
 
           localBotCache = { ...bot };
 
@@ -425,7 +553,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   }
 
   // ==========================================
-  // SINCRONIZAÇÃO DE UI
+  // SINCRONIZAÇÃO DE UI & ESTADOS VISUAIS
   // ==========================================
   function syncUI(bot) {
     hudMinedCount.innerText = bot.minedCount || 0;
@@ -453,35 +581,119 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     // Seleciona botão de fonte ativo
     selectSourceUI(bot.miningSource || 'similar');
 
-    // Botões de execução
+    // Estado do Badge Global e Indicadores
+    if (bot.actionBlocked) {
+      hudGlobalBadge.className = 'innflu-status-badge status-blocked';
+      hudStatusBadgeText.innerText = 'Bloqueio Preventivo';
+      hudLiveStatusText.innerText = 'Ação Bloqueada pelo Instagram';
+    } else if (bot.isRunning && bot.isPaused) {
+      hudGlobalBadge.className = 'innflu-status-badge status-paused';
+      hudStatusBadgeText.innerText = 'Pausado';
+      hudLiveStatusText.innerText = 'Operação Pausada (Fila Preservada)';
+    } else if (bot.isRunning) {
+      hudGlobalBadge.className = 'innflu-status-badge status-running';
+      if (bot.activeMode === 'auto') {
+        hudStatusBadgeText.innerText = 'Automação Ativa...';
+        hudLiveStatusText.innerText = 'Automação Contínua (Minerar + DM)';
+      } else if (bot.activeMode === 'miner') {
+        hudStatusBadgeText.innerText = 'Minerando...';
+        hudLiveStatusText.innerText = 'Mineração Ativa';
+      } else {
+        hudStatusBadgeText.innerText = 'Captando...';
+        hudLiveStatusText.innerText = 'Enviando DMs';
+      }
+    } else {
+      hudGlobalBadge.className = 'innflu-status-badge status-idle';
+      hudStatusBadgeText.innerText = 'Parado';
+      hudLiveStatusText.innerText = 'Parado';
+      hudCountdown.innerText = '';
+      hudHeaderCountdown.style.display = 'none';
+      hudDelayBarContainer.style.display = 'none';
+    }
+
+    // Controle rápido no Header (Pause / Resume)
+    if (bot.isRunning) {
+      btnHeaderPauseResume.style.display = 'flex';
+      if (bot.isPaused) {
+        iconHeaderPause.style.display = 'none';
+        iconHeaderResume.style.display = 'block';
+        btnHeaderPauseResume.title = 'Retomar Operação';
+      } else {
+        iconHeaderPause.style.display = 'block';
+        iconHeaderResume.style.display = 'none';
+        btnHeaderPauseResume.title = 'Pausar Operação';
+      }
+    } else {
+      btnHeaderPauseResume.style.display = 'none';
+    }
+
+    // Botões de Execução - Automação Contínua
+    if (bot.isRunning && bot.activeMode === 'auto') {
+      btnToggleAuto.classList.remove('start');
+      btnToggleAuto.classList.add('stop');
+      btnAutoLabel.innerText = '⏹ Parar Automação';
+
+      btnPauseAuto.style.display = 'flex';
+      if (bot.isPaused) {
+        btnPauseAuto.classList.add('resumed');
+        btnPauseAutoIcon.innerText = '▶️';
+        btnPauseAutoLabel.innerText = 'Retomar';
+      } else {
+        btnPauseAuto.classList.remove('resumed');
+        btnPauseAutoIcon.innerText = '⏸️';
+        btnPauseAutoLabel.innerText = 'Pausar';
+      }
+    } else {
+      btnToggleAuto.classList.remove('stop');
+      btnToggleAuto.classList.add('start');
+      btnAutoLabel.innerText = '⚡ Iniciar Automação';
+      btnPauseAuto.style.display = 'none';
+    }
+
+    // Botões de Execução - Mineração
     if (bot.isRunning && bot.activeMode === 'miner') {
       btnToggleMining.classList.remove('start');
       btnToggleMining.classList.add('stop');
       btnMiningLabel.innerText = '⏹ Parar Mineração';
-      hudStatusBadgeText.innerText = 'Minerando...';
-      hudLiveStatusText.innerText = 'Mineração em andamento';
+
+      btnPauseMining.style.display = 'flex';
+      if (bot.isPaused) {
+        btnPauseMining.classList.add('resumed');
+        btnPauseMiningIcon.innerText = '▶️';
+        btnPauseMiningLabel.innerText = 'Retomar';
+      } else {
+        btnPauseMining.classList.remove('resumed');
+        btnPauseMiningIcon.innerText = '⏸️';
+        btnPauseMiningLabel.innerText = 'Pausar';
+      }
     } else {
       btnToggleMining.classList.remove('stop');
       btnToggleMining.classList.add('start');
       btnMiningLabel.innerText = '🚀 Iniciar Mineração';
+      btnPauseMining.style.display = 'none';
     }
 
+    // Botões de Execução - Captação (Sender)
     if (bot.isRunning && bot.activeMode === 'sender') {
       btnToggleSender.classList.remove('start');
       btnToggleSender.classList.add('stop');
       btnSenderLabel.innerText = '⏹ Parar Captação';
-      hudStatusBadgeText.innerText = 'Captando...';
-      hudLiveStatusText.innerText = 'Enviando DMs';
+
+      btnPauseSender.style.display = 'flex';
+      if (bot.isPaused) {
+        btnPauseSender.classList.add('resumed');
+        btnPauseSenderIcon.innerText = '▶️';
+        btnPauseSenderLabel.innerText = 'Retomar';
+      } else {
+        btnPauseSender.classList.remove('resumed');
+        btnPauseSenderIcon.innerText = '⏸️';
+        btnPauseSenderLabel.innerText = 'Pausar';
+      }
     } else {
       btnToggleSender.classList.remove('stop');
       btnToggleSender.classList.add('start');
       btnSenderLabel.innerText = '✉️ Iniciar Envio de DMs';
-    }
-
-    if (!bot.isRunning) {
-      hudStatusBadgeText.innerText = 'Parado';
-      hudLiveStatusText.innerText = 'Parado';
-      hudCountdown.innerText = '';
+      btnPauseSender.style.display = 'none';
     }
 
     const pageType = window.InnfluCrawler.detectCurrentPage();
@@ -559,6 +771,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   // NAVEGAÇÃO ENTRE ABAS
   // ==========================================
   const tabs = {
+    auto: [$('tabBtnAuto'), $('viewAuto')],
     mine: [$('tabBtnMine'), $('viewMine')],
     leads: [$('tabBtnLeads'), $('viewLeads')],
     sender: [$('tabBtnSender'), $('viewSender')],
@@ -581,6 +794,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     }
   }
 
+  $('tabBtnAuto').onclick = () => switchTab('auto');
   $('tabBtnMine').onclick = () => switchTab('mine');
   $('tabBtnLeads').onclick = () => switchTab('leads');
   $('tabBtnSender').onclick = () => switchTab('sender');
@@ -595,7 +809,15 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     document.addEventListener('mousemove', onDrag);
     document.addEventListener('mouseup', onDragEnd);
   });
-  function onDrag(e) { if (!isDragging) return; root.style.left = `${initX + e.clientX - startX}px`; root.style.top = `${initY + e.clientY - startY}px`; root.style.bottom = 'auto'; root.style.right = 'auto'; }
+  function onDrag(e) {
+    if (!isDragging) return;
+    const newX = Math.max(10, Math.min(window.innerWidth - hud.offsetWidth - 10, initX + e.clientX - startX));
+    const newY = Math.max(10, Math.min(window.innerHeight - 50, initY + e.clientY - startY));
+    root.style.left = `${newX}px`;
+    root.style.top = `${newY}px`;
+    root.style.bottom = 'auto';
+    root.style.right = 'auto';
+  }
   function onDragEnd() { isDragging = false; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', onDragEnd); }
   $('btnMinimize').addEventListener('click', () => hud.classList.toggle('minimized'));
 
@@ -727,22 +949,101 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     runLoop();
   };
 
-  btnToggleSender.onclick = async () => {
-    const { bot } = await getState();
-    if (bot.isRunning && bot.activeMode === 'sender') {
-      await saveBot({ isRunning: false, activeMode: null, nextActionAt: 0 });
+  btnToggleAuto.onclick = async () => {
+    const { bot, apiBaseUrl } = await getState();
+    if (bot.isRunning && bot.activeMode === 'auto') {
+      await saveBot({ isRunning: false, isPaused: false, activeMode: null, nextActionAt: 0 });
       clearInterval(countdownInterval);
-      syncUI({ ...bot, isRunning: false, activeMode: null });
-      showToast({ type: 'info', title: 'Captação Pausada', message: 'Envio interrompido.' });
+      syncUI({ ...bot, isRunning: false, isPaused: false, activeMode: null });
+      showToast({ type: 'info', title: 'Automação Encerrada', message: 'Ciclo interrompido.' });
       return;
     }
 
-    await saveBot({ isRunning: true, activeMode: 'sender', nextActionAt: 0 });
+    const rawInput = (inputAutoTarget.value || '').trim();
+    let currentSource = 'keyword';
+    if (rawInput.startsWith('@')) {
+      currentSource = 'similar';
+    } else if (rawInput.startsWith('#')) {
+      currentSource = 'hashtag';
+    }
+
+    const targetClean = rawInput.replace(/^[@#]/, '').trim().toLowerCase();
+    if (!targetClean) {
+      showToast({ type: 'error', title: 'Alvo Vazio', message: 'Digite um nicho, hashtag ou perfil de referência.' });
+      return;
+    }
+
+    const minFollowersVal = parseInt(selAutoMinFollowers.value, 10) || 10000;
+    const requireStoriesVal = selAutoStories.value === 'true';
+
+    await syncKnownCRMUsers(apiBaseUrl);
+
+    await saveBot({
+      isRunning: true,
+      isPaused: false,
+      activeMode: 'auto',
+      miningSource: currentSource,
+      miningTarget: targetClean,
+      keyword: targetClean,
+      minFollowers: minFollowersVal,
+      requireStories: requireStoriesVal,
+      queue: [],
+      visitedPosts: [],
+      nextActionAt: 0
+    });
+
+    const updated = await getState();
+    syncUI(updated.bot);
+    showToast({
+      type: 'success',
+      title: '⚡ Automação Iniciada!',
+      message: `Minerando "${targetClean}" e disparando DMs em loop contínuo.`
+    });
+    runLoop();
+  };
+
+  btnToggleSender.onclick = async () => {
+    const { bot } = await getState();
+    if (bot.isRunning && bot.activeMode === 'sender') {
+      await saveBot({ isRunning: false, isPaused: false, activeMode: null, nextActionAt: 0 });
+      clearInterval(countdownInterval);
+      syncUI({ ...bot, isRunning: false, isPaused: false, activeMode: null });
+      showToast({ type: 'info', title: 'Captação Encerrada', message: 'Envio interrompido.' });
+      return;
+    }
+
+    await saveBot({ isRunning: true, isPaused: false, activeMode: 'sender', nextActionAt: 0 });
     const updated = await getState();
     syncUI(updated.bot);
     showToast({ type: 'success', title: 'Captação Iniciada', message: 'Enviando DMs com delays seguros anti-ban.' });
     runLoop();
   };
+
+  // Controle Compartilhado de Pausa e Retomada
+  async function togglePause() {
+    const { bot } = await getState();
+    if (!bot.isRunning) return;
+
+    const newPauseState = !bot.isPaused;
+    await saveBot({ isPaused: newPauseState });
+    syncUI({ ...bot, isPaused: newPauseState });
+
+    if (newPauseState) {
+      showToast({ type: 'warning', title: 'Operação Pausada', message: 'Fila e histórico preservados. Clique em Retomar quando desejar.' });
+      hudCurrentAction.innerText = 'Operação pausada pelo usuário.';
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+    } else {
+      showToast({ type: 'success', title: 'Operação Retomada', message: 'Continuando de onde parou!' });
+      runLoop();
+    }
+  }
+
+  btnHeaderPauseResume.onclick = togglePause;
+  btnPauseAuto.onclick = togglePause;
+  btnPauseMining.onclick = togglePause;
+  btnPauseSender.onclick = togglePause;
 
   // ==========================================
   // MOTOR DE AUTOMAÇÃO E MINERAÇÃO
@@ -750,6 +1051,11 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   async function runLoop() {
     const { bot, apiBaseUrl, activeTemplate } = await getState();
     if (!bot.isRunning) return;
+
+    if (bot.isPaused) {
+      hudCurrentAction.innerText = 'Operação pausada. Clique em "Retomar" para prosseguir.';
+      return;
+    }
 
     if (bot.nextActionAt && bot.nextActionAt > Date.now()) {
       startCountdown(bot.nextActionAt, runLoop);
@@ -759,21 +1065,169 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     const pageType = window.InnfluCrawler.detectCurrentPage();
     hudPageType.innerText = `Página: ${pageType} • Fila: ${(bot.queue || []).length} perfis`;
 
-    if (bot.activeMode === 'miner') {
+    if (bot.activeMode === 'auto') {
+      await stepAutomation(bot, apiBaseUrl, activeTemplate, pageType);
+    } else if (bot.activeMode === 'miner') {
       await stepMiner(bot, apiBaseUrl, pageType);
     } else if (bot.activeMode === 'sender') {
       await stepSender(bot, apiBaseUrl, activeTemplate, pageType);
     }
   }
 
-  function startCountdown(targetTs, callback) {
+  // ==========================================
+  // PIPELINE DE AUTOMAÇÃO CONTÍNUA (MINERA -> DM -> CONTINUA)
+  // ==========================================
+  async function stepAutomation(bot, apiBaseUrl, activeTemplate, pageType) {
+    if ((bot.sentCount || 0) >= (bot.dailyLimit || 40)) {
+      showToast({ type: 'warning', title: 'Meta Diária Atingida', message: 'Limite diário de abordagens alcançado por hoje!' });
+      await saveBot({ isRunning: false, isPaused: false, activeMode: null });
+      syncUI({ ...bot, isRunning: false, activeMode: null });
+      return;
+    }
+
+    // 1. Se temos criadoras na fila pronta para abordagem:
+    if (bot.queue && bot.queue.length > 0) {
+      const nextUser = bot.queue[0];
+      const cleanUser = nextUser.toLowerCase();
+
+      // Estamos no perfil da influenciadora?
+      if (pageType === 'profile' && window.InnfluCrawler.getCurrentProfileUsername() === cleanUser) {
+        hudCurrentAction.innerText = `[⚡ Automação] Avaliando e contatando @${cleanUser}...`;
+
+        const rawTarget = (bot.miningTarget || 'Geral').trim();
+        const currentNiche = bot.miningSource === 'hashtag' ? ('#' + rawTarget.replace(/^#/, '')) : rawTarget;
+        const profile = window.InnfluInspector.extractCurrentProfileData(currentNiche);
+
+        const remainingQueue = bot.queue.slice(1);
+        const visitedSet = new Set(bot.visited || []);
+        visitedSet.add(cleanUser);
+        knownCRMUsersCache.add(cleanUser);
+
+        if (!profile) {
+          hudCurrentAction.innerText = `[⚡ Automação] Falha ao ler @${cleanUser}. Avançando...`;
+          await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
+          scheduleNext(1200);
+          return;
+        }
+
+        // Validação de critérios
+        const evalResult = window.InnfluInspector.evaluateCandidate(profile, {
+          minFollowers: bot.minFollowers || 10000,
+          requireActiveStories: bot.requireStories !== false,
+          targetGender: bot.targetGender || 'female',
+          requireContact: bot.requireContact || 'all'
+        });
+
+        if (!evalResult.approved) {
+          const rejectReason = evalResult.reasons.join(', ');
+          hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada: ${rejectReason}`;
+          await logActivity({ username: cleanUser, status: `Pulada (${rejectReason})` });
+          await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
+          scheduleNext(1200);
+          return;
+        }
+
+        // Perfil qualificado: Salva no D1 e dispara mensagem
+        await saveLead(apiBaseUrl, profile, 'minerada', currentNiche);
+        await cacheLocalLead(profile, 'minerada', currentNiche);
+
+        const newMined = (bot.minedCount || 0) + 1;
+        await saveBot({
+          minedCount: newMined,
+          queue: remainingQueue,
+          visited: Array.from(visitedSet).slice(-1000)
+        });
+        hudMinedCount.innerText = newMined;
+
+        // Disparo de DM com Spintax
+        try {
+          const influencerName = profile.fullName ? profile.fullName.split(' ')[0] : cleanUser;
+          const msg = window.InnfluSpintax.interpolate(activeTemplate, { username: cleanUser, nome: influencerName });
+
+          hudCurrentAction.innerText = `[⚡ Automação] Digitando DM para @${cleanUser}...`;
+          await window.InnfluSender.sendDirectMessage(msg);
+
+          const newSent = (bot.sentCount || 0) + 1;
+          await saveBot({ sentCount: newSent });
+          hudSentTodayCount.innerText = `${newSent} / 40`;
+          await logActivity({ username: cleanUser, status: 'Automação: DM Enviada ✉️⚡' });
+          showToast({ type: 'success', title: `DM Enviada! @${cleanUser}`, message: 'Automação: aguardando delay seguro para minerar próxima...' });
+
+          // Registra no Cloudflare D1
+          try {
+            await fetch(`${apiBaseUrl}/api/log-sent`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
+            });
+          } catch (e) {}
+
+          // Delay anti-ban seguro (60s a 180s)
+          const delaySec = Math.floor(Math.random() * 121) + 60;
+          const nextAt = Date.now() + delaySec * 1000;
+          await saveBot({ nextActionAt: nextAt });
+          hudCurrentAction.innerText = `[⚡ Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
+          startCountdown(nextAt, runLoop, delaySec * 1000);
+          return;
+        } catch (err) {
+          showToast({ type: 'error', title: 'Falha no Envio', message: err.message });
+          const delaySec = 20;
+          const nextAt = Date.now() + delaySec * 1000;
+          await saveBot({ nextActionAt: nextAt });
+          startCountdown(nextAt, runLoop, delaySec * 1000);
+          return;
+        }
+      } else {
+        // Navega até o perfil da criadora
+        hudCurrentAction.innerText = `[⚡ Automação] Abrindo @${cleanUser}...`;
+        window.InnfluCrawler.openProfile(cleanUser);
+        return;
+      }
+    }
+
+    // 2. Fila vazia: executa mineração contínua para encontrar a próxima influenciadora
+    hudCurrentAction.innerText = `[⚡ Automação] Fila vazia. Minerando novos perfis...`;
+    await stepMiner(bot, apiBaseUrl, pageType);
+  }
+
+  function startCountdown(targetTs, callback, totalDurationMs) {
     clearInterval(countdownInterval);
-    countdownInterval = setInterval(() => {
+    const duration = totalDurationMs || Math.max(1000, targetTs - Date.now());
+
+    hudDelayBarContainer.style.display = 'flex';
+    hudHeaderCountdown.style.display = 'inline-block';
+
+    const tick = () => {
+      if (localBotCache && localBotCache.isPaused) {
+        hudCountdown.innerText = '⏸️ Pausado';
+        hudHeaderCountdown.innerText = '⏸️ Pausado';
+        hudDelayBarText.innerText = '⏸️ Pausado pelo usuário';
+        return;
+      }
+
       const rem = targetTs - Date.now();
-      if (rem <= 0) { clearInterval(countdownInterval); hudCountdown.innerText = ''; callback(); return; }
+      if (rem <= 0) {
+        clearInterval(countdownInterval);
+        hudCountdown.innerText = '';
+        hudHeaderCountdown.innerText = '';
+        hudHeaderCountdown.style.display = 'none';
+        hudDelayBarContainer.style.display = 'none';
+        callback();
+        return;
+      }
+
       const s = Math.ceil(rem / 1000);
-      hudCountdown.innerText = `⏳ ${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
-    }, 1000);
+      const timeFormatted = `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+      hudCountdown.innerText = `⏳ ${timeFormatted}`;
+      hudHeaderCountdown.innerText = `⏳ ${timeFormatted}`;
+
+      const pct = Math.min(100, Math.max(0, ((duration - rem) / duration) * 100));
+      hudDelayBarFill.style.width = `${pct}%`;
+      hudDelayBarText.innerText = `⏳ Delay Humano Seguro Anti-Ban: ${s}s restantes`;
+    };
+
+    tick();
+    countdownInterval = setInterval(tick, 1000);
   }
 
   // ==========================================
@@ -1104,7 +1558,10 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   // ANÁLISE E EXTRAÇÃO COMPLETA DE CONTATOS
   // ==========================================
   async function analyzeAndMineProfile(bot, apiBaseUrl) {
-    const profile = window.InnfluInspector.extractCurrentProfileData();
+    const rawTarget = (bot.miningTarget || 'Geral').trim();
+    const currentNiche = bot.miningSource === 'hashtag' ? ('#' + rawTarget.replace(/^#/, '')) : rawTarget;
+
+    const profile = window.InnfluInspector.extractCurrentProfileData(currentNiche);
     if (!profile) {
       hudCurrentAction.innerText = 'Não foi possível ler este perfil.';
       return;
@@ -1114,8 +1571,6 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     const requireStoriesFilter = bot.requireStories !== undefined ? bot.requireStories : true;
     const requireContactFilter = bot.requireContact || 'all';
     const targetGenderFilter = bot.targetGender || 'female';
-    const rawTarget = (bot.miningTarget || 'Geral').trim();
-    const currentNiche = bot.miningSource === 'hashtag' ? ('#' + rawTarget.replace(/^#/, '')) : rawTarget;
 
     let fDisplay = '?';
     if (profile.followersCount > 0) {
@@ -1129,41 +1584,17 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     const storiesStatusText = profile.hasActiveStories ? 'c/ Stories ⚡' : 's/ Stories';
     hudCurrentAction.innerText = `Avaliando @${profile.username} (${fDisplay} seg., ${storiesStatusText})...`;
 
-    // Checagem de filtros de qualificação
-    let isApproved = true;
-    let rejectReason = '';
+    // Avaliação centralizada e robusta de critérios da campanha
+    const evaluation = window.InnfluInspector.evaluateCandidate(profile, {
+      minFollowers: minFollowersRequired,
+      maxFollowers: 10000000,
+      requireActiveStories: requireStoriesFilter,
+      targetGender: targetGenderFilter,
+      requireContact: requireContactFilter
+    });
 
-    // 1. Mínimo de seguidores
-    if (profile.followersCount > 0 && profile.followersCount < minFollowersRequired) {
-      isApproved = false;
-      rejectReason = `${fDisplay} seg. (< ${minFollowersRequired.toLocaleString('pt-BR')} mín.)`;
-    }
-
-    // 2. Stories Ativos (últimas 24h)
-    if (isApproved && requireStoriesFilter && !profile.hasActiveStories) {
-      isApproved = false;
-      rejectReason = 'Sem Stories ativos nas últimas 24h';
-    }
-
-    // 3. Contatos
-    if (isApproved) {
-      if (requireContactFilter === 'any_contact' && !profile.whatsapp && !profile.email) {
-        isApproved = false;
-        rejectReason = 'Sem WhatsApp nem E-mail';
-      } else if (requireContactFilter === 'wa_only' && !profile.whatsapp) {
-        isApproved = false;
-        rejectReason = 'Sem WhatsApp';
-      } else if (requireContactFilter === 'email_only' && !profile.email) {
-        isApproved = false;
-        rejectReason = 'Sem E-mail';
-      }
-    }
-
-    // 4. Gênero Feminino (se ativado)
-    if (isApproved && targetGenderFilter === 'female' && !profile.isFemale) {
-      isApproved = false;
-      rejectReason = 'Perfil não identificado como feminino';
-    }
+    const isApproved = evaluation.approved;
+    const rejectReason = evaluation.reasons && evaluation.reasons.length > 0 ? evaluation.reasons.join(', ') : '';
 
     if (isApproved) {
       const statusText = 'minerada';
@@ -1741,40 +2172,94 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     try {
       const { bot } = await getState();
       const headers = { 'Content-Type': 'application/json' };
-      if (bot && bot.apiToken) {
-        headers['Authorization'] = `Bearer ${bot.apiToken}`;
-        headers['X-API-Key'] = bot.apiToken;
+      const token = (bot && bot.apiToken) || (await chrome.storage.local.get('apiToken'))?.apiToken;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['X-API-Key'] = token;
       }
-      await fetch(`${apiBaseUrl}/api/leads`, {
+
+      const leadPayload = {
+        username: profile.username,
+        full_name: profile.fullName || '',
+        followers_count: profile.followersCount || 0,
+        has_active_stories: profile.hasActiveStories ? 1 : 0,
+        detected_gender: profile.isFemale ? 'female' : 'other',
+        whatsapp: profile.whatsapp || null,
+        email: profile.email || null,
+        bio: profile.bio || '',
+        niche: niche || profile.niche || 'Geral',
+        status: status || 'minerada'
+      };
+
+      const res = await fetch(`${apiBaseUrl}/api/leads`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          username: profile.username,
-          full_name: profile.fullName,
-          followers_count: profile.followersCount,
-          has_active_stories: profile.hasActiveStories,
-          detected_gender: profile.isFemale ? 'female' : 'other',
-          whatsapp: profile.whatsapp,
-          email: profile.email,
-          bio: profile.bio,
-          niche: niche || profile.niche || 'Geral',
-          status
-        })
+        body: JSON.stringify(leadPayload)
       });
-    } catch (e) {}
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (e) {
+      // Guarda no buffer offline para sincronizar quando a conexão com o D1 estiver ativa
+      try {
+        const stored = await chrome.storage.local.get('pendingLeadsBuffer');
+        const buf = stored.pendingLeadsBuffer || [];
+        buf.push({
+          username: profile.username,
+          full_name: profile.fullName || '',
+          followers_count: profile.followersCount || 0,
+          has_active_stories: profile.hasActiveStories ? 1 : 0,
+          whatsapp: profile.whatsapp || null,
+          email: profile.email || null,
+          niche: niche || profile.niche || 'Geral',
+          bio: profile.bio || '',
+          status: status || 'minerada'
+        });
+        await chrome.storage.local.set({ pendingLeadsBuffer: buf.slice(-200) });
+      } catch (err) {}
+    }
+  }
+
+  /**
+   * Descarrega o buffer de leads pendentes no Cloudflare D1 em lote
+   */
+  async function flushPendingLeadsBuffer(apiBaseUrl) {
+    try {
+      const stored = await chrome.storage.local.get(['pendingLeadsBuffer', 'apiToken']);
+      const buf = stored.pendingLeadsBuffer || [];
+      if (buf.length === 0) return;
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (stored.apiToken) {
+        headers['Authorization'] = `Bearer ${stored.apiToken}`;
+        headers['X-API-Key'] = stored.apiToken;
+      }
+
+      const res = await fetch(`${apiBaseUrl}/api/leads/import`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ leads: buf })
+      });
+
+      if (res.ok) {
+        await chrome.storage.local.set({ pendingLeadsBuffer: [] });
+        console.log(`[Innflu] Sincronizados ${buf.length} leads pendentes no Cloudflare D1.`);
+      }
+    } catch (err) {}
   }
 
   // ==========================================
   // BOTÃO INSPECIONAR PERFIL ABERTO
   // ==========================================
   $('btnQuickInspect').onclick = async () => {
-    const profile = window.InnfluInspector.extractCurrentProfileData();
+    const { bot, apiBaseUrl } = await getState();
+    const currentNiche = (bot.miningTarget || 'Geral').trim();
+    const profile = window.InnfluInspector.extractCurrentProfileData(currentNiche);
     if (!profile) {
       showToast({ type: 'warning', title: 'Perfil Não Detectado', message: 'Abra a página de um perfil para analisar.' });
       return;
     }
-    const { bot, apiBaseUrl } = await getState();
-    const currentNiche = (bot.miningTarget || 'Geral').trim();
     let fDisplay = profile.followersCount >= 1000000
       ? (profile.followersCount / 1000000).toFixed(1).replace('.', ',') + ' mi'
       : (profile.followersCount >= 1000 ? (profile.followersCount / 1000).toFixed(1).replace('.', ',') + ' mil' : profile.followersCount.toString());
@@ -1792,15 +2277,77 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   };
 
   // ==========================================
+  // COMUNICAÇÃO COM O SERVICE WORKER (BACKGROUND)
+  // ==========================================
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.type === 'UPDATE_HUD' && request.data) {
+        handleBackgroundUpdate(request.data);
+      } else if (request.action === 'EXECUTE_CURRENT_PROFILE_DM') {
+        handleExecuteDMFromBackground(sendResponse);
+        return true; // resposta assíncrona
+      }
+    });
+  }
+
+  function handleBackgroundUpdate(data) {
+    if (data.dailyCount !== undefined && data.dailyLimit !== undefined) {
+      hudSentTodayCount.innerText = `${data.dailyCount} / ${data.dailyLimit}`;
+    }
+    if (data.status) {
+      hudCurrentAction.innerText = data.status;
+    }
+    if (data.actionBlocked) {
+      showSafetyBanner('Pausa Preventiva Anti-Ban', data.status);
+      showToast({ type: 'error', title: 'Aviso Anti-Ban', message: data.status, duration: 8000 });
+      saveBot({ isRunning: false, isPaused: false, actionBlocked: true });
+      if (localBotCache) syncUI({ ...localBotCache, isRunning: false, actionBlocked: true });
+    }
+    if (data.countdownSeconds) {
+      const targetTs = Date.now() + data.countdownSeconds * 1000;
+      startCountdown(targetTs, () => {}, data.countdownSeconds * 1000);
+    }
+  }
+
+  async function handleExecuteDMFromBackground(sendResponse) {
+    try {
+      const preCheck = window.InnfluSender.checkActionBlock();
+      if (preCheck.blocked) {
+        showSafetyBanner('Alerta do Instagram', preCheck.message);
+        sendResponse({ blocked: true, message: preCheck.message });
+        return;
+      }
+
+      const profile = window.InnfluInspector.extractCurrentProfileData();
+      const username = profile ? profile.username : window.InnfluCrawler.getCurrentProfileUsername();
+      const { activeTemplate } = await getState();
+      const influencerName = profile && profile.fullName ? profile.fullName.split(' ')[0] : (username || 'influenciadora');
+      const msg = window.InnfluSpintax.interpolate(activeTemplate, { username, nome: influencerName });
+
+      hudCurrentAction.innerText = `Digitando DM para @${username}...`;
+      await window.InnfluSender.sendDirectMessage(msg);
+
+      sendResponse({ success: true, username, messageText: msg });
+    } catch (err) {
+      const isBlocked = err.message && (err.message.includes('bloque') || err.message.includes('blocked'));
+      if (isBlocked) {
+        showSafetyBanner('Bloqueio Detectado', err.message);
+      }
+      sendResponse({ blocked: isBlocked, message: err.message });
+    }
+  }
+
+  // ==========================================
   // INICIALIZAÇÃO
   // ==========================================
-  getState().then(({ bot, activeTemplate, savedLeads }) => {
+  getState().then(({ bot, apiBaseUrl, activeTemplate, savedLeads }) => {
     if (activeTemplate) hudTemplateContent.value = activeTemplate;
     if (savedLeads && savedLeads.length > 0) {
       cachedLeads = savedLeads;
       updateLeadsCountHeader(savedLeads);
     }
     syncUI(bot);
+    flushPendingLeadsBuffer(apiBaseUrl);
 
     if (bot.isRunning) {
       console.log('[Innflu] Retomando operação automática após recarregamento...');

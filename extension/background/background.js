@@ -140,6 +140,17 @@ async function executeSendingStep() {
     // 1. Mensagem para o content script avaliar e enviar
     const response = await chrome.tabs.sendMessage(targetTab.id, { action: 'EXECUTE_CURRENT_PROFILE_DM' });
 
+    if (response && response.blocked) {
+      // Bloqueio detectado pelo Instagram: desativa imediatamente o ciclo para proteger a conta
+      isCycleActive = false;
+      chrome.alarms.clear('innflu_next_send');
+      notifyTabs({
+        status: `🛑 PAUSA DE SEGURANÇA: Aviso do Instagram detectado (${response.message || 'Ação bloqueada'}). Automação pausada preventivamente!`,
+        actionBlocked: true
+      });
+      return;
+    }
+
     if (response && response.success) {
       // Incrementa contador diário
       const newDaily = (config.dailyCount || 0) + 1;
@@ -152,7 +163,7 @@ async function executeSendingStep() {
       });
 
       // Sincroniza com Cloudflare D1
-      syncSentWithCloudflare(config.apiBaseUrl, response.username, response.messageText);
+      syncSentWithCloudflare(config.apiBaseUrl, config.apiToken, response.username, response.messageText);
     }
   } catch (err) {
     console.warn('[Innflu] Falha temporária no passo:', err);
@@ -165,13 +176,19 @@ async function executeSendingStep() {
 }
 
 /**
- * Sincroniza registro de disparo no banco Cloudflare D1
+ * Sincroniza registro de disparo no banco Cloudflare D1 com autenticação e retry
  */
-async function syncSentWithCloudflare(baseUrl, username, messageText) {
+async function syncSentWithCloudflare(baseUrl, apiToken, username, messageText) {
   try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiToken) {
+      headers['Authorization'] = `Bearer ${apiToken}`;
+      headers['X-API-Key'] = apiToken;
+    }
+
     await fetch(`${baseUrl}/api/log-sent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         username,
         message_text: messageText,
@@ -179,7 +196,14 @@ async function syncSentWithCloudflare(baseUrl, username, messageText) {
       })
     });
   } catch (err) {
-    console.error('[Innflu] Erro de sincronização D1:', err);
+    console.error('[Innflu] Erro de sincronização D1 (armazenando local):', err);
+    // Armazena no buffer de sincronização para reenvio
+    try {
+      const data = await chrome.storage.local.get('pendingSentLogs');
+      const queue = data.pendingSentLogs || [];
+      queue.push({ username, message_text: messageText, status: 'success', timestamp: Date.now() });
+      await chrome.storage.local.set({ pendingSentLogs: queue.slice(-100) });
+    } catch (e) {}
   }
 }
 

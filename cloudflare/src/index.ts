@@ -561,14 +561,21 @@ app.get('/api/stats', async (c) => {
       "SELECT count(*) as count FROM sent_logs WHERE user_id = ? AND date(sent_at) = date('now') AND status = 'success'"
     ).bind(userId).first<{ count: number }>();
     const totalSentRes = await db.prepare("SELECT count(*) as count FROM sent_logs WHERE user_id = ? AND status = 'success'").bind(userId).first<{ count: number }>();
+    const repliedRes = await db.prepare("SELECT count(*) as count FROM leads WHERE user_id = ? AND status = 'replied'").bind(userId).first<{ count: number }>();
     const withWhatsappRes = await db.prepare("SELECT count(*) as count FROM leads WHERE user_id = ? AND whatsapp IS NOT NULL AND whatsapp != ''").bind(userId).first<{ count: number }>();
     const withEmailRes = await db.prepare("SELECT count(*) as count FROM leads WHERE user_id = ? AND email IS NOT NULL AND email != ''").bind(userId).first<{ count: number }>();
+
+    const totalSent = totalSentRes?.count || 0;
+    const totalReplied = repliedRes?.count || 0;
+    const replyRate = totalSent > 0 ? ((totalReplied / totalSent) * 100).toFixed(1) : '0.0';
 
     return c.json({
       totalLeads: totalLeadsRes?.count || 0,
       pendingLeads: pendingLeadsRes?.count || 0,
       sentToday: sentTodayRes?.count || 0,
-      totalSent: totalSentRes?.count || 0,
+      totalSent,
+      totalReplied,
+      replyRate,
       withWhatsapp: withWhatsappRes?.count || 0,
       withEmail: withEmailRes?.count || 0,
       dailyLimit: 40,
