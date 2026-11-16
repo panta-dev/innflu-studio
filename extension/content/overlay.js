@@ -1085,109 +1085,138 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       return;
     }
 
-    // 1. Se temos criadoras na fila pronta para abordagem:
-    if (bot.queue && bot.queue.length > 0) {
-      const nextUser = bot.queue[0];
-      const cleanUser = nextUser.toLowerCase();
+    const currentProfileUser = (pageType === 'profile' ? (window.InnfluCrawler.getCurrentProfileUsername() || '') : '').toLowerCase();
+    const visitedSet = new Set(bot.visited || []);
 
-      // Estamos no perfil da influenciadora?
-      if (pageType === 'profile' && window.InnfluCrawler.getCurrentProfileUsername() === cleanUser) {
-        hudCurrentAction.innerText = `[⚡ Automação] Avaliando e contatando @${cleanUser}...`;
+    // CENÁRIO A: Estamos diretamente no perfil de uma influenciadora inédita
+    if (pageType === 'profile' && currentProfileUser && !visitedSet.has(currentProfileUser)) {
+      await processCandidateInAutomation(currentProfileUser, bot, apiBaseUrl, activeTemplate);
+      return;
+    }
 
-        const rawTarget = (bot.miningTarget || 'Geral').trim();
-        const currentNiche = bot.miningSource === 'hashtag' ? ('#' + rawTarget.replace(/^#/, '')) : rawTarget;
-        const profile = window.InnfluInspector.extractCurrentProfileData(currentNiche);
+    // CENÁRIO B: Temos criadoras na fila pronta para abordagem
+    const pendingQueue = (bot.queue || []).filter(u => u && !visitedSet.has(u.toLowerCase()));
+    if (pendingQueue.length > 0) {
+      const nextUser = pendingQueue[0].toLowerCase();
 
-        const remainingQueue = bot.queue.slice(1);
-        const visitedSet = new Set(bot.visited || []);
-        visitedSet.add(cleanUser);
-        knownCRMUsersCache.add(cleanUser);
-
-        if (!profile) {
-          hudCurrentAction.innerText = `[⚡ Automação] Falha ao ler @${cleanUser}. Avançando...`;
-          await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
-          scheduleNext(1200);
-          return;
-        }
-
-        // Validação de critérios
-        const evalResult = window.InnfluInspector.evaluateCandidate(profile, {
-          minFollowers: bot.minFollowers || 10000,
-          requireActiveStories: bot.requireStories !== false,
-          targetGender: bot.targetGender || 'female',
-          requireContact: bot.requireContact || 'all'
-        });
-
-        if (!evalResult.approved) {
-          const rejectReason = evalResult.reasons.join(', ');
-          hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada: ${rejectReason}`;
-          await logActivity({ username: cleanUser, status: `Pulada (${rejectReason})` });
-          await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
-          scheduleNext(1200);
-          return;
-        }
-
-        // Perfil qualificado: Salva no D1 e dispara mensagem
-        await saveLead(apiBaseUrl, profile, 'minerada', currentNiche);
-        await cacheLocalLead(profile, 'minerada', currentNiche);
-
-        const newMined = (bot.minedCount || 0) + 1;
-        await saveBot({
-          minedCount: newMined,
-          queue: remainingQueue,
-          visited: Array.from(visitedSet).slice(-1000)
-        });
-        hudMinedCount.innerText = newMined;
-
-        // Disparo de DM com Spintax
-        try {
-          const influencerName = profile.fullName ? profile.fullName.split(' ')[0] : cleanUser;
-          const msg = window.InnfluSpintax.interpolate(activeTemplate, { username: cleanUser, nome: influencerName });
-
-          hudCurrentAction.innerText = `[⚡ Automação] Digitando DM para @${cleanUser}...`;
-          await window.InnfluSender.sendDirectMessage(msg);
-
-          const newSent = (bot.sentCount || 0) + 1;
-          await saveBot({ sentCount: newSent });
-          hudSentTodayCount.innerText = `${newSent} / 40`;
-          await logActivity({ username: cleanUser, status: 'Automação: DM Enviada ✉️⚡' });
-          showToast({ type: 'success', title: `DM Enviada! @${cleanUser}`, message: 'Automação: aguardando delay seguro para minerar próxima...' });
-
-          // Registra no Cloudflare D1
-          try {
-            await fetch(`${apiBaseUrl}/api/log-sent`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
-            });
-          } catch (e) {}
-
-          // Delay anti-ban seguro (60s a 180s)
-          const delaySec = Math.floor(Math.random() * 121) + 60;
-          const nextAt = Date.now() + delaySec * 1000;
-          await saveBot({ nextActionAt: nextAt });
-          hudCurrentAction.innerText = `[⚡ Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
-          startCountdown(nextAt, runLoop, delaySec * 1000);
-          return;
-        } catch (err) {
-          showToast({ type: 'error', title: 'Falha no Envio', message: err.message });
-          const delaySec = 20;
-          const nextAt = Date.now() + delaySec * 1000;
-          await saveBot({ nextActionAt: nextAt });
-          startCountdown(nextAt, runLoop, delaySec * 1000);
-          return;
-        }
+      // Estamos no perfil dela?
+      if (pageType === 'profile' && currentProfileUser === nextUser) {
+        await processCandidateInAutomation(nextUser, bot, apiBaseUrl, activeTemplate);
+        return;
       } else {
         // Navega até o perfil da criadora
-        hudCurrentAction.innerText = `[⚡ Automação] Abrindo @${cleanUser}...`;
-        window.InnfluCrawler.openProfile(cleanUser);
+        hudCurrentAction.innerText = `[⚡ Automação] Abrindo @${nextUser}...`;
+        window.InnfluCrawler.openProfile(nextUser);
         return;
       }
     }
 
-    // 2. Fila vazia: executa mineração contínua para encontrar a próxima influenciadora
+    // CENÁRIO C: Fila vazia -> executa mineração contínua para encontrar novas criadoras
     hudCurrentAction.innerText = `[⚡ Automação] Fila vazia. Minerando novos perfis...`;
     await stepMiner(bot, apiBaseUrl, pageType);
+  }
+
+  /**
+   * Avalia os filtros da influenciadora, salva lead e dispara DM com delay humano seguro
+   */
+  async function processCandidateInAutomation(cleanUser, bot, apiBaseUrl, activeTemplate) {
+    hudCurrentAction.innerText = `[⚡ Automação] Avaliando critérios de @${cleanUser}...`;
+
+    const rawTarget = (bot.miningTarget || 'Geral').trim();
+    const currentNiche = bot.miningSource === 'hashtag' ? ('#' + rawTarget.replace(/^#/, '')) : rawTarget;
+    const profile = window.InnfluInspector.extractCurrentProfileData(currentNiche);
+
+    const remainingQueue = (bot.queue || []).filter(u => u && u.toLowerCase() !== cleanUser);
+    const visitedSet = new Set(bot.visited || []);
+    visitedSet.add(cleanUser);
+    knownCRMUsersCache.add(cleanUser);
+
+    if (!profile) {
+      hudCurrentAction.innerText = `[⚡ Automação] Falha ao ler @${cleanUser}. Avançando...`;
+      await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
+      scheduleNext(1200);
+      return;
+    }
+
+    // Validação estrita de critérios (Filtros configurados)
+    const evalResult = window.InnfluInspector.evaluateCandidate(profile, {
+      minFollowers: bot.minFollowers !== undefined ? bot.minFollowers : 10000,
+      maxFollowers: bot.maxFollowers || 10000000,
+      requireActiveStories: bot.requireStories !== false,
+      targetGender: bot.targetGender || 'female',
+      requireContact: bot.requireContact || 'all'
+    });
+
+    if (!evalResult.approved) {
+      const rejectReason = evalResult.reasons.join(', ');
+      hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada: ${rejectReason}`;
+      await logActivity({ username: cleanUser, status: `Pulada (${rejectReason})` });
+      await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
+      scheduleNext(1200);
+      return;
+    }
+
+    // Perfil 100% qualificado: Salva no D1 e no CRM local
+    await saveLead(apiBaseUrl, profile, 'minerada', currentNiche);
+    await cacheLocalLead(profile, 'minerada', currentNiche);
+
+    const newMined = (bot.minedCount || 0) + 1;
+    await saveBot({
+      minedCount: newMined,
+      queue: remainingQueue,
+      visited: Array.from(visitedSet).slice(-1000)
+    });
+    hudMinedCount.innerText = newMined;
+
+    // Disparo de DM com Spintax
+    try {
+      const fallbackTpl = '{Olá|Oi|Oie} {nome}! Vi seu perfil e amei seu conteúdo. Podemos conversar sobre parceria?';
+      const chosenTemplate = (activeTemplate || (hudTemplateContent ? hudTemplateContent.value : '') || fallbackTpl).trim();
+      const influencerName = profile.fullName ? profile.fullName.split(' ')[0] : cleanUser;
+      const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username: cleanUser, nome: influencerName });
+
+      hudCurrentAction.innerText = `[⚡ Automação] Digitando DM para @${cleanUser}...`;
+      await window.InnfluSender.sendDirectMessage(msg);
+
+      const newSent = (bot.sentCount || 0) + 1;
+      await saveBot({ sentCount: newSent });
+      hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
+      await logActivity({ username: cleanUser, status: 'Automação: DM Enviada ✉️⚡' });
+      showToast({ type: 'success', title: `DM Enviada! @${cleanUser}`, message: 'Automação: aguardando delay seguro para minerar próxima...' });
+
+      // Registra no Cloudflare D1
+      try {
+        await fetch(`${apiBaseUrl}/api/log-sent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
+        });
+      } catch (e) {}
+
+      // Delay anti-ban seguro e natural (60s a 180s)
+      const delaySec = Math.floor(Math.random() * 121) + 60;
+      const nextAt = Date.now() + delaySec * 1000;
+      await saveBot({ nextActionAt: nextAt });
+      hudCurrentAction.innerText = `[⚡ Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
+      startCountdown(nextAt, runLoop, delaySec * 1000);
+      return;
+    } catch (err) {
+      const isBlocked = err.message && (err.message.includes('bloque') || err.message.includes('blocked') || err.message.includes('checkpoint'));
+      if (isBlocked) {
+        showSafetyBanner('Bloqueio Detectado', err.message);
+        await saveBot({ isRunning: false, isPaused: true, activeMode: null });
+        syncUI({ ...bot, isRunning: false, isPaused: true, activeMode: null });
+        showToast({ type: 'error', title: 'Operação Interrompida', message: 'Ação bloqueada temporariamente pelo Instagram.' });
+        return;
+      }
+
+      showToast({ type: 'error', title: 'Falha no Envio', message: err.message });
+      const delaySec = 20;
+      const nextAt = Date.now() + delaySec * 1000;
+      await saveBot({ nextActionAt: nextAt });
+      startCountdown(nextAt, runLoop, delaySec * 1000);
+      return;
+    }
   }
 
   function startCountdown(targetTs, callback, totalDurationMs) {
@@ -1300,6 +1329,19 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         }
 
         // Fila esgotada
+        if (bot.activeMode === 'auto') {
+          // No modo de automação contínua, ramifica minerando semelhantes da última influenciadora visitada
+          const visitedList = (bot.visited || []).filter(u => u && u.toLowerCase() !== targetClean);
+          if (visitedList.length > 0) {
+            const nextPivot = visitedList[visitedList.length - 1].toLowerCase();
+            hudCurrentAction.innerText = `[⚡ Automação] Ramificando busca: extraindo semelhantes a @${nextPivot}...`;
+            showToast({ type: 'info', title: 'Ramificação Contínua', message: `Buscando novas semelhantes a partir de @${nextPivot}...` });
+            await saveBot({ miningTarget: nextPivot, queue: [] });
+            window.InnfluCrawler.openProfile(nextPivot);
+            return;
+          }
+        }
+
         hudCurrentAction.innerText = `Mineração de semelhantes concluída (${(bot.minedCount || 0)} salvas).`;
         showToast({ type: 'success', title: 'Mineração Concluída', message: 'Todos os perfis semelhantes foram analisados.' });
         await saveBot({ isRunning: false, activeMode: null });
@@ -1405,6 +1447,10 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
       if (author && !visitedUsers.has(author)) {
         hudCurrentAction.innerText = `Criadora identificada: @${author}. Abrindo perfil...`;
+        const currentQueue = bot.queue || [];
+        const cleanAuthor = author.toLowerCase();
+        const updatedQueue = [cleanAuthor, ...currentQueue.filter(u => u.toLowerCase() !== cleanAuthor)];
+        await saveBot({ queue: updatedQueue });
         await window.InnfluCrawler.sleep(1200);
         window.InnfluCrawler.openProfile(author);
         return;
@@ -1531,8 +1577,11 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           await saveBot({ visited: Array.from(visitedUsersSet).slice(-1000) });
           await logActivity({ username: author, status: 'Descartada (Regra 7d ⚡)' });
         } else {
-          // ELEGÍVEL E INÉDITA! Abre o perfil para auditar seguidores, stories e contatos!
+          // ELEGÍVEL E INÉDITA! Adiciona na fila e abre o perfil para auditar e contatar!
           hudCurrentAction.innerText = `Nova criadora: @${author}! Abrindo perfil...`;
+          const currentQueue = bot.queue || [];
+          const updatedQueue = [authorLower, ...currentQueue.filter(u => u.toLowerCase() !== authorLower)];
+          await saveBot({ queue: updatedQueue });
           await window.InnfluCrawler.sleep(600);
           window.InnfluCrawler.openProfile(author);
           return;
@@ -2354,5 +2403,18 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       setTimeout(runLoop, 2500);
     }
   });
+
+  // Observador de navegação SPA do Instagram (re-engaja o loop em transições internas sem recarregar)
+  let lastObservedUrl = window.location.href;
+  setInterval(() => {
+    if (window.location.href !== lastObservedUrl) {
+      lastObservedUrl = window.location.href;
+      if (localBotCache && localBotCache.isRunning && !localBotCache.isPaused) {
+        if (!localBotCache.nextActionAt || localBotCache.nextActionAt <= Date.now()) {
+          setTimeout(runLoop, 1800);
+        }
+      }
+    }
+  }, 1000);
 
 })();
