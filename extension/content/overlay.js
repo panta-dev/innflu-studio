@@ -164,6 +164,33 @@
             </div>
           </div>
 
+          <!-- 3. MENSAGEM DA ABORDAGEM (DIRECT MESSAGE) -->
+          <div class="innflu-section-title" style="margin-top:10px;">3. Mensagem da Abordagem</div>
+          <div class="innflu-template-section" style="margin-top:4px;">
+            <label class="innflu-form-label">Template com Spintax {Olá|Oi|Oie} e {nome}:</label>
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" style="height:65px;min-height:60px;">{Olá|Oi|Oie} {nome}! Vi seu perfil e amei seu conteúdo. Podemos conversar sobre parceria?</textarea>
+            <div class="innflu-template-actions">
+              <button class="innflu-btn-sub" id="btnAutoTestSpintax">🎲 Testar Variação</button>
+              <button class="innflu-btn-sub" id="btnAutoSaveTemplate" style="background:#4f46e5;color:white;">💾 Salvar Mensagem</button>
+            </div>
+          </div>
+
+          <!-- 4. INTERVALO ENTRE MENSAGENS (SEGUNDOS) -->
+          <div class="innflu-section-title" style="margin-top:10px;">4. Intervalo entre Mensagens (Segundos)</div>
+          <div class="innflu-filters-row" style="margin-top:4px;">
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Delay Mínimo (seg):</label>
+              <input type="number" class="innflu-input" id="inputAutoMinDelay" value="60" min="5" max="900" style="padding:6px 8px;font-size:12px;" />
+            </div>
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Delay Máximo (seg):</label>
+              <input type="number" class="innflu-input" id="inputAutoMaxDelay" value="120" min="10" max="1800" style="padding:6px 8px;font-size:12px;" />
+            </div>
+          </div>
+          <div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.3;">
+            🛡️ Intervalo biológico em segundos para simular digitação humana e evitar bloqueios.
+          </div>
+
           <div style="margin-top:12px;">
             <div class="innflu-btn-group-actions">
               <button class="innflu-cta-btn start" id="btnToggleAuto" style="background:linear-gradient(135deg, #10b981, #6366f1);flex:2;">
@@ -415,7 +442,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">🔎 Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;">📊 Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.65;font-size:10px;padding:4px 6px;" title="Verificar se há atualizações da extensão">v1.2 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.75;font-size:10px;padding:4px 6px;" title="Verificar se há atualizações da extensão">v1.2.1 🔄</button>
       </div>
     </div>
   `;
@@ -464,6 +491,11 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   const selAutoStories = $('selAutoStories');
   const selAutoContact = $('selAutoContact');
   const selAutoGender = $('selAutoGender');
+  const hudAutoTemplateContent = $('hudAutoTemplateContent');
+  const btnAutoTestSpintax = $('btnAutoTestSpintax');
+  const btnAutoSaveTemplate = $('btnAutoSaveTemplate');
+  const inputAutoMinDelay = $('inputAutoMinDelay');
+  const inputAutoMaxDelay = $('inputAutoMaxDelay');
   const btnToggleAuto = $('btnToggleAuto');
   const btnAutoLabel = $('btnAutoLabel');
   const btnPauseAuto = $('btnPauseAuto');
@@ -744,6 +776,12 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     }
     if (bot.targetGender && selAutoGender) {
       selAutoGender.value = bot.targetGender;
+    }
+    if (bot.minDelaySec !== undefined && inputAutoMinDelay) {
+      inputAutoMinDelay.value = bot.minDelaySec.toString();
+    }
+    if (bot.maxDelaySec !== undefined && inputAutoMaxDelay) {
+      inputAutoMaxDelay.value = bot.maxDelaySec.toString();
     }
     if (bot.miningSource && typeof selectAutoSourceUI === 'function') {
       selectAutoSourceUI(bot.miningSource);
@@ -1082,6 +1120,31 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     showToast({ type: 'success', title: 'Template Salvo', message: 'Atualizado no armazenamento e Cloudflare D1.' });
   };
 
+  if (btnAutoTestSpintax) {
+    btnAutoTestSpintax.onclick = () => {
+      const tpl = (hudAutoTemplateContent ? hudAutoTemplateContent.value : '') || '{Olá|Oi|Oie} {nome}! Adorei seu perfil!';
+      const text = window.InnfluSpintax.interpolate(tpl, { nome: 'Larissa', username: 'larifashion' });
+      showToast({ type: 'info', title: 'Variação Teste (Automação)', message: text, duration: 6000 });
+    };
+  }
+
+  if (btnAutoSaveTemplate) {
+    btnAutoSaveTemplate.onclick = async () => {
+      const tpl = (hudAutoTemplateContent ? hudAutoTemplateContent.value : '').trim();
+      await chrome.storage.local.set({ activeTemplate: tpl });
+      if (hudTemplateContent) hudTemplateContent.value = tpl;
+      const { apiBaseUrl } = await getState();
+      try {
+        await fetch(`${apiBaseUrl}/api/templates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Template Automação', content: tpl })
+        });
+      } catch (e) {}
+      showToast({ type: 'success', title: 'Mensagem Salva!', message: 'Template de automação atualizado com sucesso.' });
+    };
+  }
+
   // ==========================================
   // SINCRONIZAÇÃO DA MEMÓRIA DO CRM (ANTI-REPETIÇÃO INSTANTÂNEA)
   // ==========================================
@@ -1212,6 +1275,15 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     const requireContactVal = selAutoContact ? selAutoContact.value : 'all';
     const targetGenderVal = selAutoGender ? selAutoGender.value : 'female';
 
+    const minDelayVal = Math.max(5, parseInt(inputAutoMinDelay ? inputAutoMinDelay.value : 60, 10) || 60);
+    const maxDelayVal = Math.max(minDelayVal, parseInt(inputAutoMaxDelay ? inputAutoMaxDelay.value : 120, 10) || 120);
+
+    const autoTpl = (hudAutoTemplateContent ? hudAutoTemplateContent.value : '').trim();
+    if (autoTpl) {
+      await chrome.storage.local.set({ activeTemplate: autoTpl });
+      if (hudTemplateContent) hudTemplateContent.value = autoTpl;
+    }
+
     await syncKnownCRMUsers(apiBaseUrl);
 
     await saveBot({
@@ -1225,9 +1297,12 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       requireStories: requireStoriesVal,
       requireContact: requireContactVal,
       targetGender: targetGenderVal,
+      minDelaySec: minDelayVal,
+      maxDelaySec: maxDelayVal,
       queue: [],
       visitedPosts: [],
-      nextActionAt: 0
+      nextActionAt: 0,
+      searchStallCount: 0
     });
 
     const updated = await getState();
@@ -1409,7 +1484,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     // Disparo de DM com Spintax
     try {
       const fallbackTpl = '{Olá|Oi|Oie} {nome}! Vi seu perfil e amei seu conteúdo. Podemos conversar sobre parceria?';
-      const chosenTemplate = (activeTemplate || (hudTemplateContent ? hudTemplateContent.value : '') || fallbackTpl).trim();
+      const chosenTemplate = ((hudAutoTemplateContent ? hudAutoTemplateContent.value : '') || activeTemplate || (hudTemplateContent ? hudTemplateContent.value : '') || fallbackTpl).trim();
       const influencerName = profile.fullName ? profile.fullName.split(' ')[0] : cleanUser;
       const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username: cleanUser, nome: influencerName });
 
@@ -1431,8 +1506,10 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         });
       } catch (e) {}
 
-      // Delay anti-ban seguro e natural (60s a 180s)
-      const delaySec = Math.floor(Math.random() * 121) + 60;
+      // Delay anti-ban seguro e natural com base no intervalo configurado em segundos
+      const minS = Math.max(5, parseInt(bot.minDelaySec, 10) || 60);
+      const maxS = Math.max(minS, parseInt(bot.maxDelaySec, 10) || 120);
+      const delaySec = Math.floor(Math.random() * (maxS - minS + 1)) + minS;
       const nextAt = Date.now() + delaySec * 1000;
       await saveBot({ nextActionAt: nextAt });
       hudCurrentAction.innerText = `[⚡ Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
@@ -1740,8 +1817,34 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       const nextPost = window.InnfluCrawler.getNextUnvisitedPost(Array.from(visitedPosts));
 
       if (!nextPost) {
+        const stallCount = (bot.searchStallCount || 0) + 1;
+        await saveBot({ searchStallCount: stallCount });
+
+        // Auto-Pivot: se a busca/hashtag não trouxer mais resultados novos após rolagens consecutivas,
+        // pivota automaticamente para sugestões / contas semelhantes dos perfis já visitados/salvos
+        if (stallCount >= 2) {
+          const pivotPool = [...(bot.visited || []), ...Array.from(knownCRMUsersCache)].filter(u => u && u.length > 2);
+          if (pivotPool.length > 0) {
+            const pivotUser = pivotPool[Math.floor(Math.random() * pivotPool.length)].toLowerCase();
+            hudCurrentAction.innerText = `[⚡ Auto-Pivot] Feed esgotado. Minerando semelhantes a @${pivotUser}...`;
+            showToast({
+              type: 'info',
+              title: '⚡ Auto-Pivot de Prospecção',
+              message: `Feed travado. Buscando sugestões de contas semelhantes a @${pivotUser}...`
+            });
+            await saveBot({
+              searchStallCount: 0,
+              miningSource: 'similar',
+              miningTarget: pivotUser,
+              queue: []
+            });
+            window.InnfluCrawler.openProfile(pivotUser);
+            return;
+          }
+        }
+
         // Todos os posts visíveis foram inspecionados! Rola para carregar novos posts
-        hudCurrentAction.innerText = 'Rolando feed para carregar novas publicações...';
+        hudCurrentAction.innerText = `Rolando feed para carregar novas publicações (${stallCount}/2)...`;
         await window.InnfluCrawler.scrollDown();
         await window.InnfluCrawler.sleep(2000);
 
@@ -1752,9 +1855,11 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           scheduleNext(2500);
           return;
         }
+        await saveBot({ searchStallCount: 0 });
         return handleInspectPostElement(retryPost, visitedPosts, visitedUsers, source, target, apiBaseUrl);
       }
 
+      await saveBot({ searchStallCount: 0 });
       return handleInspectPostElement(nextPost, visitedPosts, visitedUsers, source, target, apiBaseUrl);
     }
 
@@ -2628,7 +2733,12 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   // INICIALIZAÇÃO
   // ==========================================
   getState().then(({ bot, apiBaseUrl, activeTemplate, savedLeads }) => {
-    if (activeTemplate) hudTemplateContent.value = activeTemplate;
+    if (activeTemplate) {
+      if (hudTemplateContent) hudTemplateContent.value = activeTemplate;
+      if (hudAutoTemplateContent) hudAutoTemplateContent.value = activeTemplate;
+    }
+    if (bot.minDelaySec && inputAutoMinDelay) inputAutoMinDelay.value = bot.minDelaySec.toString();
+    if (bot.maxDelaySec && inputAutoMaxDelay) inputAutoMaxDelay.value = bot.maxDelaySec.toString();
     if (savedLeads && savedLeads.length > 0) {
       cachedLeads = savedLeads;
       updateLeadsCountHeader(savedLeads);

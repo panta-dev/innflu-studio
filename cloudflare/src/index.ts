@@ -548,11 +548,11 @@ app.get('/api/health', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.2.0',
+    version: '1.2.1',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'Painel com 3 abas (Automação, Mineração e Captação), Dock Ao Vivo fixo permanente e sincronização remota OTA.',
+    releaseNotes: 'Auto-Pivot para perfis semelhantes em feeds travados, novo editor de mensagens na Automação, ajuste de delay em segundos e fim de falsos-positivos em perfis de moda/provador.',
     downloadUrl: '/innflu-extensao.zip',
-    publishedAt: '2026-11-17T12:00:00Z',
+    publishedAt: '2026-11-17T14:30:00Z',
     dynamicRules: {
       selectors: {
         messageButtons: ['enviar mensagem', 'mensagem', 'message', 'send message'],
@@ -569,9 +569,9 @@ app.get('/api/extension/version', (c) => {
       },
       blacklistBioKeywords: [
         'sorteio', 'rifa', 'dropshipping', 'afiliado', 'afiliada', 'bet', 'tigrinho', 'cassino', 'privacy', 'onlyfans',
-        'loja', 'store', 'varejo', 'atacado', 'frete', 'compre online', 'site oficial', 'cupom', 'multimarcas', 'look do dia'
+        'loja oficial', 'compre no site', 'loja virtual', 'site oficial', 'enviamos para todo brasil', 'entregamos para todo brasil'
       ],
-      heuristicsVersion: '2026.11.17'
+      heuristicsVersion: '2026.11.17-v2'
     }
   });
 });
