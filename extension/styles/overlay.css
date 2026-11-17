@@ -516,13 +516,15 @@
   background: #090d14;
   border: 1px solid #30363d;
   border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 11px;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
   color: #f0f6fc;
   outline: none;
   box-sizing: border-box;
   font-family: inherit;
-  resize: none;
+  resize: vertical;
+  min-height: 120px;
 }
 
 .innflu-template-textarea:focus {

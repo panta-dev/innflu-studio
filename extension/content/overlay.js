@@ -146,7 +146,7 @@
           <!-- 3. MENSAGEM & INTERVALO -->
           <div class="innflu-section-title" style="margin-top:6px;">3. Mensagem & Intervalo</div>
           <div class="innflu-template-section">
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" style="height:55px;min-height:50px;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="6" style="height:125px;min-height:115px;line-height:1.45;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
             <div class="innflu-delay-row">
               <div class="innflu-delay-inputs">
                 <span class="innflu-form-label" style="margin:0;">Delay:</span>
@@ -321,7 +321,7 @@
         <div id="viewSender" class="innflu-tab-content" style="display:none;">
           <div class="innflu-template-section">
             <label class="innflu-form-label">Mensagem Spintax {Olá|Oi|Oie} e {nome}:</label>
-            <textarea class="innflu-template-textarea" id="hudTemplateContent" style="height:90px;min-height:80px;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}
+            <textarea class="innflu-template-textarea" id="hudTemplateContent" rows="6" style="height:125px;min-height:115px;line-height:1.45;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}
 
 {Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!
 
@@ -1017,7 +1017,11 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       tabs[target][0].classList.add('active');
       tabs[target][1].style.display = 'block';
     }
-    if (target === 'mine') {
+    if (target === 'auto') {
+      setTimeout(() => autoExpandTextarea(hudAutoTemplateContent), 50);
+    } else if (target === 'sender') {
+      setTimeout(() => autoExpandTextarea(hudTemplateContent), 50);
+    } else if (target === 'mine') {
       renderLeadsTable();
       loadLeadsFromApiAndRender();
     }
@@ -1098,6 +1102,19 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       } catch (e) {}
       showToast({ type: 'success', title: 'Mensagem Salva!', message: 'Template de automação atualizado com sucesso.' });
     };
+  }
+
+  function autoExpandTextarea(ta) {
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(125, ta.scrollHeight + 4) + 'px';
+  }
+
+  if (hudAutoTemplateContent) {
+    hudAutoTemplateContent.addEventListener('input', () => autoExpandTextarea(hudAutoTemplateContent));
+  }
+  if (hudTemplateContent) {
+    hudTemplateContent.addEventListener('input', () => autoExpandTextarea(hudTemplateContent));
   }
 
   // ==========================================
@@ -2855,8 +2872,16 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       try { chrome.storage.local.set({ activeTemplate }); } catch (e) {}
     }
 
-    if (hudTemplateContent) hudTemplateContent.value = activeTemplate;
-    if (hudAutoTemplateContent) hudAutoTemplateContent.value = activeTemplate;
+    if (hudTemplateContent) {
+      hudTemplateContent.value = activeTemplate;
+      hudTemplateContent.scrollTop = 0;
+      autoExpandTextarea(hudTemplateContent);
+    }
+    if (hudAutoTemplateContent) {
+      hudAutoTemplateContent.value = activeTemplate;
+      hudAutoTemplateContent.scrollTop = 0;
+      autoExpandTextarea(hudAutoTemplateContent);
+    }
     if (bot.minDelaySec && inputAutoMinDelay) inputAutoMinDelay.value = bot.minDelaySec.toString();
     if (bot.maxDelaySec && inputAutoMaxDelay) inputAutoMaxDelay.value = bot.maxDelaySec.toString();
     if (savedLeads && savedLeads.length > 0) {
