@@ -290,12 +290,12 @@ app.post('/api/auth/register', async (c) => {
     // Cria template inicial com Spintax para o novo usuário
     await db.prepare(`
       INSERT INTO templates (id, user_id, campaign_id, title, content, is_active)
-      VALUES (?, ?, ?, 'Convite Parceria Maternidade', ?, 1)
+      VALUES (?, ?, ?, 'Publicidade Stories Infoproduto', ?, 1)
     `).bind(
       'tmpl_' + userId + '_01',
       userId,
       'camp_' + userId + '_01',
-      '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Espero que esteja tudo bem!}\n\nVi seu perfil e adorei o conteúdo que você compartilha sobre maternidade! {Estou muito encantada com sua rotina.|Achei suas publicações super autênticas e acolhedoras.}\n\nSomos uma marca e gostaríamos de te convidar para uma parceria com envio de produtos exclusivos sem nenhum custo. Você teria interesse em conhecer mais da nossa proposta?'
+      '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}\n\n{Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!\n\nGostaria de saber se você faz publicidade nos stories. Temos uma proposta de publicidade nos stories de um infoproduto digital.\n\n{Podemos conversar a respeito?|Topa saber mais detalhes?|Você tem disponibilidade?}'
     ).run();
 
     return c.json({
@@ -548,9 +548,9 @@ app.get('/api/health', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.2.6',
+    version: '1.2.7',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.2.6: Templates genéricos universais, resolução perfeita de Spintax e interpolação inteligente do nome da criadora.',
+    releaseNotes: 'v1.2.7: Copy atualizada exclusivamente para publicidade nos stories de infoproduto digital.',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-17T16:30:00Z',
     dynamicRules: {

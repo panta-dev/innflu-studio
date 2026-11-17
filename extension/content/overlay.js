@@ -146,7 +146,7 @@
           <!-- 3. MENSAGEM & INTERVALO -->
           <div class="innflu-section-title" style="margin-top:6px;">3. Mensagem & Intervalo</div>
           <div class="innflu-template-section">
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" style="height:55px;min-height:50px;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! {Somos uma marca e|Trabalho com uma marca e} gostaríamos de te convidar para uma parceria. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" style="height:55px;min-height:50px;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
             <div class="innflu-delay-row">
               <div class="innflu-delay-inputs">
                 <span class="innflu-form-label" style="margin:0;">Delay:</span>
@@ -325,7 +325,9 @@
 
 {Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!
 
-{Somos uma marca e|Trabalho com uma marca e} gostaríamos de te convidar para uma parceria com envio de produtos exclusivos sem nenhum custo. {Você teria interesse em conhecer mais da nossa proposta?|Topa saber mais detalhes?|Podemos conversar a respeito?}</textarea>
+Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de publicidade nos stories de um infoproduto digital.
+
+{Podemos conversar a respeito?|Topa saber mais detalhes?|Você tem disponibilidade?}</textarea>
             
             <div class="innflu-template-actions">
               <button class="innflu-btn-sub" id="btnTestSpintax">🎲 Testar Variação</button>
@@ -1495,7 +1497,7 @@
 
     // Disparo de DM com Spintax
     try {
-      const fallbackTpl = '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! {Somos uma marca e|Trabalho com uma marca e} gostaríamos de te convidar para uma parceria. {Podemos conversar a respeito?|Topa saber mais detalhes?}';
+      const fallbackTpl = '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}';
       const chosenTemplate = ((hudAutoTemplateContent ? hudAutoTemplateContent.value : '') || activeTemplate || (hudTemplateContent ? hudTemplateContent.value : '') || fallbackTpl).trim();
       const msg = window.InnfluSpintax.interpolate(chosenTemplate, { 
         username: cleanUser, 
@@ -2840,11 +2842,15 @@
   getState().then(({ bot, apiBaseUrl, activeTemplate, savedLeads }) => {
     const DEFAULT_UNIVERSAL_TEMPLATE = 
       '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}\n\n' +
-      '{Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}! ' +
-      '{Somos uma marca e|Trabalho com uma marca e} gostaríamos de te convidar para uma parceria com envio de produtos exclusivos sem nenhum custo. ' +
-      '{Você teria interesse em conhecer mais da nossa proposta?|Topa saber mais detalhes?|Podemos conversar a respeito?}';
+      '{Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!\n\n' +
+      'Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de publicidade nos stories de um infoproduto digital.\n\n' +
+      '{Podemos conversar a respeito?|Topa saber mais detalhes?|Você tem disponibilidade?}';
 
-    if (!activeTemplate || activeTemplate.toLowerCase().includes('maternidade')) {
+    if (!activeTemplate || 
+        activeTemplate.toLowerCase().includes('maternidade') || 
+        activeTemplate.toLowerCase().includes('produtos') || 
+        activeTemplate.toLowerCase().includes('produto') || 
+        activeTemplate.toLowerCase().includes('sem nenhum custo')) {
       activeTemplate = DEFAULT_UNIVERSAL_TEMPLATE;
       try { chrome.storage.local.set({ activeTemplate }); } catch (e) {}
     }
