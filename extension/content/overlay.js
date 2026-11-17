@@ -395,7 +395,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.2.4 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.2.5 🔄</button>
       </div>
     </div>
   `;
@@ -1500,15 +1500,16 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       const influencerName = profile.fullName ? profile.fullName.split(' ')[0] : cleanUser;
       const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username: cleanUser, nome: influencerName });
 
-      hudCurrentAction.innerText = `[⚡ Automação] Digitando DM para @${cleanUser}...`;
+      hudCurrentAction.innerText = `[Automação] Digitando DM para @${cleanUser}...`;
       await window.InnfluSender.sendDirectMessage(msg);
 
+      // SÓ ENTRA AQUI SE FOI 100% CONFIRMADO O ENVIO DA MENSAGEM NO DIRECT
       const newSent = (bot.sentCount || 0) + 1;
       await saveBot({ sentCount: newSent });
       hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
-      await logActivity({ username: cleanUser, status: 'Automação: DM Enviada ✉️⚡' });
+      await logActivity({ username: cleanUser, status: 'DM Enviada ✓' });
       await updateLocalLeadStatus(cleanUser, 'contatada');
-      showToast({ type: 'success', title: `DM Enviada! @${cleanUser}`, message: 'Automação: aguardando delay seguro para minerar próxima...' });
+      showToast({ type: 'success', title: `DM Confirmada! @${cleanUser}`, message: 'Mensagem enviada com sucesso no Direct.' });
 
       // Registra no Cloudflare D1
       try {
@@ -1519,13 +1520,13 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         });
       } catch (e) {}
 
-      // Delay anti-ban seguro e natural com base no intervalo configurado em segundos
+      // ENTRA NO DESCANSO ANTI-BAN SOMENTE APÓS CONFIRMAÇÃO DO ENVIO
       const minS = Math.max(5, parseInt(bot.minDelaySec, 10) || 60);
       const maxS = Math.max(minS, parseInt(bot.maxDelaySec, 10) || 120);
       const delaySec = Math.floor(Math.random() * (maxS - minS + 1)) + minS;
       const nextAt = Date.now() + delaySec * 1000;
       await saveBot({ nextActionAt: nextAt });
-      hudCurrentAction.innerText = `[⚡ Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
+      hudCurrentAction.innerText = `[Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
       startCountdown(nextAt, runLoop, delaySec * 1000);
       return;
     } catch (err) {
@@ -1538,11 +1539,16 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         return;
       }
 
-      showToast({ type: 'error', title: 'Falha no Envio', message: err.message });
-      const delaySec = 20;
-      const nextAt = Date.now() + delaySec * 1000;
+      // NÃO FOI ENVIADA! Não entra no descanso anti-ban longo!
+      console.warn('[Innflu] Falha ao enviar DM para @' + cleanUser + ':', err.message);
+      await logActivity({ username: cleanUser, status: `Não Enviada (${err.message.substring(0, 24)})` });
+      showToast({ type: 'warning', title: `DM Não Enviada (@${cleanUser})`, message: err.message });
+      
+      const retryDelay = 6;
+      const nextAt = Date.now() + retryDelay * 1000;
       await saveBot({ nextActionAt: nextAt });
-      startCountdown(nextAt, runLoop, delaySec * 1000);
+      hudCurrentAction.innerText = `[Automação] Pulando @${cleanUser} (não enviou)...`;
+      startCountdown(nextAt, runLoop, retryDelay * 1000);
       return;
     }
   }
@@ -2184,10 +2190,12 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       hudCurrentAction.innerText = `Pausa anti-ban (${delaySec}s)...`;
       startCountdown(nextAt, runLoop, delaySec * 1000);
     } catch (err) {
-      showToast({ type: 'error', title: 'Falha no Envio', message: err.message });
-      const nextAt = Date.now() + 15000;
+      console.warn('[Innflu] Falha ao enviar DM na Captação:', err.message);
+      await logActivity({ username, status: `Não Enviada (${err.message.substring(0, 24)})` });
+      showToast({ type: 'warning', title: 'Falha no Envio', message: err.message });
+      const nextAt = Date.now() + 6000;
       await saveBot({ nextActionAt: nextAt });
-      startCountdown(nextAt, runLoop, 15000);
+      startCountdown(nextAt, runLoop, 6000);
     }
   }
 

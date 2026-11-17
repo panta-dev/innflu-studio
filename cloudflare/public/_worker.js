@@ -2535,9 +2535,9 @@ app.get("/api/health", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.2.4",
+    version: "1.2.5",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "Novo layout profissional SaaS: sem barra de rolagem, design compacto e paleta s\xF3bria de alto contraste.",
+    releaseNotes: "v1.2.5: Verifica\xE7\xE3o estrita de confirma\xE7\xE3o de envio de DM antes do descanso anti-ban e corre\xE7\xE3o de abertura do chat.",
     downloadUrl: "/innflu-extensao.zip",
     publishedAt: "2026-11-17T16:30:00Z",
     dynamicRules: {
