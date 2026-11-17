@@ -11,7 +11,7 @@ const DEFAULT_CONFIG = {
   dailyLimit: 40,
   minDelaySec: 60,
   maxDelaySec: 180,
-  activeCampaignKeyword: 'maternidade',
+  activeCampaignKeyword: 'provador',
   lastResetDate: new Date().toISOString().split('T')[0]
 };
 

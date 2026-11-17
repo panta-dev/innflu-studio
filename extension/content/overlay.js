@@ -97,7 +97,7 @@
 
           <div class="innflu-form-group">
             <label class="innflu-form-label" id="lblAutoTarget">Alvo ou Nicho:</label>
-            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: maternidade, @perfil" value="maternidade" />
+            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: @perfil, moda, provador, beleza" value="" />
           </div>
 
           <div class="innflu-section-title">2. Filtros de Qualificação</div>
@@ -146,7 +146,7 @@
           <!-- 3. MENSAGEM & INTERVALO -->
           <div class="innflu-section-title" style="margin-top:6px;">3. Mensagem & Intervalo</div>
           <div class="innflu-template-section">
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" style="height:44px;min-height:44px;">{Olá|Oi|Oie} {nome}! Vi seu perfil e amei seu conteúdo. Podemos conversar sobre parceria?</textarea>
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" style="height:55px;min-height:50px;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! {Somos uma marca e|Trabalho com uma marca e} gostaríamos de te convidar para uma parceria. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
             <div class="innflu-delay-row">
               <div class="innflu-delay-inputs">
                 <span class="innflu-form-label" style="margin:0;">Delay:</span>
@@ -197,7 +197,7 @@
 
           <div class="innflu-form-group">
             <label class="innflu-form-label" id="lblMiningTarget">Termo de Pesquisa / Nicho:</label>
-            <input type="text" class="innflu-input" id="inputMiningTarget" placeholder="ex: maternidade, moda, nutrição" value="maternidade" />
+            <input type="text" class="innflu-input" id="inputMiningTarget" placeholder="ex: moda, provador, beleza, nutrição" value="" />
           </div>
 
           <div class="innflu-section-title">2. Filtros de Qualificação</div>
@@ -321,11 +321,11 @@
         <div id="viewSender" class="innflu-tab-content" style="display:none;">
           <div class="innflu-template-section">
             <label class="innflu-form-label">Mensagem Spintax {Olá|Oi|Oie} e {nome}:</label>
-            <textarea class="innflu-template-textarea" id="hudTemplateContent" style="height:90px;min-height:80px;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?}
+            <textarea class="innflu-template-textarea" id="hudTemplateContent" style="height:90px;min-height:80px;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}
 
-Vi seu perfil e adorei o conteúdo que você compartilha sobre maternidade real!
+{Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!
 
-Somos uma marca e gostaríamos de te convidar para uma parceria com envio de produtos exclusivos sem nenhum custo. Você teria interesse em conhecer mais da nossa proposta?</textarea>
+{Somos uma marca e|Trabalho com uma marca e} gostaríamos de te convidar para uma parceria com envio de produtos exclusivos sem nenhum custo. {Você teria interesse em conhecer mais da nossa proposta?|Topa saber mais detalhes?|Podemos conversar a respeito?}</textarea>
             
             <div class="innflu-template-actions">
               <button class="innflu-btn-sub" id="btnTestSpintax">🎲 Testar Variação</button>
@@ -395,7 +395,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.2.5 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.2.6 🔄</button>
       </div>
     </div>
   `;
@@ -1495,10 +1495,13 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
     // Disparo de DM com Spintax
     try {
-      const fallbackTpl = '{Olá|Oi|Oie} {nome}! Vi seu perfil e amei seu conteúdo. Podemos conversar sobre parceria?';
+      const fallbackTpl = '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! {Somos uma marca e|Trabalho com uma marca e} gostaríamos de te convidar para uma parceria. {Podemos conversar a respeito?|Topa saber mais detalhes?}';
       const chosenTemplate = ((hudAutoTemplateContent ? hudAutoTemplateContent.value : '') || activeTemplate || (hudTemplateContent ? hudTemplateContent.value : '') || fallbackTpl).trim();
-      const influencerName = profile.fullName ? profile.fullName.split(' ')[0] : cleanUser;
-      const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username: cleanUser, nome: influencerName });
+      const msg = window.InnfluSpintax.interpolate(chosenTemplate, { 
+        username: cleanUser, 
+        nome: profile.fullName || cleanUser,
+        fullName: profile.fullName 
+      });
 
       hudCurrentAction.innerText = `[Automação] Digitando DM para @${cleanUser}...`;
       await window.InnfluSender.sendDirectMessage(msg);
@@ -2137,16 +2140,16 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         }
       } catch (e) {}
 
-      // Busca primeiro nome real do perfil se disponível
+      // Busca nome real do perfil se disponível para interpolação
       let influencerName = username;
       try {
         if (window.InnfluCrawler && typeof window.InnfluCrawler.getCurrentProfileFullName === 'function') {
           const profileName = window.InnfluCrawler.getCurrentProfileFullName();
-          if (profileName) influencerName = profileName.split(' ')[0];
+          if (profileName) influencerName = profileName;
         }
       } catch (e) {}
 
-      const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username, nome: influencerName });
+      const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username, nome: influencerName, fullName: influencerName });
       hudCurrentAction.innerText = `Digitando DM para @${username}...`;
       await window.InnfluSender.sendDirectMessage(msg);
 
@@ -2835,10 +2838,19 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   // INICIALIZAÇÃO
   // ==========================================
   getState().then(({ bot, apiBaseUrl, activeTemplate, savedLeads }) => {
-    if (activeTemplate) {
-      if (hudTemplateContent) hudTemplateContent.value = activeTemplate;
-      if (hudAutoTemplateContent) hudAutoTemplateContent.value = activeTemplate;
+    const DEFAULT_UNIVERSAL_TEMPLATE = 
+      '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}\n\n' +
+      '{Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}! ' +
+      '{Somos uma marca e|Trabalho com uma marca e} gostaríamos de te convidar para uma parceria com envio de produtos exclusivos sem nenhum custo. ' +
+      '{Você teria interesse em conhecer mais da nossa proposta?|Topa saber mais detalhes?|Podemos conversar a respeito?}';
+
+    if (!activeTemplate || activeTemplate.toLowerCase().includes('maternidade')) {
+      activeTemplate = DEFAULT_UNIVERSAL_TEMPLATE;
+      try { chrome.storage.local.set({ activeTemplate }); } catch (e) {}
     }
+
+    if (hudTemplateContent) hudTemplateContent.value = activeTemplate;
+    if (hudAutoTemplateContent) hudAutoTemplateContent.value = activeTemplate;
     if (bot.minDelaySec && inputAutoMinDelay) inputAutoMinDelay.value = bot.minDelaySec.toString();
     if (bot.maxDelaySec && inputAutoMaxDelay) inputAutoMaxDelay.value = bot.maxDelaySec.toString();
     if (savedLeads && savedLeads.length > 0) {

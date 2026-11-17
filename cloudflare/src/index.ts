@@ -548,9 +548,9 @@ app.get('/api/health', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.2.5',
+    version: '1.2.6',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.2.5: Verificação estrita de confirmação de envio de DM antes do descanso anti-ban e correção de abertura do chat.',
+    releaseNotes: 'v1.2.6: Templates genéricos universais, resolução perfeita de Spintax e interpolação inteligente do nome da criadora.',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-17T16:30:00Z',
     dynamicRules: {
