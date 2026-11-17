@@ -2535,11 +2535,11 @@ app.get("/api/health", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.2.2",
+    version: "1.2.3",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "Sincroniza\xE7\xE3o autom\xE1tica imediata da barra de Leads minerados para a Capta\xE7\xE3o e Automa\xE7\xE3o com atualiza\xE7\xE3o de status contatada.",
+    releaseNotes: "Corre\xE7\xE3o de disparo de DM no Instagram Web (suporte ao React 18, clique no bot\xE3o de mensagem, envio de convites e polling de chat).",
     downloadUrl: "/innflu-extensao.zip",
-    publishedAt: "2026-11-17T15:00:00Z",
+    publishedAt: "2026-11-17T16:30:00Z",
     dynamicRules: {
       selectors: {
         messageButtons: ["enviar mensagem", "mensagem", "message", "send message"],

@@ -1,6 +1,6 @@
 /**
  * Módulo de Envio de DM com Simulação de Digitação Humana,
- * Detecção Anti-Ban e Validação da Regra de 7 Dias
+ * Detecção Anti-Ban, Suporte Robusto ao React 18 e Tratamento de Convites
  */
 window.InnfluSender = {
 
@@ -63,44 +63,25 @@ window.InnfluSender = {
   },
 
   /**
-   * Verifica se a conversa aberta já possui mensagens enviadas recentemente (Regra de 7 Dias no DOM)
-   */
-  hasRecentOutgoingMessagesInChat() {
-    // Procura bolhas de mensagens e timestamps de envio no chat
-    const messageRows = document.querySelectorAll('div[role="row"], div[role="listitem"], div[class*="message"]');
-    for (const row of messageRows) {
-      // Verifica se a mensagem partiu do remetente (lado direito / bolha de saída)
-      const isOutgoing = row.querySelector('[data-testid*="outgoing"], [class*="outgoing"], [class*="x1n2onr6"]') ||
-                         row.style.alignSelf === 'flex-end' ||
-                         row.classList.contains('_outgoing');
-      if (isOutgoing) return true;
-    }
-
-    // Fallback: busca por bolhas com alinhamento à direita no container de conversa
-    const bubbles = Array.from(document.querySelectorAll('div[dir="auto"]'));
-    return bubbles.length > 2;
-  },
-
-  /**
-   * Localiza o botão "Enviar mensagem" no perfil do influenciador com seletores multi-camadas
+   * Localiza o botão "Enviar mensagem" no perfil com seletores universais e resilientes
    */
   findMessageButton() {
-    // 1. Botões no cabeçalho (header ou section do topo do perfil)
-    const scope = document.querySelector('header') || document.querySelector('main section') || document.body;
-    const candidates = Array.from(scope.querySelectorAll('button, div[role="button"], a[role="button"], a[href*="/direct/t/"]'));
+    // 1. Procura em todo o cabeçalho e corpo da página
+    const candidates = Array.from(document.querySelectorAll('header button, header div[role="button"], header a[role="button"], header a[href*="/direct/"], button, div[role="button"], a[role="button"]'));
 
-    const dynamicLabels = window.__innfluDynamicRules?.selectors?.messageButtons || [
+    const targetKeywords = [
       'enviar mensagem',
       'mensagem',
       'message',
-      'send message'
+      'send message',
+      'enviar convite',
+      'send invite'
     ];
 
     for (const btn of candidates) {
       const text = (btn.innerText || btn.getAttribute('aria-label') || '').toLowerCase().trim();
-      const isMatch = dynamicLabels.some(l => text === l || text.startsWith(l));
+      const isMatch = targetKeywords.some(kw => text === kw || text.startsWith(kw));
       if (isMatch) {
-        // Garante que o botão está visível na tela
         const rect = btn.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
           return btn;
@@ -108,89 +89,176 @@ window.InnfluSender = {
       }
     }
 
-    // 2. Link direto para o chat (/direct/t/...)
-    const directLink = document.querySelector('a[href*="/direct/t/"]');
-    if (directLink) return directLink;
+    // 2. Links específicos de chat (/direct/t/...)
+    const directLinks = Array.from(document.querySelectorAll('a[href*="/direct/t/"], a[href*="/direct/new"]'));
+    for (const link of directLinks) {
+      const rect = link.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        return link;
+      }
+    }
+
+    // 3. Botão adjacente ao botão de Seguir / Seguindo
+    const followButtons = Array.from(document.querySelectorAll('button, div[role="button"]')).filter(b => {
+      const t = (b.innerText || '').toLowerCase().trim();
+      return t === 'seguir' || t === 'seguindo' || t === 'follow' || t === 'following';
+    });
+    for (const fBtn of followButtons) {
+      const parent = fBtn.parentElement?.parentElement;
+      if (parent) {
+        const siblingButtons = Array.from(parent.querySelectorAll('button, div[role="button"]')).filter(b => b !== fBtn);
+        for (const sBtn of siblingButtons) {
+          const txt = (sBtn.innerText || '').toLowerCase().trim();
+          if (txt.includes('mensagem') || txt.includes('message') || txt.length < 15) {
+            return sBtn;
+          }
+        }
+      }
+    }
 
     return null;
   },
 
   /**
-   * Localiza a caixa de texto de mensagem do Direct (adaptável ao layout atual do Instagram)
+   * Aguarda a caixa de texto do Direct aparecer no DOM com polling resiliente
    */
-  findMessageInput() {
-    return document.querySelector('div[contenteditable="true"][role="textbox"]') ||
-           document.querySelector('div[contenteditable="true"][aria-label*="Mensagem" i]') ||
-           document.querySelector('div[contenteditable="true"][aria-label*="Message" i]') ||
-           document.querySelector('textarea[placeholder*="Mensagem" i]') ||
-           document.querySelector('textarea[placeholder*="Message" i]') ||
-           document.querySelector('div[contenteditable="true"]');
+  async waitForMessageInput(timeoutMs = 9000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const el = document.querySelector('div[contenteditable="true"][role="textbox"]') ||
+                 document.querySelector('div[contenteditable="true"][aria-label*="Mensagem" i]') ||
+                 document.querySelector('div[contenteditable="true"][aria-label*="Message" i]') ||
+                 document.querySelector('div[contenteditable="true"][aria-label*="convite" i]') ||
+                 document.querySelector('div[contenteditable="true"][aria-label*="invite" i]') ||
+                 document.querySelector('textarea[placeholder*="Mensagem" i]') ||
+                 document.querySelector('textarea[placeholder*="Message" i]') ||
+                 document.querySelector('div[contenteditable="true"]');
+      if (el && el.offsetParent !== null) {
+        return el;
+      }
+      await this.sleep(300);
+    }
+    return null;
   },
 
   /**
-   * Simula a movimentação do mouse e foco natural antes de interagir
+   * Simula clique humano e interativo
    */
-  async naturalInteract(element) {
+  async clickElement(element) {
     if (!element) return;
+    try {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {}
+    await this.sleep(this.randomDelay(120, 250));
+
     const rect = element.getBoundingClientRect();
-    const x = rect.left + rect.width / 2 + (Math.random() * 8 - 4);
-    const y = rect.top + rect.height / 2 + (Math.random() * 8 - 4);
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
 
     element.dispatchEvent(new MouseEvent('mousemove', { clientX: x, clientY: y, bubbles: true }));
-    await this.sleep(this.randomDelay(80, 220));
     element.dispatchEvent(new MouseEvent('mousedown', { clientX: x, clientY: y, bubbles: true }));
-    await this.sleep(this.randomDelay(50, 150));
+    element.focus();
+    await this.sleep(this.randomDelay(60, 140));
     element.dispatchEvent(new MouseEvent('mouseup', { clientX: x, clientY: y, bubbles: true }));
     element.dispatchEvent(new MouseEvent('click', { clientX: x, clientY: y, bubbles: true }));
+
+    // Clique nativo explícito (obrigatório para links e React)
+    if (typeof element.click === 'function') {
+      try { element.click(); } catch (e) {}
+    }
   },
 
   /**
-   * Simula a digitação letra por letra como um ser humano real com micro-pausas,
-   * hesitações e suporte seguro a input events modernos (sem depender puramente de execCommand legado)
+   * Digita a mensagem no editor do Instagram acionando o estado interno do React
    */
-  async typeHumanLike(inputEl, text) {
-    await this.naturalInteract(inputEl);
+  async typeMessageIntoReact(inputEl, text) {
+    await this.clickElement(inputEl);
     inputEl.focus();
-    await this.sleep(this.randomDelay(350, 750));
+    await this.sleep(this.randomDelay(250, 450));
 
-    // Limpa conteúdo prévio se houver
-    inputEl.innerText = '';
-    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-    await this.sleep(this.randomDelay(150, 300));
+    // Seleciona o conteúdo prévio se houver e limpa
+    try {
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(inputEl);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (e) {}
 
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-
-      // Dispara InputEvent moderno com fallback para execCommand
-      let inserted = false;
-      try {
-        inserted = document.execCommand('insertText', false, char);
-      } catch (e) {
-        inserted = false;
-      }
-
-      if (!inserted) {
-        inputEl.innerText += char;
-        inputEl.dispatchEvent(new InputEvent('input', { bubbles: true, data: char, inputType: 'insertText' }));
-      }
-
-      // Ritmo de digitação com cadência humana
-      let delay = this.randomDelay(50, 125);
-      if (char === '.' || char === '!' || char === '?') {
-        delay += this.randomDelay(300, 600); // Pausa ao final de frases
-      } else if (char === ',' || char === ';') {
-        delay += this.randomDelay(150, 300); // Respiração na pontuação
-      } else if (char === '\n') {
-        delay += this.randomDelay(400, 750); // Nova linha
-      } else if (Math.random() < 0.05) {
-        // Hesitação/pausa pensativa (5% de chance)
-        delay += this.randomDelay(250, 500);
-      }
-
-      await this.sleep(delay);
+    // Injeta via execCommand insertText (aciona nativamente o Slate/Draft.js do React 18)
+    let inserted = false;
+    try {
+      inserted = document.execCommand('insertText', false, text);
+    } catch (e) {
+      inserted = false;
     }
 
-    await this.sleep(this.randomDelay(500, 1000));
+    if (!inserted || !inputEl.innerText.trim()) {
+      // Fallback 1: InputEvent com data completa
+      try {
+        const inputEvt = new InputEvent('beforeinput', {
+          bubbles: true,
+          cancelable: true,
+          inputType: 'insertText',
+          data: text
+        });
+        inputEl.dispatchEvent(inputEvt);
+        inputEl.innerText = text;
+        inputEl.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
+      } catch (e) {
+        inputEl.innerText = text;
+      }
+    }
+
+    // Notifica os manipuladores de evento do React
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+    await this.sleep(this.randomDelay(400, 700));
+  },
+
+  /**
+   * Localiza e clica no botão "Enviar" / "Enviar convite"
+   */
+  async submitMessage(inputEl) {
+    await this.sleep(this.randomDelay(300, 600));
+
+    // 1. Procura por botão com texto "Enviar", "Send", "Enviar convite" ou "Send invite"
+    const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]'));
+    let sendBtn = allButtons.find(b => {
+      const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
+      const isSendText = t === 'enviar' || t === 'send' || t === 'enviar mensagem' || t === 'enviar convite' || t === 'send invite';
+      return isSendText && b.offsetParent !== null;
+    });
+
+    // 2. Se não achou por texto, procura no container da caixa de mensagem
+    if (!sendBtn && inputEl) {
+      const container = inputEl.closest('form') || inputEl.closest('div[role="region"]') || inputEl.parentElement?.parentElement;
+      if (container) {
+        const buttonsInside = Array.from(container.querySelectorAll('button, div[role="button"]')).filter(b => b !== inputEl && !b.contains(inputEl));
+        // O botão de envio geralmente é o último botão do container
+        if (buttonsInside.length > 0) {
+          sendBtn = buttonsInside[buttonsInside.length - 1];
+        }
+      }
+    }
+
+    // 3. Clica no botão Enviar se encontrado
+    if (sendBtn) {
+      console.log('[Innflu] Clicando no botão de envio:', sendBtn.innerText || sendBtn.getAttribute('aria-label') || 'Botão SVG');
+      await this.clickElement(sendBtn);
+      await this.sleep(1200);
+      return true;
+    }
+
+    // 4. Fallback: despacha tecla Enter completa
+    console.log('[Innflu] Botão não encontrado visualmente, despachando tecla Enter...');
+    inputEl.focus();
+    const enterProps = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13, bubbles: true, cancelable: true };
+    inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
+    inputEl.dispatchEvent(new KeyboardEvent('keypress', enterProps));
+    inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
+    await this.sleep(1200);
+    return true;
   },
 
   /**
@@ -202,70 +270,60 @@ window.InnfluSender = {
       throw new Error(`Instagram bloqueou a ação: ${preCheck.message}`);
     }
 
-    let messageBtn = this.findMessageButton();
-    if (!messageBtn) {
-      // Aguarda 1.5s e rola ligeiramente para renderizar botões se o cabeçalho estiver sticky
-      window.scrollBy({ top: 120, behavior: 'smooth' });
-      await this.sleep(1500);
-      window.scrollBy({ top: -120, behavior: 'smooth' });
-      await this.sleep(800);
-      messageBtn = this.findMessageButton();
+    const curPath = window.location.pathname.toLowerCase();
+    let inputEl = null;
+
+    // Se já estamos dentro de uma tela de direct (/direct/t/...), pula o clique e busca o input
+    if (curPath.startsWith('/direct/')) {
+      inputEl = await this.waitForMessageInput(5000);
     }
 
-    if (!messageBtn) {
-      throw new Error('Botão "Enviar mensagem" não encontrado no perfil');
-    }
-
-    await this.naturalInteract(messageBtn);
-    await this.sleep(this.randomDelay(2800, 4200));
-
-    const inputEl = this.findMessageInput();
+    // Se não achou ou estamos no perfil, clica no botão "Enviar mensagem"
     if (!inputEl) {
-      throw new Error('Caixa de texto do Direct não encontrada');
-    }
-
-    // Digitação humana natural
-    await this.typeHumanLike(inputEl, messageText);
-
-    // Clica no botão Enviar ou despacha tecla Enter com simulação completa de eventos
-    let sendBtn = null;
-    const allButtons = Array.from(document.querySelectorAll('div[role="button"], button'));
-    for (const b of allButtons) {
-      const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
-      if (t === 'enviar' || t === 'send') {
-        sendBtn = b;
-        break;
+      let messageBtn = this.findMessageButton();
+      if (!messageBtn) {
+        // Rola levemente a página para acionar lazy-loading do cabeçalho
+        window.scrollBy({ top: 100, behavior: 'smooth' });
+        await this.sleep(1200);
+        window.scrollBy({ top: -100, behavior: 'smooth' });
+        await this.sleep(600);
+        messageBtn = this.findMessageButton();
       }
+
+      if (!messageBtn) {
+        throw new Error('Botão "Enviar mensagem" não encontrado no perfil');
+      }
+
+      console.log('[Innflu] Abrindo conversa de direct...');
+      await this.clickElement(messageBtn);
+
+      // Aguarda o chat abrir e a caixa de digitação ser montada
+      inputEl = await this.waitForMessageInput(9000);
     }
 
-    if (sendBtn) {
-      await this.naturalInteract(sendBtn);
-    } else {
-      const enterDown = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        code: 'Enter',
-        keyCode: 13,
-        which: 13,
-        bubbles: true,
-        cancelable: true
-      });
-      const enterUp = new KeyboardEvent('keyup', {
-        key: 'Enter',
-        code: 'Enter',
-        keyCode: 13,
-        which: 13,
-        bubbles: true,
-        cancelable: true
-      });
-      inputEl.dispatchEvent(enterDown);
-      inputEl.dispatchEvent(enterUp);
+    if (!inputEl) {
+      throw new Error('Caixa de texto do Direct não encontrada (o chat não abriu a tempo)');
     }
 
-    await this.sleep(this.randomDelay(2500, 4000));
+    // Digitação e envio da mensagem
+    console.log('[Innflu] Inserindo mensagem formatada no editor do Instagram...');
+    await this.typeMessageIntoReact(inputEl, messageText);
+    await this.submitMessage(inputEl);
 
+    // Aguarda confirmação visual
+    await this.sleep(this.randomDelay(2000, 3200));
+
+    // Checagem pós-envio de bloqueios
     const postCheck = this.checkActionBlock();
     if (postCheck.blocked) {
       throw new Error(`Ação temporariamente bloqueada pelo Instagram: ${postCheck.message}`);
+    }
+
+    // Se a página navegou para a URL do Direct (/direct/t/...), volta automaticamente para o perfil
+    if (window.location.pathname.toLowerCase().startsWith('/direct/')) {
+      console.log('[Innflu] DM disparada com sucesso. Retornando ao perfil...');
+      window.history.back();
+      await this.sleep(1500);
     }
 
     return { success: true };

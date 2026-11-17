@@ -445,7 +445,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">🔎 Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;">📊 Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.75;font-size:10px;padding:4px 6px;" title="Verificar se há atualizações da extensão">v1.2.2 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.75;font-size:10px;padding:4px 6px;" title="Verificar se há atualizações da extensão">v1.2.3 🔄</button>
       </div>
     </div>
   `;
@@ -1434,6 +1434,13 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       showToast({ type: 'warning', title: 'Meta Diária Atingida', message: 'Limite diário de abordagens alcançado por hoje!' });
       await saveBot({ isRunning: false, isPaused: false, activeMode: null });
       syncUI({ ...bot, isRunning: false, activeMode: null });
+      return;
+    }
+
+    if (pageType === 'direct') {
+      hudCurrentAction.innerText = '[⚡ Automação] Retornando ao fluxo de prospecção...';
+      window.history.back();
+      await window.InnfluCrawler.sleep(1500);
       return;
     }
 
