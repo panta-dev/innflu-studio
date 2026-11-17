@@ -59,7 +59,12 @@ window.InnfluSender = {
    * Localiza o botão "Enviar mensagem" no perfil do Instagram
    */
   findMessageButton() {
-    const candidates = Array.from(document.querySelectorAll('header button, header div[role="button"], header a[role="button"], header a[href*="/direct/"], button, div[role="button"], a[role="button"], a[href*="/direct/"]'));
+    // 1. Foca prioritariamente no cabeçalho do perfil (<header>) dentro de <main>
+    const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main');
+    if (!header) return null;
+
+    // 2. Coleta todos os botões e links clicáveis DENTRO do cabeçalho
+    const candidates = Array.from(header.querySelectorAll('button, div[role="button"], a[role="button"], a'));
 
     const targetKeywords = [
       'enviar mensagem',
@@ -67,35 +72,106 @@ window.InnfluSender = {
       'message',
       'send message',
       'enviar convite',
-      'send invite'
+      'send invite',
+      'enviar solicitação',
+      'send request'
     ];
 
     for (const btn of candidates) {
-      if (btn.closest('#innflu-hud-root')) continue;
+      if (btn.closest('#innflu-hud-root') || btn.closest('nav') || btn.closest('aside')) continue;
+      // Ignora links genéricos de caixa de entrada
+      if (btn.tagName === 'A' && btn.href && btn.href.includes('/direct/inbox')) continue;
 
-      const text = (btn.innerText || btn.getAttribute('aria-label') || '').toLowerCase().trim();
-      const isMatch = targetKeywords.some(kw => text === kw || text.startsWith(kw));
+      const rawText = (btn.innerText || btn.getAttribute('aria-label') || '').toLowerCase();
+      const text = rawText.replace(/\s+/g, ' ').trim();
+
+      // Não confunda com o link geral da barra lateral ("mensagens")
+      if (text === 'mensagens' || text === 'messages') continue;
+
+      const isMatch = targetKeywords.some(kw => text === kw || text.startsWith(kw) || text.includes(kw));
       if (isMatch) {
         const rect = btn.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          // Se for filho de um <a> com link de direct, prefere o <a>
           const parentAnchor = btn.closest('a[href*="/direct/"]');
           return parentAnchor || btn;
         }
       }
     }
 
-    // Links diretos para chat
-    const directLinks = Array.from(document.querySelectorAll('a[href*="/direct/t/"], a[href*="/direct/new"]'));
-    for (const link of directLinks) {
-      if (link.closest('#innflu-hud-root')) continue;
-      const rect = link.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        return link;
+    // 3. Estratégia de Proximidade: Procura o botão adjacente ao botão de Seguir/Seguindo
+    const followButtons = Array.from(header.querySelectorAll('button, div[role="button"]')).filter(b => {
+      const t = (b.innerText || '').toLowerCase().trim();
+      return t === 'seguir' || t === 'seguindo' || t === 'follow' || t === 'following';
+    });
+
+    for (const fBtn of followButtons) {
+      const parent = fBtn.parentElement?.parentElement || fBtn.parentElement;
+      if (parent) {
+        const siblingButtons = Array.from(parent.querySelectorAll('button, div[role="button"]')).filter(b => b !== fBtn && !b.contains(fBtn) && !fBtn.contains(b));
+        for (const sBtn of siblingButtons) {
+          if (sBtn.closest('#innflu-hud-root')) continue;
+          const txt = (sBtn.innerText || sBtn.getAttribute('aria-label') || '').toLowerCase().trim();
+          if (txt === 'mensagens' || txt === 'messages') continue;
+          if (txt.includes('mensag') || txt.includes('messag') || txt.includes('convite') || txt.includes('invite')) {
+            const rect = sBtn.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) return sBtn;
+          }
+        }
       }
     }
 
     return null;
+  },
+
+  /**
+   * Dispara sequência de cliques e eventos compatível com React 18
+   */
+  simulateClick(element) {
+    if (!element) return;
+    try {
+      element.scrollIntoView({ behavior: 'auto', block: 'center' });
+    } catch (e) {}
+
+    const rect = element.getBoundingClientRect();
+    const clientX = rect.left + rect.width / 2;
+    const clientY = rect.top + rect.height / 2;
+
+    const commonProps = {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      detail: 1,
+      screenX: window.screenX + clientX,
+      screenY: window.screenY + clientY,
+      clientX: clientX,
+      clientY: clientY,
+      button: 0,
+      buttons: 1,
+      which: 1
+    };
+
+    element.focus();
+    element.dispatchEvent(new PointerEvent('pointerover', commonProps));
+    element.dispatchEvent(new PointerEvent('pointerenter', commonProps));
+    element.dispatchEvent(new PointerEvent('pointerdown', commonProps));
+    element.dispatchEvent(new MouseEvent('mouseover', commonProps));
+    element.dispatchEvent(new MouseEvent('mousedown', commonProps));
+
+    element.dispatchEvent(new PointerEvent('pointerup', { ...commonProps, buttons: 0 }));
+    element.dispatchEvent(new MouseEvent('mouseup', { ...commonProps, buttons: 0 }));
+    element.dispatchEvent(new MouseEvent('click', { ...commonProps, buttons: 0 }));
+
+    if (typeof element.click === 'function') {
+      try { element.click(); } catch (e) {}
+    }
+
+    // Se o elemento contiver um filho clicável interno do React, despacha também
+    const innerClickable = element.querySelector('div, span, button');
+    if (innerClickable && innerClickable !== element) {
+      try {
+        innerClickable.dispatchEvent(new MouseEvent('click', { ...commonProps, buttons: 0 }));
+      } catch (e) {}
+    }
   },
 
   /**
@@ -104,64 +180,50 @@ window.InnfluSender = {
   async openDirectChat(element) {
     if (!element) return;
 
-    try {
-      element.scrollIntoView({ behavior: 'auto', block: 'center' });
-    } catch (e) {}
-    await this.sleep(this.randomDelay(150, 300));
-
     // Se possui href com direct, navega ou clica na âncora
     const anchor = element.closest('a') || (element.tagName === 'A' ? element : null) || element.querySelector('a');
-    if (anchor && anchor.href && anchor.href.includes('/direct/')) {
+    if (anchor && anchor.href && anchor.href.includes('/direct/') && !anchor.href.includes('/direct/inbox')) {
       console.log('[Innflu] Abrindo Direct via link:', anchor.href);
       try { anchor.click(); } catch (e) {}
       await this.sleep(1500);
       if (window.location.pathname.startsWith('/direct/')) {
         return;
       }
-      // Se não navegou via click, força navegação
       window.location.href = anchor.href;
       return;
     }
 
-    const rect = element.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const evtOpts = { clientX: x, clientY: y, bubbles: true, cancelable: true, view: window };
-
-    element.dispatchEvent(new PointerEvent('pointerdown', evtOpts));
-    element.dispatchEvent(new MouseEvent('mousedown', evtOpts));
-    element.focus();
-    await this.sleep(this.randomDelay(80, 160));
-    element.dispatchEvent(new PointerEvent('pointerup', evtOpts));
-    element.dispatchEvent(new MouseEvent('mouseup', evtOpts));
-    element.dispatchEvent(new MouseEvent('click', evtOpts));
-
-    if (typeof element.click === 'function') {
-      try { element.click(); } catch (e) {}
-    }
+    this.simulateClick(element);
+    await this.sleep(this.randomDelay(200, 400));
   },
 
   /**
    * Aguarda a caixa de texto legítima do Direct aparecer no DOM
    */
-  async waitForMessageInput(timeoutMs = 12000) {
+  async waitForMessageInput(timeoutMs = 15000) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       const candidates = Array.from(document.querySelectorAll(
-        'div[contenteditable="true"][role="textbox"], ' +
-        'div[contenteditable="true"][aria-label*="Mensagem" i], ' +
-        'div[contenteditable="true"][aria-label*="Message" i], ' +
-        'div[contenteditable="true"][aria-label*="convite" i], ' +
-        'div[contenteditable="true"][aria-label*="invite" i], ' +
-        'div[contenteditable="true"][data-lexical-editor="true"], ' +
-        'textarea[placeholder*="Mensagem" i], ' +
-        'textarea[placeholder*="Message" i]'
+        'div[contenteditable="true"], textarea, div[role="textbox"][contenteditable="true"]'
       ));
 
       for (const el of candidates) {
         if (el.closest('#innflu-hud-root')) continue;
-        if (el.offsetParent !== null) {
-          return el;
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 50 && rect.height > 15) {
+          const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+          const placeholder = (el.getAttribute('placeholder') || '').toLowerCase();
+          const role = (el.getAttribute('role') || '').toLowerCase();
+
+          if (
+            window.location.pathname.toLowerCase().includes('/direct/') ||
+            aria.includes('mensag') || aria.includes('messag') || aria.includes('convite') || aria.includes('invite') ||
+            placeholder.includes('mensag') || placeholder.includes('messag') ||
+            role === 'textbox' ||
+            el.getAttribute('data-lexical-editor') === 'true'
+          ) {
+            return el;
+          }
         }
       }
 
@@ -171,23 +233,23 @@ window.InnfluSender = {
   },
 
   /**
-   * Digita a mensagem no editor do Instagram
+   * Digita a mensagem no editor do Instagram com suporte nativo ao Lexical
    */
   async typeMessageIntoReact(inputEl, text) {
-    await this.openDirectChat(inputEl);
     inputEl.focus();
-    await this.sleep(this.randomDelay(250, 400));
+    await this.sleep(this.randomDelay(200, 350));
 
-    // Limpa texto prévio se houver
+    // 1. Colapsa seleção dentro do input
     try {
       const sel = window.getSelection();
       const range = document.createRange();
       range.selectNodeContents(inputEl);
+      range.collapse(false);
       sel.removeAllRanges();
       sel.addRange(range);
     } catch (e) {}
 
-    // Injeta via execCommand insertText
+    // 2. Método primordial para Lexical/DraftJS: document.execCommand('insertText')
     let inserted = false;
     try {
       inserted = document.execCommand('insertText', false, text);
@@ -195,27 +257,37 @@ window.InnfluSender = {
       inserted = false;
     }
 
-    if (!inserted || !inputEl.innerText.trim()) {
+    // 3. Fallback estruturado para Lexical se execCommand falhar
+    if (!inserted || !(inputEl.innerText || '').trim()) {
+      console.log('[Innflu] Fallback para inserção estruturada no Lexical...');
       try {
-        const inputEvt = new InputEvent('beforeinput', {
+        const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+        inputEl.innerHTML = `<p class="xat24cr xdj266r xdpxx8g" dir="ltr"><span data-lexical-text="true">${safeText}</span></p>`;
+      } catch (e) {
+        inputEl.innerText = text;
+      }
+
+      try {
+        inputEl.dispatchEvent(new InputEvent('beforeinput', {
           bubbles: true,
           cancelable: true,
           inputType: 'insertText',
           data: text
-        });
-        inputEl.dispatchEvent(inputEvt);
-        inputEl.innerText = text;
-        inputEl.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
-      } catch (e) {
-        inputEl.innerText = text;
-      }
+        }));
+        inputEl.dispatchEvent(new InputEvent('input', {
+          bubbles: true,
+          cancelable: true,
+          inputType: 'insertText',
+          data: text
+        }));
+      } catch (e) {}
     }
 
     inputEl.dispatchEvent(new Event('input', { bubbles: true }));
     inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-    await this.sleep(this.randomDelay(500, 800));
+    await this.sleep(this.randomDelay(400, 600));
 
-    if (!inputEl.innerText.trim()) {
+    if (!(inputEl.innerText || '').trim()) {
       throw new Error('Falha ao inserir texto no campo de mensagem');
     }
   },
@@ -224,20 +296,27 @@ window.InnfluSender = {
    * Clica no botão "Enviar" ou "Enviar convite" e despacha tecla Enter
    */
   async submitMessage(inputEl) {
-    await this.sleep(this.randomDelay(250, 500));
+    await this.sleep(this.randomDelay(300, 600));
 
+    // 1. Procura o botão Enviar / Send / Enviar convite
     const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]'));
     let sendBtn = allButtons.find(b => {
       if (b.closest('#innflu-hud-root')) return false;
       const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
+      const rect = b.getBoundingClientRect();
+      const isVisible = rect.width > 0 && rect.height > 0;
       const isSendText = t === 'enviar' || t === 'send' || t === 'enviar mensagem' || t === 'enviar convite' || t === 'send invite';
-      return isSendText && b.offsetParent !== null;
+      return isSendText && isVisible;
     });
 
     if (!sendBtn && inputEl) {
-      const container = inputEl.closest('form') || inputEl.closest('div[role="region"]') || inputEl.parentElement?.parentElement;
+      const container = inputEl.closest('form') || inputEl.closest('div[role="region"]') || inputEl.parentElement?.parentElement?.parentElement;
       if (container) {
-        const buttonsInside = Array.from(container.querySelectorAll('button, div[role="button"]')).filter(b => b !== inputEl && !b.contains(inputEl));
+        const buttonsInside = Array.from(container.querySelectorAll('button, div[role="button"]')).filter(b => {
+          if (b.closest('#innflu-hud-root') || b === inputEl || b.contains(inputEl)) return false;
+          const rect = b.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        });
         if (buttonsInside.length > 0) {
           sendBtn = buttonsInside[buttonsInside.length - 1];
         }
@@ -246,17 +325,26 @@ window.InnfluSender = {
 
     if (sendBtn) {
       console.log('[Innflu] Clicando no botão de envio:', sendBtn.innerText || sendBtn.getAttribute('aria-label') || 'Botão');
-      await this.openDirectChat(sendBtn);
+      this.simulateClick(sendBtn);
       await this.sleep(500);
     }
 
-    // Despacha tecla Enter como garantia
+    // 2. Dispara tecla Enter como garantia com sequência completa de eventos
     inputEl.focus();
-    const enterProps = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13, bubbles: true, cancelable: true };
+    const enterProps = {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      charCode: 13,
+      bubbles: true,
+      cancelable: true,
+      view: window
+    };
     inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
     inputEl.dispatchEvent(new KeyboardEvent('keypress', enterProps));
     inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
-    await this.sleep(800);
+    await this.sleep(700);
   },
 
   /**
@@ -351,7 +439,7 @@ window.InnfluSender = {
       await this.openDirectChat(messageBtn);
 
       // Aguarda abertura do chat e montagem da caixa de texto
-      inputEl = await this.waitForMessageInput(12000);
+      inputEl = await this.waitForMessageInput(15000);
     }
 
     if (!inputEl) {
@@ -368,7 +456,7 @@ window.InnfluSender = {
 
     // VERIFICAÇÃO MANDATÓRIA: Confirma se foi realmente enviada
     console.log('[Innflu] Aguardando confirmação do envio...');
-    const result = await this.waitForSendConfirmation(inputEl, messageText, 8000);
+    const result = await this.waitForSendConfirmation(inputEl, messageText, 9000);
 
     if (!result.confirmed) {
       if (result.blocked) {

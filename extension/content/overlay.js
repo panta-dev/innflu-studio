@@ -1370,6 +1370,10 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // MOTOR DE AUTOMAÇÃO E MINERAÇÃO
   // ==========================================
   async function runLoop() {
+    if (window.InnfluIsSendingDM) {
+      console.log('[Innflu] Envio de DM em andamento, ignorando ciclo concorrente.');
+      return;
+    }
     const { bot, apiBaseUrl, activeTemplate } = await getState();
     if (!bot.isRunning) return;
 
@@ -1407,6 +1411,9 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     }
 
     if (pageType === 'direct') {
+      if (window.InnfluIsSendingDM) {
+        return; // Não interrompe o fluxo de envio ativo
+      }
       hudCurrentAction.innerText = '[⚡ Automação] Retornando ao fluxo de prospecção...';
       window.history.back();
       await window.InnfluCrawler.sleep(1500);
@@ -1514,6 +1521,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     // Disparo de DM com Spintax
     try {
+      window.InnfluIsSendingDM = true;
       const fallbackTpl = '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}';
       const chosenTemplate = ((hudAutoTemplateContent ? hudAutoTemplateContent.value : '') || activeTemplate || (hudTemplateContent ? hudTemplateContent.value : '') || fallbackTpl).trim();
       const msg = window.InnfluSpintax.interpolate(chosenTemplate, { 
@@ -1524,6 +1532,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
       hudCurrentAction.innerText = `[Automação] Digitando DM para @${cleanUser}...`;
       await window.InnfluSender.sendDirectMessage(msg);
+      window.InnfluIsSendingDM = false;
 
       // SÓ ENTRA AQUI SE FOI 100% CONFIRMADO O ENVIO DA MENSAGEM NO DIRECT
       const newSent = (bot.sentCount || 0) + 1;
@@ -1552,6 +1561,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       startCountdown(nextAt, runLoop, delaySec * 1000);
       return;
     } catch (err) {
+      window.InnfluIsSendingDM = false;
       const isBlocked = err.message && (err.message.includes('bloque') || err.message.includes('blocked') || err.message.includes('checkpoint'));
       if (isBlocked) {
         showSafetyBanner('Bloqueio Detectado', err.message);
@@ -1572,6 +1582,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       hudCurrentAction.innerText = `[Automação] Pulando @${cleanUser} (não enviou)...`;
       startCountdown(nextAt, runLoop, retryDelay * 1000);
       return;
+    } finally {
+      window.InnfluIsSendingDM = false;
     }
   }
 
@@ -2144,6 +2156,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
   async function dispatchDM(username, apiBaseUrl, template) {
     try {
+      window.InnfluIsSendingDM = true;
       let chosenTemplate = template;
       try {
         const { apiKey } = await getState();
@@ -2171,6 +2184,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username, nome: influencerName, fullName: influencerName });
       hudCurrentAction.innerText = `Digitando DM para @${username}...`;
       await window.InnfluSender.sendDirectMessage(msg);
+      window.InnfluIsSendingDM = false;
 
       const cleanUser = username.toLowerCase();
       const { bot } = await getState();
@@ -2212,12 +2226,15 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       hudCurrentAction.innerText = `Pausa anti-ban (${delaySec}s)...`;
       startCountdown(nextAt, runLoop, delaySec * 1000);
     } catch (err) {
+      window.InnfluIsSendingDM = false;
       console.warn('[Innflu] Falha ao enviar DM na Captação:', err.message);
       await logActivity({ username, status: `Não Enviada (${err.message.substring(0, 24)})` });
       showToast({ type: 'warning', title: 'Falha no Envio', message: err.message });
       const nextAt = Date.now() + 6000;
       await saveBot({ nextActionAt: nextAt });
       startCountdown(nextAt, runLoop, 6000);
+    } finally {
+      window.InnfluIsSendingDM = false;
     }
   }
 
@@ -2902,6 +2919,10 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   setInterval(() => {
     if (window.location.href !== lastObservedUrl) {
       lastObservedUrl = window.location.href;
+      if (window.InnfluIsSendingDM) {
+        // Envio ativo no momento, não interfere com o loop
+        return;
+      }
       if (localBotCache && localBotCache.isRunning && !localBotCache.isPaused) {
         if (!localBotCache.nextActionAt || localBotCache.nextActionAt <= Date.now()) {
           setTimeout(runLoop, 1800);

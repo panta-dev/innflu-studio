@@ -2535,9 +2535,9 @@ app.get("/api/health", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.2.8",
+    version: "1.2.9",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "v1.2.8: Expans\xE3o do campo de mensagem para exibir todo o texto e auto-resize din\xE2mico.",
+    releaseNotes: "v1.2.9: Corre\xE7\xE3o cr\xEDtica no envio de DMs (mutex anti-interrup\xE7\xE3o SPA, suporte ao Lexical e cliques React 18).",
     downloadUrl: "/innflu-extensao.zip",
     publishedAt: "2026-11-17T16:30:00Z",
     dynamicRules: {
