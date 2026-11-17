@@ -89,16 +89,17 @@ window.InnfluSender = {
     const scope = document.querySelector('header') || document.querySelector('main section') || document.body;
     const candidates = Array.from(scope.querySelectorAll('button, div[role="button"], a[role="button"], a[href*="/direct/t/"]'));
 
+    const dynamicLabels = window.__innfluDynamicRules?.selectors?.messageButtons || [
+      'enviar mensagem',
+      'mensagem',
+      'message',
+      'send message'
+    ];
+
     for (const btn of candidates) {
       const text = (btn.innerText || btn.getAttribute('aria-label') || '').toLowerCase().trim();
-      if (
-        text === 'enviar mensagem' ||
-        text === 'mensagem' ||
-        text === 'message' ||
-        text === 'send message' ||
-        text.startsWith('enviar mensagem') ||
-        text.startsWith('message')
-      ) {
+      const isMatch = dynamicLabels.some(l => text === l || text.startsWith(l));
+      if (isMatch) {
         // Garante que o botão está visível na tela
         const rect = btn.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {

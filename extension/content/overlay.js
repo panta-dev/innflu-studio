@@ -51,6 +51,20 @@
       <!-- Toasts Notificações Internas -->
       <div class="innflu-toast-container" id="hudToastContainer"></div>
 
+      <!-- Banner de Atualização OTA (Aparece automaticamente se houver versão nova) -->
+      <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
+        <div class="innflu-ota-content">
+          <div class="innflu-ota-title">
+            <span>🚀 Nova Versão (<span id="hudOtaVersion">1.2.0</span>)</span>
+          </div>
+          <div class="innflu-ota-desc" id="hudOtaNotes">Atualização pronta com melhorias anti-ban.</div>
+        </div>
+        <div class="innflu-ota-actions">
+          <a href="#" id="btnDownloadOta" class="innflu-ota-btn download" target="_blank" download>⬇️ Baixar .zip</a>
+          <button id="btnReloadOta" class="innflu-ota-btn reload" title="Recarregar Extensão Instantaneamente">🔄 Atualizar</button>
+        </div>
+      </div>
+
       <!-- Navegação de Abas (3 Abas Principais) -->
       <div class="innflu-nav-tabs">
         <button class="innflu-nav-btn active" id="tabBtnAuto">⚡ Automação</button>
@@ -401,6 +415,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">🔎 Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;">📊 Painel Web</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.65;font-size:10px;padding:4px 6px;" title="Verificar se há atualizações da extensão">v1.2 🔄</button>
       </div>
     </div>
   `;
@@ -465,6 +480,26 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   const hudLiveStatusBadge = $('hudLiveStatusBadge');
   const btnToggleLiveFeed = $('btnToggleLiveFeed');
   const hudLiveFeedArrow = $('hudLiveFeedArrow');
+
+  // Elementos do Banner OTA
+  const hudOtaBanner = $('hudOtaBanner');
+  const hudOtaVersion = $('hudOtaVersion');
+  const hudOtaNotes = $('hudOtaNotes');
+  const btnDownloadOta = $('btnDownloadOta');
+  const btnReloadOta = $('btnReloadOta');
+  const btnCheckOtaUpdates = $('btnCheckOtaUpdates');
+
+  function displayOtaBanner(info) {
+    if (!hudOtaBanner) return;
+    if (info && (info.remoteUpdateAvailable || info.hasNewerVersion)) {
+      if (hudOtaVersion) hudOtaVersion.innerText = info.remoteVersion || '1.2.0';
+      if (hudOtaNotes) hudOtaNotes.innerText = info.releaseNotes || 'Atualizações e melhorias anti-ban disponíveis.';
+      if (btnDownloadOta) btnDownloadOta.href = info.downloadUrl || '#';
+      hudOtaBanner.style.display = 'flex';
+    } else {
+      hudOtaBanner.style.display = 'none';
+    }
+  }
 
   // Controles de Mineração
   const inputMiningTarget = $('inputMiningTarget');
@@ -532,6 +567,42 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     };
   }
 
+  // Ações do Banner OTA
+  if (btnReloadOta) {
+    btnReloadOta.onclick = () => {
+      showToast({ type: 'info', title: 'Atualizando...', message: 'Recarregando extensão para aplicar nova versão.' });
+      chrome.runtime.sendMessage({ action: 'RELOAD_EXTENSION' });
+    };
+  }
+
+  if (btnCheckOtaUpdates) {
+    btnCheckOtaUpdates.onclick = async () => {
+      showToast({ type: 'info', title: 'Verificando...', message: 'Checando novas versões no servidor...' });
+      chrome.runtime.sendMessage({ action: 'CHECK_UPDATES_NOW' }, () => {
+        chrome.storage.local.get(['remoteUpdateAvailable', 'remoteVersion', 'releaseNotes', 'downloadUrl', 'dynamicRules'], data => {
+          if (data.dynamicRules) {
+            window.__innfluDynamicRules = data.dynamicRules;
+          }
+          if (data.remoteUpdateAvailable) {
+            displayOtaBanner(data);
+            showToast({ type: 'success', title: 'Atualização Encontrada!', message: `Versão ${data.remoteVersion} disponível!` });
+          } else {
+            displayOtaBanner(null);
+            showToast({ type: 'success', title: 'Extensão 100% Atualizada', message: 'Você já está rodando a versão mais recente com regras OTA ativas.' });
+          }
+        });
+      });
+    };
+  }
+
+  // Ouvinte de mensagens do background para avisos de atualizações OTA
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.type === 'OTA_UPDATE_AVAILABLE') {
+      displayOtaBanner(msg);
+      showToast({ type: 'info', title: 'Atualização OTA', message: `Nova versão ${msg.remoteVersion} disponível!` });
+    }
+  });
+
   // ==========================================
   // STORAGE PERSISTENTE (COM PROTEÇÃO ANTI-INVALIDATED CONTEXT)
   // ==========================================
@@ -575,12 +646,21 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       }
 
       try {
-        chrome.storage.local.get(['innfluBot', 'apiBaseUrl', 'activeTemplate', 'savedLeadsCache'], res => {
+        chrome.storage.local.get(['innfluBot', 'apiBaseUrl', 'activeTemplate', 'savedLeadsCache', 'dynamicRules', 'remoteUpdateAvailable', 'remoteVersion', 'releaseNotes', 'downloadUrl'], res => {
           if (chrome.runtime.lastError) {
             localBotCache = fallback.bot;
             resolve(fallback);
             return;
           }
+
+          // Sincroniza regras dinâmicas OTA em memória
+          if (res?.dynamicRules) {
+            window.__innfluDynamicRules = res.dynamicRules;
+          }
+          if (res?.remoteUpdateAvailable) {
+            displayOtaBanner(res);
+          }
+
           const bot = res?.innfluBot || fallback.bot;
           if (!bot.queue) bot.queue = [];
           if (!bot.visited) bot.visited = [];

@@ -166,6 +166,84 @@
 .innflu-toast-close { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; opacity: 0.7; }
 .innflu-toast-close:hover { opacity: 1; }
 
+/* ==========================================
+   BANNER DE ATUALIZAÇÃO AUTOMÁTICA OTA
+   ========================================== */
+.innflu-ota-banner {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.28), rgba(168, 85, 247, 0.28));
+  border-bottom: 1px solid rgba(168, 85, 247, 0.45);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.innflu-ota-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.innflu-ota-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.innflu-ota-desc {
+  font-size: 10px;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.innflu-ota-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.innflu-ota-btn {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.innflu-ota-btn.download {
+  background: #a855f7;
+  color: #ffffff;
+}
+
+.innflu-ota-btn.download:hover {
+  background: #9333ea;
+}
+
+.innflu-ota-btn.reload {
+  background: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.innflu-ota-btn.reload:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
 /* Tabs de Navegação */
 .innflu-nav-tabs {
   display: flex;

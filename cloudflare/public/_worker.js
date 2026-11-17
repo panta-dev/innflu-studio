@@ -2528,8 +2528,62 @@ app.get("/api/health", (c) => {
   return c.json({
     status: "ok",
     service: "Innflu Cloudflare API",
-    version: "1.1.0",
+    version: "1.2.0",
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
+app.get("/api/extension/version", (c) => {
+  return c.json({
+    status: "ok",
+    version: "1.2.0",
+    minSupportedVersion: "1.0.0",
+    releaseNotes: "Painel com 3 abas (Automa\xE7\xE3o, Minera\xE7\xE3o e Capta\xE7\xE3o), Dock Ao Vivo fixo permanente e sincroniza\xE7\xE3o remota OTA.",
+    downloadUrl: "/innflu-extensao.zip",
+    publishedAt: "2026-11-17T12:00:00Z",
+    dynamicRules: {
+      selectors: {
+        messageButtons: ["enviar mensagem", "mensagem", "message", "send message"],
+        actionBlockKeywords: [
+          "bloqueio",
+          "bloqueamos",
+          "action blocked",
+          "try again later",
+          "limite de a\xE7\xE3o",
+          "checkpoint",
+          "temporariamente bloqueado",
+          "restringimos determinadas atividades"
+        ]
+      },
+      delays: {
+        minDelaySec: 60,
+        maxDelaySec: 180,
+        typingCharMinMs: 40,
+        typingCharMaxMs: 110
+      },
+      blacklistBioKeywords: [
+        "sorteio",
+        "rifa",
+        "dropshipping",
+        "afiliado",
+        "afiliada",
+        "bet",
+        "tigrinho",
+        "cassino",
+        "privacy",
+        "onlyfans",
+        "loja",
+        "store",
+        "varejo",
+        "atacado",
+        "frete",
+        "compre online",
+        "site oficial",
+        "cupom",
+        "multimarcas",
+        "look do dia"
+      ],
+      heuristicsVersion: "2026.11.17"
+    }
   });
 });
 app.get("/api/stats", async (c) => {

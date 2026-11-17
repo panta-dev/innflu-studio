@@ -15,11 +15,15 @@ const DEFAULT_CONFIG = {
   lastResetDate: new Date().toISOString().split('T')[0]
 };
 
-// Inicialização de armazenamento
+// Inicialização de armazenamento e checagem de atualizações OTA
 chrome.runtime.onInstalled.addListener(async () => {
   const current = await chrome.storage.local.get(null);
   await chrome.storage.local.set({ ...DEFAULT_CONFIG, ...current });
   console.log('[Innflu] Service Worker instalado e configurado.');
+
+  // Cria alarme para verificar atualizações OTA a cada 60 minutos
+  chrome.alarms.create('innflu_ota_update_check', { periodInMinutes: 60 });
+  checkForRemoteUpdates();
 });
 
 // Fila de execução em memória
@@ -43,6 +47,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'GET_STATUS') {
     chrome.storage.local.get(null, (data) => {
       sendResponse({ ...data, isCycleActive });
+    });
+    return true;
+  }
+
+  // Recarregar extensão em 1 clique (para desenvolvedores e usuários unpacked)
+  if (request.action === 'RELOAD_EXTENSION') {
+    console.log('[Innflu OTA] 🔄 Recarregando extensão...');
+    sendResponse({ success: true });
+    setTimeout(() => {
+      chrome.runtime.reload();
+    }, 200);
+    return true;
+  }
+
+  // Forçar checagem imediata de atualizações OTA
+  if (request.action === 'CHECK_UPDATES_NOW') {
+    checkForRemoteUpdates().then(info => {
+      sendResponse({ success: true, info });
     });
     return true;
   }
@@ -123,6 +145,9 @@ async function processNextStep() {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'innflu_next_send' && isCycleActive) {
     await executeSendingStep();
+  }
+  if (alarm.name === 'innflu_ota_update_check') {
+    await checkForRemoteUpdates();
   }
 });
 
@@ -216,4 +241,69 @@ function notifyTabs(data) {
       chrome.tabs.sendMessage(tab.id, { type: 'UPDATE_HUD', data }).catch(() => {});
     });
   });
+}
+
+/**
+ * Compara duas versões semânticas (ex: "1.2.0" vs "1.1.0")
+ */
+function compareVersions(v1, v2) {
+  const p1 = (v1 || '0').split('.').map(n => parseInt(n, 10) || 0);
+  const p2 = (v2 || '0').split('.').map(n => parseInt(n, 10) || 0);
+  const len = Math.max(p1.length, p2.length);
+  for (let i = 0; i < len; i++) {
+    const a = p1[i] || 0;
+    const b = p2[i] || 0;
+    if (a > b) return 1;
+    if (a < b) return -1;
+  }
+  return 0;
+}
+
+/**
+ * Consulta a API Cloudflare e sincroniza regras dinâmicas e checagem de versão
+ */
+async function checkForRemoteUpdates() {
+  try {
+    const stored = await chrome.storage.local.get(['apiBaseUrl']);
+    const baseUrl = (stored.apiBaseUrl || 'https://innflu-studio.pages.dev').replace(/\/$/, '');
+    
+    const res = await fetch(`${baseUrl}/api/extension/version?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const remoteData = await res.json();
+
+    // 1. Aplica e armazena regras dinâmicas OTA (seletores, delays e blacklist em tempo real)
+    if (remoteData.dynamicRules) {
+      await chrome.storage.local.set({
+        dynamicRules: remoteData.dynamicRules,
+        lastRulesSync: Date.now()
+      });
+      console.log('[Innflu OTA] ⚡ Regras dinâmicas do Instagram atualizadas com sucesso.');
+    }
+
+    // 2. Compara versão instalada com versão do servidor
+    const manifest = chrome.runtime.getManifest();
+    const localVersion = manifest.version;
+    const hasNewerVersion = compareVersions(remoteData.version, localVersion) > 0;
+
+    const updateInfo = {
+      remoteUpdateAvailable: hasNewerVersion,
+      remoteVersion: remoteData.version,
+      localVersion,
+      releaseNotes: remoteData.releaseNotes || '',
+      downloadUrl: remoteData.downloadUrl || `${baseUrl}/innflu-extensao.zip`,
+      lastUpdateCheck: Date.now()
+    };
+
+    await chrome.storage.local.set(updateInfo);
+
+    if (hasNewerVersion) {
+      console.log(`[Innflu OTA] 🚀 Nova versão ${remoteData.version} disponível (atual: ${localVersion})`);
+      notifyTabs({ type: 'OTA_UPDATE_AVAILABLE', ...updateInfo });
+    }
+
+    return updateInfo;
+  } catch (err) {
+    console.warn('[Innflu OTA] Checagem de atualizações não pôde ser completada:', err.message);
+    return null;
+  }
 }

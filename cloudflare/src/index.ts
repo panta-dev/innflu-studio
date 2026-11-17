@@ -537,8 +537,42 @@ app.get('/api/health', (c) => {
   return c.json({
     status: 'ok',
     service: 'Innflu Cloudflare API',
-    version: '1.1.0',
+    version: '1.2.0',
     timestamp: new Date().toISOString(),
+  });
+});
+
+// ==========================================
+// 1.1 SISTEMA DE ATUALIZAÇÃO AUTOMÁTICA OTA (OVER-THE-AIR)
+// ==========================================
+app.get('/api/extension/version', (c) => {
+  return c.json({
+    status: 'ok',
+    version: '1.2.0',
+    minSupportedVersion: '1.0.0',
+    releaseNotes: 'Painel com 3 abas (Automação, Mineração e Captação), Dock Ao Vivo fixo permanente e sincronização remota OTA.',
+    downloadUrl: '/innflu-extensao.zip',
+    publishedAt: '2026-11-17T12:00:00Z',
+    dynamicRules: {
+      selectors: {
+        messageButtons: ['enviar mensagem', 'mensagem', 'message', 'send message'],
+        actionBlockKeywords: [
+          'bloqueio', 'bloqueamos', 'action blocked', 'try again later',
+          'limite de ação', 'checkpoint', 'temporariamente bloqueado', 'restringimos determinadas atividades'
+        ]
+      },
+      delays: {
+        minDelaySec: 60,
+        maxDelaySec: 180,
+        typingCharMinMs: 40,
+        typingCharMaxMs: 110
+      },
+      blacklistBioKeywords: [
+        'sorteio', 'rifa', 'dropshipping', 'afiliado', 'afiliada', 'bet', 'tigrinho', 'cassino', 'privacy', 'onlyfans',
+        'loja', 'store', 'varejo', 'atacado', 'frete', 'compre online', 'site oficial', 'cupom', 'multimarcas', 'look do dia'
+      ],
+      heuristicsVersion: '2026.11.17'
+    }
   });
 });
 

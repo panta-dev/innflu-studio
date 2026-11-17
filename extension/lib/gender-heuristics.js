@@ -68,8 +68,10 @@ window.InnfluGenderDetector = {
     const bioClean = (bio || '').toLowerCase();
     const userClean = (username || '').toLowerCase().replace(/[^a-z]/g, '');
 
-    // 1. Checar marcas comerciais estritas
-    const isBrand = this.brandBioKeywords.some(kw => bioClean.includes(kw));
+    // 1. Checar marcas comerciais estritas (inclui regras dinâmicas OTA em tempo real)
+    const extraBrandKeywords = window.__innfluDynamicRules?.blacklistBioKeywords || [];
+    const allBrandKeywords = [...this.brandBioKeywords, ...extraBrandKeywords];
+    const isBrand = allBrandKeywords.some(kw => bioClean.includes(kw));
     if (isBrand) {
       return { isFemale: false, isBrand: true, reason: 'Identificado padrão de loja ou marca comercial' };
     }

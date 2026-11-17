@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Innflu - Smart Instagram Prospector",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Automação e prospecção de influenciadores no Instagram com mineração de WhatsApp/Email, captação por templates e automação com delays anti-ban.",
   "permissions": [
     "storage",
