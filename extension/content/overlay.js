@@ -51,48 +51,101 @@
       <!-- Toasts Notificações Internas -->
       <div class="innflu-toast-container" id="hudToastContainer"></div>
 
-      <!-- Navegação de Abas -->
+      <!-- Navegação de Abas (3 Abas Principais) -->
       <div class="innflu-nav-tabs">
         <button class="innflu-nav-btn active" id="tabBtnAuto">⚡ Automação</button>
-        <button class="innflu-nav-btn" id="tabBtnMine">⛏️ Minerar</button>
-        <button class="innflu-nav-btn" id="tabBtnLeads">📋 Leads (<span id="tabLeadsCount">0</span>)</button>
+        <button class="innflu-nav-btn" id="tabBtnMine">⛏️ Mineração</button>
         <button class="innflu-nav-btn" id="tabBtnSender">✉️ Captação</button>
-        <button class="innflu-nav-btn" id="tabBtnLive">🎯 Ao Vivo</button>
       </div>
 
       <!-- Corpo do HUD -->
       <div class="innflu-hud-body">
         
         <!-- ==========================================
-             ABA 0: AUTOMAÇÃO COMPLETA (MINERA -> ENVIA DM -> REPETE)
+             ABA 1: AUTOMAÇÃO (MINERA -> QUALIFICA -> DM -> REPETE)
              ========================================== -->
         <div id="viewAuto" class="innflu-tab-content">
           <div class="innflu-section-title">⚡ Automação Contínua (Mineração + DM)</div>
           <div style="font-size:10.5px;color:#94a3b8;line-height:1.4;margin-bottom:10px;background:rgba(99,102,241,0.12);padding:8px 10px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);">
-            O robô <b>minera</b> a criadora, <b>valida os filtros</b>, <b>envia a mensagem</b>, aguarda o delay humano e <b>segue minerando automaticamente</b>.
+            O robô <b>procura criadoras</b> pelo nicho, <b>valida todos os filtros</b>, se qualificada <b>dispara a DM</b> com delay biológico anti-ban e <b>continua prospectando em loop infinito</b>.
+          </div>
+
+          <div class="innflu-section-title" style="margin-top:6px;">1. O que você quer minerar?</div>
+          <div class="innflu-sources-grid">
+            <button class="innflu-source-btn active" data-source="similar" id="srcBtnAutoSimilar">
+              <span class="innflu-source-icon">✨</span>
+              <div class="innflu-source-label">
+                <span class="innflu-source-name">Semelhantes a @</span>
+                <span class="innflu-source-sub">Recomendadas pelo Instagram</span>
+              </div>
+            </button>
+            <button class="innflu-source-btn" data-source="keyword" id="srcBtnAutoKeyword">
+              <span class="innflu-source-icon">🔍</span>
+              <div class="innflu-source-label">
+                <span class="innflu-source-name">Palavra-chave</span>
+                <span class="innflu-source-sub">Busca geral e virais</span>
+              </div>
+            </button>
+            <button class="innflu-source-btn" data-source="hashtag" id="srcBtnAutoHashtag">
+              <span class="innflu-source-icon">#️⃣</span>
+              <div class="innflu-source-label">
+                <span class="innflu-source-name">Hashtag (#)</span>
+                <span class="innflu-source-sub">Página de hashtag</span>
+              </div>
+            </button>
+            <button class="innflu-source-btn" data-source="following" id="srcBtnAutoFollowing">
+              <span class="innflu-source-icon">👥</span>
+              <div class="innflu-source-label">
+                <span class="innflu-source-name">Seguindo de @</span>
+                <span class="innflu-source-sub">Quem ela segue (Parceiras)</span>
+              </div>
+            </button>
           </div>
 
           <div class="innflu-form-group">
-            <label class="innflu-form-label">Nicho / Palavra-chave ou Perfil @:</label>
-            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: maternidade, @vihtube, #modafeminina" value="maternidade" />
+            <label class="innflu-form-label" id="lblAutoTarget">Perfil de Referência (ex: @marialuizazamoner):</label>
+            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: @marialuizazamoner, @vihtube" value="maternidade" />
           </div>
 
+          <div class="innflu-section-title">2. Filtros de Qualificação</div>
           <div class="innflu-filters-row">
             <div class="innflu-form-group" style="margin-bottom:0;">
               <label class="innflu-form-label">Mín. Seguidores:</label>
               <select class="innflu-select" id="selAutoMinFollowers">
+                <option value="0">Qualquer tamanho</option>
                 <option value="1000">1.000+ seg.</option>
+                <option value="2000">2.000+ seg.</option>
+                <option value="3000">3.000+ seg.</option>
                 <option value="5000">5.000+ seg.</option>
-                <option value="10000" selected>10.000+ (Ideal)</option>
+                <option value="10000" selected>10.000+ (Recomendado)</option>
                 <option value="20000">20.000+ seg.</option>
                 <option value="50000">50.000+ seg.</option>
+                <option value="100000">100.000+ seg.</option>
               </select>
             </div>
             <div class="innflu-form-group" style="margin-bottom:0;">
-              <label class="innflu-form-label">Stories Ativos:</label>
+              <label class="innflu-form-label">Stories Ativos (24h):</label>
               <select class="innflu-select" id="selAutoStories">
-                <option value="true" selected>⚡ Apenas c/ Stories</option>
-                <option value="false">Todos</option>
+                <option value="true" selected>⚡ Apenas c/ Stories Ativos</option>
+                <option value="false">Todos (com ou sem stories)</option>
+              </select>
+            </div>
+          </div>
+          <div class="innflu-filters-row" style="margin-top:6px;">
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Filtro de Contato:</label>
+              <select class="innflu-select" id="selAutoContact">
+                <option value="all" selected>Todos os contatos</option>
+                <option value="any_contact">Apenas com WA ou Email</option>
+                <option value="wa_only">Apenas com WhatsApp</option>
+                <option value="email_only">Apenas com E-mail</option>
+              </select>
+            </div>
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Gênero Alvo:</label>
+              <select class="innflu-select" id="selAutoGender">
+                <option value="female" selected>Apenas Feminino</option>
+                <option value="all">Todos os Gêneros</option>
               </select>
             </div>
           </div>
@@ -101,7 +154,7 @@
             <div class="innflu-btn-group-actions">
               <button class="innflu-cta-btn start" id="btnToggleAuto" style="background:linear-gradient(135deg, #10b981, #6366f1);flex:2;">
                 <span>⚡</span>
-                <span id="btnAutoLabel">Iniciar Automação</span>
+                <span id="btnAutoLabel">Iniciar Automação Contínua</span>
               </button>
               <button class="innflu-btn-pause" id="btnPauseAuto" style="display:none;" title="Pausar ou retomar automação">
                 <span id="btnPauseAutoIcon">⏸️</span>
@@ -112,7 +165,7 @@
         </div>
 
         <!-- ==========================================
-             ABA 1: PAINEL DE MINERAÇÃO (ONDE ESCOLHE COMO MINERAR)
+             ABA 2: MINERAÇÃO & LEADS MINERADOS
              ========================================== -->
         <div id="viewMine" class="innflu-tab-content" style="display:none;">
           <div class="innflu-section-title">1. Escolha Onde Minerar</div>
@@ -209,58 +262,60 @@
               </button>
             </div>
           </div>
-        </div>
 
-        <!-- ==========================================
-             ABA 2: LEADS MINERADOS (TABELA EM TEMPO REAL)
-             ========================================== -->
-        <div id="viewLeads" class="innflu-tab-content" style="display:none;">
-          <div class="innflu-leads-summary">
-            <div class="innflu-summary-box">
-              <div class="innflu-summary-val" id="sumTotalLeads">0</div>
-              <div class="innflu-summary-label">Total Leads</div>
+          <!-- SEÇÃO: LEADS MINERADOS (Tudo o que foi minerado) -->
+          <div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.08);padding-top:12px;">
+            <div class="innflu-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+              <span>📋 Leads Minerados (<span id="tabLeadsCount">0</span>)</span>
             </div>
-            <div class="innflu-summary-box">
-              <div class="innflu-summary-val wa" id="sumWaLeads">0</div>
-              <div class="innflu-summary-label">Com WhatsApp</div>
+
+            <div class="innflu-leads-summary">
+              <div class="innflu-summary-box">
+                <div class="innflu-summary-val" id="sumTotalLeads">0</div>
+                <div class="innflu-summary-label">Total Leads</div>
+              </div>
+              <div class="innflu-summary-box">
+                <div class="innflu-summary-val wa" id="sumWaLeads">0</div>
+                <div class="innflu-summary-label">Com WhatsApp</div>
+              </div>
+              <div class="innflu-summary-box">
+                <div class="innflu-summary-val email" id="sumEmailLeads">0</div>
+                <div class="innflu-summary-label">Com E-mail</div>
+              </div>
             </div>
-            <div class="innflu-summary-box">
-              <div class="innflu-summary-val email" id="sumEmailLeads">0</div>
-              <div class="innflu-summary-label">Com E-mail</div>
+
+            <!-- Barra de Exportação e Ações -->
+            <div class="innflu-export-bar">
+              <button class="innflu-export-btn csv" id="btnExportCSV" title="Baixar planilha completa">
+                📥 Baixar CSV
+              </button>
+              <button class="innflu-export-btn" id="btnImportCSV" title="Importar lista de influenciadoras CSV para o CRM">
+                📤 Importar CSV
+              </button>
+              <input type="file" id="hudInputImportCSV" accept=".csv,text/csv,text/plain" style="display:none;" />
+              <button class="innflu-export-btn" id="btnCopyWhatsapps" title="Copiar todos os números">
+                📱 Copiar Whats
+              </button>
+              <button class="innflu-export-btn" id="btnCopyEmails" title="Copiar todos os e-mails">
+                ✉️ Copiar Emails
+              </button>
+              <button class="innflu-export-btn" id="btnRefreshLeads" title="Recarregar">
+                🔄
+              </button>
             </div>
-          </div>
 
-          <!-- Barra de Exportação e Ações -->
-          <div class="innflu-export-bar">
-            <button class="innflu-export-btn csv" id="btnExportCSV" title="Baixar planilha completa">
-              📥 Baixar CSV
-            </button>
-            <button class="innflu-export-btn" id="btnImportCSV" title="Importar lista de influenciadoras CSV para o CRM">
-              📤 Importar CSV
-            </button>
-            <input type="file" id="hudInputImportCSV" accept=".csv,text/csv,text/plain" style="display:none;" />
-            <button class="innflu-export-btn" id="btnCopyWhatsapps" title="Copiar todos os números">
-              📱 Copiar Whats
-            </button>
-            <button class="innflu-export-btn" id="btnCopyEmails" title="Copiar todos os e-mails">
-              ✉️ Copiar Emails
-            </button>
-            <button class="innflu-export-btn" id="btnRefreshLeads" title="Recarregar">
-              🔄
-            </button>
-          </div>
+            <!-- Filtro de Visualização -->
+            <div class="innflu-filter-chips">
+              <button class="innflu-chip active" data-filter="all" id="chipFilterAll">Todos</button>
+              <button class="innflu-chip" data-filter="wa" id="chipFilterWa">Com WhatsApp</button>
+              <button class="innflu-chip" data-filter="email" id="chipFilterEmail">Com Email</button>
+            </div>
 
-          <!-- Filtro de Visualização -->
-          <div class="innflu-filter-chips">
-            <button class="innflu-chip active" data-filter="all" id="chipFilterAll">Todos</button>
-            <button class="innflu-chip" data-filter="wa" id="chipFilterWa">Com WhatsApp</button>
-            <button class="innflu-chip" data-filter="email" id="chipFilterEmail">Com Email</button>
-          </div>
-
-          <!-- Lista de Cards -->
-          <div class="innflu-leads-scroll" id="leadsCardsContainer">
-            <div style="font-size:11px;color:#64748b;text-align:center;padding:16px;">
-              Nenhum lead minerado ainda.<br>Clique em "Iniciar Mineração" para começar!
+            <!-- Lista de Cards -->
+            <div class="innflu-leads-scroll" id="leadsCardsContainer" style="max-height:220px;">
+              <div style="font-size:11px;color:#64748b;text-align:center;padding:16px;">
+                Nenhum lead minerado ainda.<br>Clique em "Iniciar Mineração" para começar!
+              </div>
             </div>
           </div>
         </div>
@@ -297,47 +352,49 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           </div>
         </div>
 
-        <!-- ==========================================
-             ABA 4: AO VIVO & STATUS
-             ========================================== -->
-        <div id="viewLive" class="innflu-tab-content" style="display:none;">
-          <div class="innflu-live-card">
-            <div class="innflu-live-header">
-              <span class="innflu-status-badge">
-                <span class="innflu-status-pulse"></span>
-                <span id="hudLiveStatusText">Aguardando comando...</span>
-              </span>
-              <span class="innflu-countdown" id="hudCountdown"></span>
-            </div>
-            <div class="innflu-live-target">
-              <span id="hudCurrentAction">Pronto para operar</span>
-            </div>
-            <div style="font-size:10px;color:#64748b;margin-top:4px;" id="hudPageType"></div>
-            
-            <div class="innflu-counters-row">
-              <div class="innflu-counter-box">
-                <div class="innflu-summary-label">Mineradas</div>
-                <div class="innflu-counter-val" id="hudMinedCount">0</div>
-              </div>
-              <div class="innflu-counter-box">
-                <div class="innflu-summary-label">DMs Hoje</div>
-                <div class="innflu-counter-val" id="hudSentTodayCount">0 / 40</div>
-              </div>
-              <div class="innflu-counter-box">
-                <div class="innflu-summary-label">Na Fila</div>
-                <div class="innflu-counter-val" id="hudQueueCount">0</div>
-              </div>
-            </div>
-          </div>
+      </div>
 
-          <div style="margin-top:8px;">
-            <div class="innflu-section-title">Registro de Atividades</div>
-            <div class="innflu-feed" id="hudActivityFeed">
-              <div style="font-size:10px;color:#64748b;text-align:center;padding:8px;">Nenhuma atividade recente.</div>
+      <!-- Telinha Ao Vivo Fixa Embaixo (Sempre Visível) -->
+      <div class="innflu-live-dock" id="hudLiveDock">
+        <div class="innflu-live-card">
+          <div class="innflu-live-header">
+            <span class="innflu-status-badge status-idle" id="hudLiveStatusBadge">
+              <span class="innflu-status-pulse"></span>
+              <span id="hudLiveStatusText">Aguardando comando...</span>
+            </span>
+            <span class="innflu-countdown" id="hudCountdown" style="display:none;"></span>
+          </div>
+          <div class="innflu-live-target">
+            <span id="hudCurrentAction">Pronto para operar</span>
+          </div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px;" id="hudPageType">Página: Inicial</div>
+          
+          <div class="innflu-counters-row">
+            <div class="innflu-counter-box">
+              <div class="innflu-summary-label">⛏️ Mineradas</div>
+              <div class="innflu-counter-val" id="hudMinedCount">0</div>
+            </div>
+            <div class="innflu-counter-box">
+              <div class="innflu-summary-label">✉️ DMs Hoje</div>
+              <div class="innflu-counter-val" id="hudSentTodayCount">0 / 40</div>
+            </div>
+            <div class="innflu-counter-box">
+              <div class="innflu-summary-label">👥 Na Fila</div>
+              <div class="innflu-counter-val" id="hudQueueCount">0</div>
             </div>
           </div>
         </div>
 
+        <!-- Mini feed ao vivo expansível -->
+        <div class="innflu-live-feed-dock" id="hudActivityFeedDock">
+          <div class="innflu-live-feed-title" id="btnToggleLiveFeed">
+            <span>📡 Ao Vivo: Atividades Recentes</span>
+            <span id="hudLiveFeedArrow" style="font-size:9px;color:#94a3b8;">▼</span>
+          </div>
+          <div class="innflu-feed" id="hudActivityFeed" style="max-height:80px;overflow-y:auto;">
+            <div style="font-size:10px;color:#64748b;text-align:center;padding:4px;">Nenhuma atividade recente.</div>
+          </div>
+        </div>
       </div>
 
       <!-- Rodapé -->
@@ -387,13 +444,27 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
 
   // Controles de Automação Contínua
   const inputAutoTarget = $('inputAutoTarget');
+  const lblAutoTarget = $('lblAutoTarget');
   const selAutoMinFollowers = $('selAutoMinFollowers');
   const selAutoStories = $('selAutoStories');
+  const selAutoContact = $('selAutoContact');
+  const selAutoGender = $('selAutoGender');
   const btnToggleAuto = $('btnToggleAuto');
   const btnAutoLabel = $('btnAutoLabel');
   const btnPauseAuto = $('btnPauseAuto');
   const btnPauseAutoIcon = $('btnPauseAutoIcon');
   const btnPauseAutoLabel = $('btnPauseAutoLabel');
+
+  const sourceButtonsAuto = {
+    similar: $('srcBtnAutoSimilar'),
+    keyword: $('srcBtnAutoKeyword'),
+    hashtag: $('srcBtnAutoHashtag'),
+    following: $('srcBtnAutoFollowing')
+  };
+
+  const hudLiveStatusBadge = $('hudLiveStatusBadge');
+  const btnToggleLiveFeed = $('btnToggleLiveFeed');
+  const hudLiveFeedArrow = $('hudLiveFeedArrow');
 
   // Controles de Mineração
   const inputMiningTarget = $('inputMiningTarget');
@@ -576,6 +647,29 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     }
     if (bot.targetGender && selTargetGender) {
       selTargetGender.value = bot.targetGender;
+    }
+
+    // Sincroniza formulário de automação
+    if (bot.miningTarget && inputAutoTarget && inputAutoTarget.value !== bot.miningTarget) {
+      inputAutoTarget.value = bot.miningTarget;
+    }
+    if (bot.minFollowers !== undefined && selAutoMinFollowers) {
+      selAutoMinFollowers.value = bot.minFollowers.toString();
+    }
+    if (bot.requireStories !== undefined && selAutoStories) {
+      selAutoStories.value = bot.requireStories ? 'true' : 'false';
+    }
+    if (bot.requireContact && selAutoContact) {
+      selAutoContact.value = bot.requireContact;
+    }
+    if (bot.targetGender && selAutoGender) {
+      selAutoGender.value = bot.targetGender;
+    }
+    if (bot.miningSource && typeof selectAutoSourceUI === 'function') {
+      selectAutoSourceUI(bot.miningSource);
+    }
+    if (hudLiveStatusBadge) {
+      hudLiveStatusBadge.className = hudGlobalBadge.className;
     }
 
     // Seleciona botão de fonte ativo
@@ -767,15 +861,76 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     });
   }
 
+  // Configuração da Fonte da Automação Contínua
+  let autoSelectedSource = 'similar';
+  function selectAutoSourceUI(source) {
+    autoSelectedSource = source;
+    Object.entries(sourceButtonsAuto).forEach(([key, btn]) => {
+      if (btn) {
+        if (key === source) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+    });
+
+    if (source === 'similar') {
+      if (lblAutoTarget) lblAutoTarget.innerText = 'Perfil de Referência (ex: @marialuizazamoner):';
+      if (inputAutoTarget) inputAutoTarget.placeholder = 'ex: @marialuizazamoner, @vihtube';
+    } else if (source === 'keyword') {
+      if (lblAutoTarget) lblAutoTarget.innerText = 'Palavra-chave do Nicho:';
+      if (inputAutoTarget) inputAutoTarget.placeholder = 'ex: maternidade, moda praia, nutrição';
+    } else if (source === 'hashtag') {
+      if (lblAutoTarget) lblAutoTarget.innerText = 'Hashtag (com ou sem #):';
+      if (inputAutoTarget) inputAutoTarget.placeholder = 'ex: #maternidadereal, #modafeminina';
+    } else if (source === 'following') {
+      if (lblAutoTarget) lblAutoTarget.innerText = 'Perfil para minerar quem ela segue:';
+      if (inputAutoTarget) inputAutoTarget.placeholder = 'ex: @marialuizazamoner, @vihtube';
+    }
+  }
+
+  Object.entries(sourceButtonsAuto).forEach(([src, btn]) => {
+    if (btn) {
+      btn.onclick = () => {
+        selectAutoSourceUI(src);
+        saveBot({ miningSource: src });
+      };
+    }
+  });
+
+  if (inputAutoTarget) {
+    inputAutoTarget.addEventListener('input', () => {
+      const val = inputAutoTarget.value.trim();
+      if (val.startsWith('@')) {
+        selectAutoSourceUI('similar');
+        saveBot({ miningSource: 'similar', miningTarget: val.replace(/^@/, '') });
+      } else if (val.startsWith('#')) {
+        selectAutoSourceUI('hashtag');
+        saveBot({ miningSource: 'hashtag', miningTarget: val });
+      } else {
+        saveBot({ miningTarget: val });
+      }
+    });
+  }
+
+  if (btnToggleLiveFeed) {
+    btnToggleLiveFeed.onclick = () => {
+      const feed = $('hudActivityFeed');
+      if (feed.style.display === 'none') {
+        feed.style.display = 'flex';
+        if (hudLiveFeedArrow) hudLiveFeedArrow.innerText = '▼';
+      } else {
+        feed.style.display = 'none';
+        if (hudLiveFeedArrow) hudLiveFeedArrow.innerText = '▲';
+      }
+    };
+  }
+
   // ==========================================
-  // NAVEGAÇÃO ENTRE ABAS
+  // NAVEGAÇÃO ENTRE ABAS (3 ABAS: AUTOMAÇÃO, MINERAÇÃO E CAPTAÇÃO)
   // ==========================================
   const tabs = {
     auto: [$('tabBtnAuto'), $('viewAuto')],
     mine: [$('tabBtnMine'), $('viewMine')],
-    leads: [$('tabBtnLeads'), $('viewLeads')],
-    sender: [$('tabBtnSender'), $('viewSender')],
-    live: [$('tabBtnLive'), $('viewLive')]
+    sender: [$('tabBtnSender'), $('viewSender')]
   };
 
   function switchTab(target) {
@@ -789,16 +944,15 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       tabs[target][0].classList.add('active');
       tabs[target][1].style.display = 'block';
     }
-    if (target === 'leads') {
+    if (target === 'mine') {
+      renderLeadsTable();
       loadLeadsFromApiAndRender();
     }
   }
 
   $('tabBtnAuto').onclick = () => switchTab('auto');
   $('tabBtnMine').onclick = () => switchTab('mine');
-  $('tabBtnLeads').onclick = () => switchTab('leads');
   $('tabBtnSender').onclick = () => switchTab('sender');
-  $('tabBtnLive').onclick = () => switchTab('live');
 
   // Drag & Minimizar
   let isDragging = false, startX, startY, initX, initY;
@@ -960,7 +1114,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     }
 
     const rawInput = (inputAutoTarget.value || '').trim();
-    let currentSource = 'keyword';
+    let currentSource = autoSelectedSource || 'keyword';
     if (rawInput.startsWith('@')) {
       currentSource = 'similar';
     } else if (rawInput.startsWith('#')) {
@@ -973,8 +1127,10 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       return;
     }
 
-    const minFollowersVal = parseInt(selAutoMinFollowers.value, 10) || 10000;
+    const minFollowersVal = parseInt(selAutoMinFollowers.value, 10) || 0;
     const requireStoriesVal = selAutoStories.value === 'true';
+    const requireContactVal = selAutoContact ? selAutoContact.value : 'all';
+    const targetGenderVal = selAutoGender ? selAutoGender.value : 'female';
 
     await syncKnownCRMUsers(apiBaseUrl);
 
@@ -987,6 +1143,8 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       keyword: targetClean,
       minFollowers: minFollowersVal,
       requireStories: requireStoriesVal,
+      requireContact: requireContactVal,
+      targetGender: targetGenderVal,
       queue: [],
       visitedPosts: [],
       nextActionAt: 0

@@ -37,7 +37,8 @@
 .innflu-hud.minimized .innflu-toast-container,
 .innflu-hud.minimized .innflu-tab-content,
 .innflu-hud.minimized .innflu-delay-bar-container,
-.innflu-hud.minimized .innflu-alert-banner {
+.innflu-hud.minimized .innflu-alert-banner,
+.innflu-hud.minimized .innflu-live-dock {
   display: none !important;
 }
 
@@ -203,10 +204,52 @@
 .innflu-hud-body {
   padding: 12px 14px;
   overflow-y: auto;
-  max-height: 480px;
+  max-height: 400px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* ==========================================
+   DOCK AO VIVO FIXO (SEMPRE VISÍVEL EMBAIXO)
+   ========================================== */
+.innflu-live-dock {
+  background: rgba(10, 15, 29, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.innflu-live-dock .innflu-live-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.innflu-live-feed-dock {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 4px;
+}
+
+.innflu-live-feed-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 2px;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.innflu-live-feed-title:hover {
+  color: #c084fc;
 }
 
 /* ==========================================
