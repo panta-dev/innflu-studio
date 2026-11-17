@@ -67,9 +67,9 @@
 
       <!-- Navegação de Abas (3 Abas Principais) -->
       <div class="innflu-nav-tabs">
-        <button class="innflu-nav-btn active" id="tabBtnAuto">⚡ Automação</button>
-        <button class="innflu-nav-btn" id="tabBtnMine">⛏️ Mineração</button>
-        <button class="innflu-nav-btn" id="tabBtnSender">✉️ Captação</button>
+        <button class="innflu-nav-btn active" id="tabBtnAuto">Automação</button>
+        <button class="innflu-nav-btn" id="tabBtnMine">Mineração</button>
+        <button class="innflu-nav-btn" id="tabBtnSender">Captação</button>
       </div>
 
       <!-- Corpo do HUD -->
@@ -79,46 +79,25 @@
              ABA 1: AUTOMAÇÃO (MINERA -> QUALIFICA -> DM -> REPETE)
              ========================================== -->
         <div id="viewAuto" class="innflu-tab-content">
-          <div class="innflu-section-title">⚡ Automação Contínua (Mineração + DM)</div>
-          <div style="font-size:10.5px;color:#94a3b8;line-height:1.4;margin-bottom:10px;background:rgba(99,102,241,0.12);padding:8px 10px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);">
-            O robô <b>procura criadoras</b> pelo nicho, <b>valida todos os filtros</b>, se qualificada <b>dispara a DM</b> com delay biológico anti-ban e <b>continua prospectando em loop infinito</b>.
-          </div>
-
-          <div class="innflu-section-title" style="margin-top:6px;">1. O que você quer minerar?</div>
+          <div class="innflu-section-title">1. Onde Minerar</div>
           <div class="innflu-sources-grid">
-            <button class="innflu-source-btn active" data-source="similar" id="srcBtnAutoSimilar">
-              <span class="innflu-source-icon">✨</span>
-              <div class="innflu-source-label">
-                <span class="innflu-source-name">Semelhantes a @</span>
-                <span class="innflu-source-sub">Recomendadas pelo Instagram</span>
-              </div>
+            <button class="innflu-source-btn active" data-source="similar" id="srcBtnAutoSimilar" title="Semelhantes a @ (Recomendadas)">
+              <span class="innflu-source-name">Semelhantes</span>
             </button>
-            <button class="innflu-source-btn" data-source="keyword" id="srcBtnAutoKeyword">
-              <span class="innflu-source-icon">🔍</span>
-              <div class="innflu-source-label">
-                <span class="innflu-source-name">Palavra-chave</span>
-                <span class="innflu-source-sub">Busca geral e virais</span>
-              </div>
+            <button class="innflu-source-btn" data-source="keyword" id="srcBtnAutoKeyword" title="Palavra-chave (Busca geral)">
+              <span class="innflu-source-name">Palavra-chave</span>
             </button>
-            <button class="innflu-source-btn" data-source="hashtag" id="srcBtnAutoHashtag">
-              <span class="innflu-source-icon">#️⃣</span>
-              <div class="innflu-source-label">
-                <span class="innflu-source-name">Hashtag (#)</span>
-                <span class="innflu-source-sub">Página de hashtag</span>
-              </div>
+            <button class="innflu-source-btn" data-source="hashtag" id="srcBtnAutoHashtag" title="Hashtag (#)">
+              <span class="innflu-source-name">Hashtag</span>
             </button>
-            <button class="innflu-source-btn" data-source="following" id="srcBtnAutoFollowing">
-              <span class="innflu-source-icon">👥</span>
-              <div class="innflu-source-label">
-                <span class="innflu-source-name">Seguindo de @</span>
-                <span class="innflu-source-sub">Quem ela segue (Parceiras)</span>
-              </div>
+            <button class="innflu-source-btn" data-source="following" id="srcBtnAutoFollowing" title="Seguindo de @">
+              <span class="innflu-source-name">Seguindo</span>
             </button>
           </div>
 
           <div class="innflu-form-group">
-            <label class="innflu-form-label" id="lblAutoTarget">Perfil de Referência (ex: @marialuizazamoner):</label>
-            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: @marialuizazamoner, @vihtube" value="maternidade" />
+            <label class="innflu-form-label" id="lblAutoTarget">Alvo ou Nicho:</label>
+            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: maternidade, @perfil" value="maternidade" />
           </div>
 
           <div class="innflu-section-title">2. Filtros de Qualificação</div>
@@ -131,7 +110,7 @@
                 <option value="2000">2.000+ seg.</option>
                 <option value="3000">3.000+ seg.</option>
                 <option value="5000">5.000+ seg.</option>
-                <option value="10000" selected>10.000+ (Recomendado)</option>
+                <option value="10000" selected>10.000+ seg.</option>
                 <option value="20000">20.000+ seg.</option>
                 <option value="50000">50.000+ seg.</option>
                 <option value="100000">100.000+ seg.</option>
@@ -140,19 +119,19 @@
             <div class="innflu-form-group" style="margin-bottom:0;">
               <label class="innflu-form-label">Stories Ativos (24h):</label>
               <select class="innflu-select" id="selAutoStories">
-                <option value="true" selected>⚡ Apenas c/ Stories Ativos</option>
-                <option value="false">Todos (com ou sem stories)</option>
+                <option value="true" selected>Apenas com Stories</option>
+                <option value="false">Todos os perfis</option>
               </select>
             </div>
           </div>
-          <div class="innflu-filters-row" style="margin-top:6px;">
+          <div class="innflu-filters-row" style="margin-top:4px;">
             <div class="innflu-form-group" style="margin-bottom:0;">
               <label class="innflu-form-label">Filtro de Contato:</label>
               <select class="innflu-select" id="selAutoContact">
                 <option value="all" selected>Todos os contatos</option>
-                <option value="any_contact">Apenas com WA ou Email</option>
-                <option value="wa_only">Apenas com WhatsApp</option>
-                <option value="email_only">Apenas com E-mail</option>
+                <option value="any_contact">WhatsApp ou E-mail</option>
+                <option value="wa_only">Apenas WhatsApp</option>
+                <option value="email_only">Apenas E-mail</option>
               </select>
             </div>
             <div class="innflu-form-group" style="margin-bottom:0;">
@@ -164,37 +143,28 @@
             </div>
           </div>
 
-          <!-- 3. MENSAGEM DA ABORDAGEM (DIRECT MESSAGE) -->
-          <div class="innflu-section-title" style="margin-top:10px;">3. Mensagem da Abordagem</div>
-          <div class="innflu-template-section" style="margin-top:4px;">
-            <label class="innflu-form-label">Template com Spintax {Olá|Oi|Oie} e {nome}:</label>
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" style="height:65px;min-height:60px;">{Olá|Oi|Oie} {nome}! Vi seu perfil e amei seu conteúdo. Podemos conversar sobre parceria?</textarea>
-            <div class="innflu-template-actions">
-              <button class="innflu-btn-sub" id="btnAutoTestSpintax">🎲 Testar Variação</button>
-              <button class="innflu-btn-sub" id="btnAutoSaveTemplate" style="background:#4f46e5;color:white;">💾 Salvar Mensagem</button>
+          <!-- 3. MENSAGEM & INTERVALO -->
+          <div class="innflu-section-title" style="margin-top:6px;">3. Mensagem & Intervalo</div>
+          <div class="innflu-template-section">
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" style="height:44px;min-height:44px;">{Olá|Oi|Oie} {nome}! Vi seu perfil e amei seu conteúdo. Podemos conversar sobre parceria?</textarea>
+            <div class="innflu-delay-row">
+              <div class="innflu-delay-inputs">
+                <span class="innflu-form-label" style="margin:0;">Delay:</span>
+                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMinDelay" value="60" min="5" max="900" title="Mínimo em segundos" />
+                <span>a</span>
+                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMaxDelay" value="120" min="10" max="1800" title="Máximo em segundos" />
+                <span>seg</span>
+              </div>
+              <div class="innflu-template-actions">
+                <button class="innflu-btn-sub" id="btnAutoTestSpintax" title="Testar variação">🎲 Testar</button>
+                <button class="innflu-btn-sub save" id="btnAutoSaveTemplate" title="Salvar mensagem">💾 Salvar</button>
+              </div>
             </div>
           </div>
 
-          <!-- 4. INTERVALO ENTRE MENSAGENS (SEGUNDOS) -->
-          <div class="innflu-section-title" style="margin-top:10px;">4. Intervalo entre Mensagens (Segundos)</div>
-          <div class="innflu-filters-row" style="margin-top:4px;">
-            <div class="innflu-form-group" style="margin-bottom:0;">
-              <label class="innflu-form-label">Delay Mínimo (seg):</label>
-              <input type="number" class="innflu-input" id="inputAutoMinDelay" value="60" min="5" max="900" style="padding:6px 8px;font-size:12px;" />
-            </div>
-            <div class="innflu-form-group" style="margin-bottom:0;">
-              <label class="innflu-form-label">Delay Máximo (seg):</label>
-              <input type="number" class="innflu-input" id="inputAutoMaxDelay" value="120" min="10" max="1800" style="padding:6px 8px;font-size:12px;" />
-            </div>
-          </div>
-          <div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.3;">
-            🛡️ Intervalo biológico em segundos para simular digitação humana e evitar bloqueios.
-          </div>
-
-          <div style="margin-top:12px;">
+          <div style="margin-top:6px;">
             <div class="innflu-btn-group-actions">
-              <button class="innflu-cta-btn start" id="btnToggleAuto" style="background:linear-gradient(135deg, #10b981, #6366f1);flex:2;">
-                <span>⚡</span>
+              <button class="innflu-cta-btn start" id="btnToggleAuto" style="flex:2;">
                 <span id="btnAutoLabel">Iniciar Automação Contínua</span>
               </button>
               <button class="innflu-btn-pause" id="btnPauseAuto" style="display:none;" title="Pausar ou retomar automação">
@@ -211,39 +181,23 @@
         <div id="viewMine" class="innflu-tab-content" style="display:none;">
           <div class="innflu-section-title">1. Escolha Onde Minerar</div>
           <div class="innflu-sources-grid">
-            <button class="innflu-source-btn active" data-source="similar" id="srcBtnSimilar">
-              <span class="innflu-source-icon">✨</span>
-              <div class="innflu-source-label">
-                <span class="innflu-source-name">Semelhantes a @</span>
-                <span class="innflu-source-sub">Recomendados pelo Instagram</span>
-              </div>
+            <button class="innflu-source-btn active" data-source="similar" id="srcBtnSimilar" title="Semelhantes a @ (Recomendadas)">
+              <span class="innflu-source-name">Semelhantes</span>
             </button>
-            <button class="innflu-source-btn" data-source="keyword" id="srcBtnKeyword">
-              <span class="innflu-source-icon">🔍</span>
-              <div class="innflu-source-label">
-                <span class="innflu-source-name">Palavra-chave</span>
-                <span class="innflu-source-sub">Busca geral e virais</span>
-              </div>
+            <button class="innflu-source-btn" data-source="keyword" id="srcBtnKeyword" title="Palavra-chave (Busca geral)">
+              <span class="innflu-source-name">Palavra-chave</span>
             </button>
-            <button class="innflu-source-btn" data-source="hashtag" id="srcBtnHashtag">
-              <span class="innflu-source-icon">#️⃣</span>
-              <div class="innflu-source-label">
-                <span class="innflu-source-name">Hashtag (#)</span>
-                <span class="innflu-source-sub">Página de hashtag</span>
-              </div>
+            <button class="innflu-source-btn" data-source="hashtag" id="srcBtnHashtag" title="Hashtag (#)">
+              <span class="innflu-source-name">Hashtag</span>
             </button>
-            <button class="innflu-source-btn" data-source="following" id="srcBtnFollowing">
-              <span class="innflu-source-icon">👥</span>
-              <div class="innflu-source-label">
-                <span class="innflu-source-name">Seguindo de @</span>
-                <span class="innflu-source-sub">Quem ela segue (Parceiras)</span>
-              </div>
+            <button class="innflu-source-btn" data-source="following" id="srcBtnFollowing" title="Seguindo de @">
+              <span class="innflu-source-name">Seguindo</span>
             </button>
           </div>
 
           <div class="innflu-form-group">
             <label class="innflu-form-label" id="lblMiningTarget">Termo de Pesquisa / Nicho:</label>
-            <input type="text" class="innflu-input" id="inputMiningTarget" placeholder="ex: maternidade, nutricionista, moda" value="maternidade" />
+            <input type="text" class="innflu-input" id="inputMiningTarget" placeholder="ex: maternidade, moda, nutrição" value="maternidade" />
           </div>
 
           <div class="innflu-section-title">2. Filtros de Qualificação</div>
@@ -255,11 +209,9 @@
                 <option value="1000">1.000+ seguidores</option>
                 <option value="2000">2.000+ seguidores</option>
                 <option value="3000">3.000+ seguidores</option>
-                <option value="4000">4.000+ seguidores</option>
                 <option value="5000">5.000+ seguidores</option>
-                <option value="10000" selected>10.000+ (Recomendado)</option>
+                <option value="10000" selected>10.000+ seguidores</option>
                 <option value="20000">20.000+ seguidores</option>
-                <option value="30000">30.000+ seguidores</option>
                 <option value="50000">50.000+ seguidores</option>
                 <option value="100000">100.000+ seguidores</option>
               </select>
@@ -267,19 +219,19 @@
             <div class="innflu-form-group" style="margin-bottom:0;">
               <label class="innflu-form-label">Stories Ativos (24h):</label>
               <select class="innflu-select" id="selRequireStories">
-                <option value="true" selected>⚡ Apenas c/ Stories Ativos</option>
-                <option value="false">Todos (com ou sem stories)</option>
+                <option value="true" selected>Apenas com Stories</option>
+                <option value="false">Todos os perfis</option>
               </select>
             </div>
           </div>
-          <div class="innflu-filters-row" style="margin-top:6px;">
+          <div class="innflu-filters-row" style="margin-top:4px;">
             <div class="innflu-form-group" style="margin-bottom:0;">
               <label class="innflu-form-label">Filtro de Contato:</label>
               <select class="innflu-select" id="selRequireContact">
                 <option value="all" selected>Todos os contatos</option>
-                <option value="any_contact">Apenas com WA ou Email</option>
-                <option value="wa_only">Apenas com WhatsApp</option>
-                <option value="email_only">Apenas com E-mail</option>
+                <option value="any_contact">WhatsApp ou E-mail</option>
+                <option value="wa_only">Apenas WhatsApp</option>
+                <option value="email_only">Apenas E-mail</option>
               </select>
             </div>
             <div class="innflu-form-group" style="margin-bottom:0;">
@@ -291,10 +243,9 @@
             </div>
           </div>
 
-          <div style="margin-top:10px;">
+          <div style="margin-top:6px;">
             <div class="innflu-btn-group-actions">
               <button class="innflu-cta-btn start" id="btnToggleMining" style="flex:2;">
-                <span>🚀</span>
                 <span id="btnMiningLabel">Iniciar Mineração</span>
               </button>
               <button class="innflu-btn-pause" id="btnPauseMining" style="display:none;" title="Pausar ou retomar sem perder a fila">
@@ -304,46 +255,46 @@
             </div>
           </div>
 
-          <!-- SEÇÃO: LEADS MINERADOS (Tudo o que foi minerado) -->
-          <div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.08);padding-top:12px;">
-            <div class="innflu-section-title" style="display:flex;justify-content:space-between;align-items:center;">
-              <span>📋 Leads Minerados (<span id="tabLeadsCount">0</span>)</span>
+          <!-- SEÇÃO: LEADS MINERADOS -->
+          <div style="margin-top:10px;border-top:1px solid #21262d;padding-top:8px;">
+            <div class="innflu-section-title">
+              <span>Leads Minerados (<span id="tabLeadsCount">0</span>)</span>
             </div>
 
             <div class="innflu-leads-summary">
               <div class="innflu-summary-box">
                 <div class="innflu-summary-val" id="sumTotalLeads">0</div>
-                <div class="innflu-summary-label">Total Leads</div>
+                <div class="innflu-summary-label">Total</div>
               </div>
               <div class="innflu-summary-box">
                 <div class="innflu-summary-val wa" id="sumWaLeads">0</div>
-                <div class="innflu-summary-label">Com WhatsApp</div>
+                <div class="innflu-summary-label">WhatsApp</div>
               </div>
               <div class="innflu-summary-box">
                 <div class="innflu-summary-val email" id="sumEmailLeads">0</div>
-                <div class="innflu-summary-label">Com E-mail</div>
+                <div class="innflu-summary-label">E-mail</div>
               </div>
             </div>
 
             <!-- Barra de Exportação e Ações -->
             <div class="innflu-export-bar">
-              <button class="innflu-export-btn" id="btnSendDMsToLeads" style="background:linear-gradient(135deg, #ec4899, #8b5cf6);color:#fff;font-weight:600;" title="Iniciar envio de DMs para todas as criadoras mineradas">
+              <button class="innflu-export-btn" id="btnSendDMsToLeads" style="background:#1f293d;border-color:#3b82f6;color:#60a5fa;" title="Iniciar envio de DMs para todas as criadoras mineradas">
                 ✉️ Enviar DMs
               </button>
               <button class="innflu-export-btn csv" id="btnExportCSV" title="Baixar planilha completa">
-                📥 Baixar CSV
+                CSV
               </button>
-              <button class="innflu-export-btn" id="btnImportCSV" title="Importar lista de influenciadoras CSV para o CRM">
-                📤 Importar CSV
+              <button class="innflu-export-btn" id="btnImportCSV" title="Importar lista de influenciadoras CSV">
+                Importar
               </button>
               <input type="file" id="hudInputImportCSV" accept=".csv,text/csv,text/plain" style="display:none;" />
               <button class="innflu-export-btn" id="btnCopyWhatsapps" title="Copiar todos os números">
-                📱 Copiar Whats
+                Whats
               </button>
               <button class="innflu-export-btn" id="btnCopyEmails" title="Copiar todos os e-mails">
-                ✉️ Copiar Emails
+                Emails
               </button>
-              <button class="innflu-export-btn" id="btnRefreshLeads" title="Recarregar">
+              <button class="innflu-export-btn" id="btnRefreshLeads" title="Recarregar" style="min-width:24px;flex:0.4;">
                 🔄
               </button>
             </div>
@@ -356,8 +307,8 @@
             </div>
 
             <!-- Lista de Cards -->
-            <div class="innflu-leads-scroll" id="leadsCardsContainer" style="max-height:220px;">
-              <div style="font-size:11px;color:#64748b;text-align:center;padding:16px;">
+            <div class="innflu-leads-scroll" id="leadsCardsContainer" style="max-height:140px;">
+              <div style="font-size:10px;color:#8b949e;text-align:center;padding:12px;">
                 Nenhum lead minerado ainda.<br>Clique em "Iniciar Mineração" para começar!
               </div>
             </div>
@@ -369,8 +320,8 @@
              ========================================== -->
         <div id="viewSender" class="innflu-tab-content" style="display:none;">
           <div class="innflu-template-section">
-            <label class="innflu-form-label">Mensagem com Spintax {Olá|Oi|Oie} e {nome}:</label>
-            <textarea class="innflu-template-textarea" id="hudTemplateContent">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?}
+            <label class="innflu-form-label">Mensagem Spintax {Olá|Oi|Oie} e {nome}:</label>
+            <textarea class="innflu-template-textarea" id="hudTemplateContent" style="height:90px;min-height:80px;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?}
 
 Vi seu perfil e adorei o conteúdo que você compartilha sobre maternidade real!
 
@@ -378,14 +329,13 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
             
             <div class="innflu-template-actions">
               <button class="innflu-btn-sub" id="btnTestSpintax">🎲 Testar Variação</button>
-              <button class="innflu-btn-sub" id="btnSaveTemplate" style="background:#7c3aed;color:white;">💾 Salvar Template</button>
+              <button class="innflu-btn-sub save" id="btnSaveTemplate">💾 Salvar Template</button>
             </div>
           </div>
 
-          <div style="margin-top:12px;">
+          <div style="margin-top:8px;">
             <div class="innflu-btn-group-actions">
-              <button class="innflu-cta-btn start" id="btnToggleSender" style="background:linear-gradient(135deg, #ec4899, #8b5cf6);flex:2;">
-                <span>✉️</span>
+              <button class="innflu-cta-btn start" id="btnToggleSender" style="flex:2;">
                 <span id="btnSenderLabel">Iniciar Envio de DMs (Captação)</span>
               </button>
               <button class="innflu-btn-pause" id="btnPauseSender" style="display:none;" title="Pausar ou retomar envios">
@@ -411,19 +361,19 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
           <div class="innflu-live-target">
             <span id="hudCurrentAction">Pronto para operar</span>
           </div>
-          <div style="font-size:10px;color:#64748b;margin-top:2px;" id="hudPageType">Página: Inicial</div>
+          <div style="font-size:9px;color:#8b949e;" id="hudPageType">Página: Inicial</div>
           
           <div class="innflu-counters-row">
             <div class="innflu-counter-box">
-              <div class="innflu-summary-label">⛏️ Mineradas</div>
+              <div class="innflu-summary-label">Mineradas</div>
               <div class="innflu-counter-val" id="hudMinedCount">0</div>
             </div>
             <div class="innflu-counter-box">
-              <div class="innflu-summary-label">✉️ DMs Hoje</div>
+              <div class="innflu-summary-label">DMs Hoje</div>
               <div class="innflu-counter-val" id="hudSentTodayCount">0 / 40</div>
             </div>
             <div class="innflu-counter-box">
-              <div class="innflu-summary-label">👥 Na Fila</div>
+              <div class="innflu-summary-label">Na Fila</div>
               <div class="innflu-counter-val" id="hudQueueCount">0</div>
             </div>
           </div>
@@ -432,20 +382,20 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
         <!-- Mini feed ao vivo expansível -->
         <div class="innflu-live-feed-dock" id="hudActivityFeedDock">
           <div class="innflu-live-feed-title" id="btnToggleLiveFeed">
-            <span>📡 Ao Vivo: Atividades Recentes</span>
-            <span id="hudLiveFeedArrow" style="font-size:9px;color:#94a3b8;">▼</span>
+            <span>Atividades Recentes</span>
+            <span id="hudLiveFeedArrow" style="font-size:9px;color:#8b949e;">▼</span>
           </div>
-          <div class="innflu-feed" id="hudActivityFeed" style="max-height:80px;overflow-y:auto;">
-            <div style="font-size:10px;color:#64748b;text-align:center;padding:4px;">Nenhuma atividade recente.</div>
+          <div class="innflu-feed" id="hudActivityFeed" style="display:none;max-height:70px;overflow-y:auto;">
+            <div style="font-size:9px;color:#8b949e;text-align:center;padding:4px;">Nenhuma atividade recente.</div>
           </div>
         </div>
       </div>
 
       <!-- Rodapé -->
       <div class="innflu-hud-footer">
-        <button class="innflu-btn-secondary" id="btnQuickInspect">🔎 Analisar Perfil Aberto</button>
-        <button class="innflu-btn-secondary" id="btnOpenDashboard" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;">📊 Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.75;font-size:10px;padding:4px 6px;" title="Verificar se há atualizações da extensão">v1.2.3 🔄</button>
+        <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
+        <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;">Painel Web</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.2.4 🔄</button>
       </div>
     </div>
   `;
