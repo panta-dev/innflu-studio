@@ -2535,11 +2535,11 @@ app.get("/api/health", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.2.1",
+    version: "1.2.2",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "Auto-Pivot para perfis semelhantes em feeds travados, novo editor de mensagens na Automa\xE7\xE3o, ajuste de delay em segundos e fim de falsos-positivos em perfis de moda/provador.",
+    releaseNotes: "Sincroniza\xE7\xE3o autom\xE1tica imediata da barra de Leads minerados para a Capta\xE7\xE3o e Automa\xE7\xE3o com atualiza\xE7\xE3o de status contatada.",
     downloadUrl: "/innflu-extensao.zip",
-    publishedAt: "2026-11-17T14:30:00Z",
+    publishedAt: "2026-11-17T15:00:00Z",
     dynamicRules: {
       selectors: {
         messageButtons: ["enviar mensagem", "mensagem", "message", "send message"],

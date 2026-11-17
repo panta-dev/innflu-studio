@@ -327,6 +327,9 @@
 
             <!-- Barra de Exportação e Ações -->
             <div class="innflu-export-bar">
+              <button class="innflu-export-btn" id="btnSendDMsToLeads" style="background:linear-gradient(135deg, #ec4899, #8b5cf6);color:#fff;font-weight:600;" title="Iniciar envio de DMs para todas as criadoras mineradas">
+                ✉️ Enviar DMs
+              </button>
               <button class="innflu-export-btn csv" id="btnExportCSV" title="Baixar planilha completa">
                 📥 Baixar CSV
               </button>
@@ -442,7 +445,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">🔎 Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;">📊 Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.75;font-size:10px;padding:4px 6px;" title="Verificar se há atualizações da extensão">v1.2.1 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.75;font-size:10px;padding:4px 6px;" title="Verificar se há atualizações da extensão">v1.2.2 🔄</button>
       </div>
     </div>
   `;
@@ -1316,7 +1319,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   };
 
   btnToggleSender.onclick = async () => {
-    const { bot } = await getState();
+    const { bot, savedLeads } = await getState();
     if (bot.isRunning && bot.activeMode === 'sender') {
       await saveBot({ isRunning: false, isPaused: false, activeMode: null, nextActionAt: 0 });
       clearInterval(countdownInterval);
@@ -1325,10 +1328,46 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       return;
     }
 
-    await saveBot({ isRunning: true, isPaused: false, activeMode: 'sender', nextActionAt: 0 });
+    // Puxa automaticamente da barra de leads minerados todos que ainda não receberam mensagem
+    const allLeads = savedLeads || cachedLeads || [];
+    const visitedSet = new Set((bot.visited || []).map(u => (u || '').toLowerCase()));
+    const uncontacted = allLeads
+      .filter(l => {
+        const u = (l.username || '').toLowerCase();
+        const s = (l.status || '').toLowerCase();
+        const isPending = s === 'minerada' || s === 'pendente' || s === 'qualificada' || (!s.includes('contatad') && !s.includes('enviad') && !s.includes('skip'));
+        return u && isPending && !visitedSet.has(u);
+      })
+      .map(l => l.username.toLowerCase());
+
+    const initialQueue = uncontacted.length > 0 ? uncontacted : (bot.queue || []);
+
+    if (initialQueue.length === 0) {
+      showToast({
+        type: 'warning',
+        title: 'Nenhum Lead Pendente',
+        message: 'Todos os leads minerados da lista já foram contatados ou a barra está vazia. Minere novos perfis na aba "Mineração"!'
+      });
+      return;
+    }
+
+    await saveBot({
+      isRunning: true,
+      isPaused: false,
+      activeMode: 'sender',
+      queue: initialQueue,
+      nextActionAt: 0
+    });
+
     const updated = await getState();
     syncUI(updated.bot);
-    showToast({ type: 'success', title: 'Captação Iniciada', message: 'Enviando DMs com delays seguros anti-ban.' });
+    hudQueueCount.innerText = initialQueue.length;
+
+    showToast({
+      type: 'success',
+      title: 'Captação Iniciada ✉️',
+      message: `${initialQueue.length} criadoras mineradas carregadas automaticamente da lista para envio!`
+    });
     runLoop();
   };
 
@@ -1424,7 +1463,23 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       }
     }
 
-    // CENÁRIO C: Fila vazia -> executa mineração contínua para encontrar novas criadoras
+    // CENÁRIO C: Fila vazia -> Primeiro verifica se há criadoras salvas na barra de Leads pendentes de envio
+    const allLeads = cachedLeads || [];
+    const pendingFromBar = allLeads.filter(l => {
+      const u = (l.username || '').toLowerCase();
+      const s = (l.status || '').toLowerCase();
+      const isPending = s === 'minerada' || s === 'pendente' || s === 'qualificada' || (!s.includes('contatad') && !s.includes('enviad') && !s.includes('skip'));
+      return u && isPending && !visitedSet.has(u);
+    });
+
+    if (pendingFromBar.length > 0) {
+      const nextFromBar = pendingFromBar[0].username.toLowerCase();
+      hudCurrentAction.innerText = `[⚡ Automação] Puxando da barra de leads: @${nextFromBar}...`;
+      window.InnfluCrawler.openProfile(nextFromBar);
+      return;
+    }
+
+    // Se a barra de leads também não tiver pendentes -> mineração contínua
     hudCurrentAction.innerText = `[⚡ Automação] Fila vazia. Minerando novos perfis...`;
     await stepMiner(bot, apiBaseUrl, pageType);
   }
@@ -1495,6 +1550,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       await saveBot({ sentCount: newSent });
       hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
       await logActivity({ username: cleanUser, status: 'Automação: DM Enviada ✉️⚡' });
+      await updateLocalLeadStatus(cleanUser, 'contatada');
       showToast({ type: 'success', title: `DM Enviada! @${cleanUser}`, message: 'Automação: aguardando delay seguro para minerar próxima...' });
 
       // Registra no Cloudflare D1
@@ -2030,17 +2086,48 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   async function stepSender(bot, apiBaseUrl, activeTemplate, pageType) {
     hudCurrentAction.innerText = 'Buscando próxima influenciadora minerada...';
     let target = null;
+    const visitedSet = new Set((bot.visited || []).map(u => (u || '').toLowerCase()));
 
+    // 1. Tenta buscar da API remota Cloudflare D1
     try {
       const res = await fetch(`${apiBaseUrl}/api/leads?status=minerada`);
-      const data = await res.json();
-      if (data.leads && data.leads.length > 0) target = data.leads[0];
+      if (res.ok) {
+        const data = await res.json();
+        if (data.leads && Array.isArray(data.leads)) {
+          const eligibleRemote = data.leads.find(l => l && l.username && !visitedSet.has(l.username.toLowerCase()));
+          if (eligibleRemote) target = eligibleRemote;
+        }
+      }
     } catch (e) {}
 
+    // 2. Se a API remota não tiver ou falhar, busca AUTOMATICAMENTE dos Leads Minerados salvos na barra local
     if (!target) {
-      showToast({ type: 'info', title: 'Fila de Envio Vazia', message: 'Minere influenciadoras primeiro na aba "⛏️ Minerar".' });
+      const { savedLeads } = await getState();
+      const localLeads = savedLeads || cachedLeads || [];
+      const pendingLead = localLeads.find(l => {
+        const u = (l.username || '').toLowerCase();
+        const s = (l.status || '').toLowerCase();
+        const isPending = s === 'minerada' || s === 'pendente' || s === 'qualificada' || (!s.includes('contatad') && !s.includes('enviad') && !s.includes('skip'));
+        return u && isPending && !visitedSet.has(u);
+      });
+
+      if (pendingLead) {
+        target = pendingLead;
+      }
+    }
+
+    // 3. Fallback: se houver criadoras na fila do bot que ainda não foram visitadas
+    if (!target && bot.queue && bot.queue.length > 0) {
+      const nextUser = bot.queue.find(u => u && !visitedSet.has(u.toLowerCase()));
+      if (nextUser) {
+        target = { username: nextUser };
+      }
+    }
+
+    if (!target || !target.username) {
+      showToast({ type: 'info', title: 'Fila de Envio Vazia', message: 'Nenhuma influenciadora pendente encontrada na lista de leads. Minere novas criadoras primeiro!' });
       await saveBot({ isRunning: false, activeMode: null });
-      syncUI({ ...bot, isRunning: false });
+      syncUI({ ...bot, isRunning: false, activeMode: null });
       return;
     }
 
@@ -2100,32 +2187,50 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       hudCurrentAction.innerText = `Digitando DM para @${username}...`;
       await window.InnfluSender.sendDirectMessage(msg);
 
+      const cleanUser = username.toLowerCase();
       const { bot } = await getState();
       const newSent = (bot.sentCount || 0) + 1;
-      await saveBot({ sentCount: newSent });
-      hudSentTodayCount.innerText = `${newSent} / 40`;
-      await logActivity({ username, status: 'DM Enviada ✉️' });
-      showToast({ type: 'success', title: `DM Enviada! @${username}`, message: 'Digitação humana concluída.' });
+      const visitedList = [...(bot.visited || []), cleanUser];
+      const remainingQueue = (bot.queue || []).filter(u => u && u.toLowerCase() !== cleanUser);
+
+      await saveBot({
+        sentCount: newSent,
+        visited: Array.from(new Set(visitedList)).slice(-1000),
+        queue: remainingQueue
+      });
+
+      hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
+      hudQueueCount.innerText = remainingQueue.length;
+      await logActivity({ username: cleanUser, status: 'DM Enviada ✉️' });
+      await updateLocalLeadStatus(cleanUser, 'contatada');
+      showToast({ type: 'success', title: `DM Enviada! @${cleanUser}`, message: 'Digitação humana concluída.' });
 
       try {
+        await fetch(`${apiBaseUrl}/api/leads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: cleanUser, status: 'contatada' })
+        });
         await fetch(`${apiBaseUrl}/api/log-sent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, message_text: msg, status: 'success' })
+          body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
         });
       } catch (e) {}
 
-      // Delay seguro anti-ban (60s a 180s)
-      const delaySec = Math.floor(Math.random() * 121) + 60;
+      // Delay seguro anti-ban (respeitando configuração do usuário)
+      const minS = Math.max(5, parseInt(bot.minDelaySec, 10) || 60);
+      const maxS = Math.max(minS, parseInt(bot.maxDelaySec, 10) || 120);
+      const delaySec = Math.floor(Math.random() * (maxS - minS + 1)) + minS;
       const nextAt = Date.now() + delaySec * 1000;
       await saveBot({ nextActionAt: nextAt });
       hudCurrentAction.innerText = `Pausa anti-ban (${delaySec}s)...`;
-      startCountdown(nextAt, runLoop);
+      startCountdown(nextAt, runLoop, delaySec * 1000);
     } catch (err) {
       showToast({ type: 'error', title: 'Falha no Envio', message: err.message });
       const nextAt = Date.now() + 15000;
       await saveBot({ nextActionAt: nextAt });
-      startCountdown(nextAt, runLoop);
+      startCountdown(nextAt, runLoop, 15000);
     }
   }
 
@@ -2136,6 +2241,23 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
   // ==========================================
   // GERENCIAMENTO DA LISTA DE LEADS
   // ==========================================
+  async function updateLocalLeadStatus(username, newStatus) {
+    try {
+      const cleanUser = (username || '').toLowerCase();
+      const { savedLeads } = await getState();
+      const leads = savedLeads || cachedLeads || [];
+      const idx = leads.findIndex(l => (l.username || '').toLowerCase() === cleanUser);
+      if (idx >= 0) {
+        leads[idx].status = newStatus;
+        leads[idx].last_contacted_at = new Date().toISOString();
+        cachedLeads = [...leads];
+        await chrome.storage.local.set({ savedLeadsCache: cachedLeads });
+        updateLeadsCountHeader(cachedLeads);
+        renderLeadsTable();
+      }
+    } catch (e) {}
+  }
+
   async function cacheLocalLead(profile, status, niche) {
     const { savedLeads } = await getState();
     const cleanUser = profile.username.toLowerCase();
@@ -2220,6 +2342,11 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
       let waCleanDigits = l.whatsapp ? l.whatsapp.replace(/\D/g, '') : '';
       let waLink = waCleanDigits ? `https://wa.me/${waCleanDigits.startsWith('55') ? waCleanDigits : '55' + waCleanDigits}` : '#';
 
+      const isContacted = l.status === 'contatada' || l.status === 'enviada';
+      const statusBadge = isContacted 
+        ? `<span class="innflu-lead-followers" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.3);font-size:9px;">✉️ Contatada</span>`
+        : `<span class="innflu-lead-followers" style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);font-size:9px;">⚡ Na Fila</span>`;
+
       return `
         <div class="innflu-lead-card">
           <div class="innflu-lead-top">
@@ -2227,6 +2354,7 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
               @${l.username} ↗
             </a>
             <div style="display:flex;align-items:center;gap:4px;">
+              ${statusBadge}
               <span class="innflu-lead-followers" style="background:rgba(168,85,247,0.18);color:#c084fc;border:1px solid rgba(168,85,247,0.3);font-size:9px;">🏷️ ${l.niche || 'Geral'}</span>
               <span class="innflu-lead-followers">${fDisplay} seg.</span>
             </div>
@@ -2521,6 +2649,15 @@ Somos uma marca e gostaríamos de te convidar para uma parceria com envio de pro
     navigator.clipboard.writeText(emails.join(', '));
     showToast({ type: 'success', title: 'Copiado!', message: `${emails.length} e-mails copiados para a área de transferência.` });
   };
+
+  if ($('btnSendDMsToLeads')) {
+    $('btnSendDMsToLeads').onclick = () => {
+      switchTab('sender');
+      if (btnToggleSender) {
+        btnToggleSender.click();
+      }
+    };
+  }
 
   // ==========================================
   // FEED DE ATIVIDADES RECENTES
