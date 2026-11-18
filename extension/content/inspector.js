@@ -450,9 +450,9 @@ window.InnfluInspector = {
       reasons.push('Sem WhatsApp nem E-mail');
     }
 
-    // Checagem de marca
+    // Checagem de marca / empresa corporativa
     if (profileData.isBrand) {
-      reasons.push('Identificado como loja / marca comercial');
+      reasons.push(profileData.genderReason || 'Empresa / Loja comercial (não é influenciador)');
     }
 
     // Checagem de gênero

@@ -2535,11 +2535,11 @@ app.get("/api/health", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.2.9",
+    version: "1.3.0",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "v1.2.9: Corre\xE7\xE3o cr\xEDtica no envio de DMs (mutex anti-interrup\xE7\xE3o SPA, suporte ao Lexical e cliques React 18).",
+    releaseNotes: "v1.3.0: Filtro inteligente anti-empresas (pula C&A, Renner, Magalu, Avon, Botic\xE1rio, Zara, Shein e lojas comerciais, focando exclusivamente em influenciadores reais).",
     downloadUrl: "/innflu-extensao.zip",
-    publishedAt: "2026-11-17T16:30:00Z",
+    publishedAt: "2026-11-17T17:00:00Z",
     dynamicRules: {
       selectors: {
         messageButtons: ["enviar mensagem", "mensagem", "message", "send message"],
@@ -2574,11 +2574,23 @@ app.get("/api/extension/version", (c) => {
         "loja oficial",
         "compre no site",
         "loja virtual",
+        "loja online",
         "site oficial",
+        "compre online",
+        "baixe o app",
+        "e-commerce",
+        "ecommerce",
+        "varejo",
+        "atacado e varejo",
+        "atacadista",
+        "cnpj:",
+        "sac:",
         "enviamos para todo brasil",
-        "entregamos para todo brasil"
+        "entregamos para todo brasil",
+        "frete gr\xE1tis",
+        "frete gratis"
       ],
-      heuristicsVersion: "2026.11.17-v2"
+      heuristicsVersion: "2026.11.17-v3"
     }
   });
 });

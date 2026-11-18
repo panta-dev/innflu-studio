@@ -61,12 +61,112 @@ window.InnfluGenderDetector = {
     'parcerias via direct', 'assessoria de estilo', 'consultoria de moda'
   ],
 
-  // Termos indicativos EXCLUSIVAMENTE de marcas ou lojas comerciais reais (sem falsos-positivos em provador)
-  brandBioKeywords: [
-    'loja oficial', 'compre no nosso site', 'compre no site:', 'sac:', 'cnpj:',
-    'catálogo disponível', 'produtos importados', 'revenda autorizada',
-    'enviamos para todo brasil', 'entregamos para todo brasil', 'frete grátis para todo brasil'
+  // Grandes Redes Corporativas e Marcas Famosas (Pular sempre: C&A, Renner, Magalu, Avon, Boticário, etc.)
+  knownCorporateBrands: new Set([
+    'cea', 'cea_brasil', 'ceabrasil', 'lojasrenner', 'renner', 'magalu', 'magazineluiza',
+    'avon', 'avonbrasil', 'oboticario', 'boticario', 'natura', 'naturabroficial', 'naturabrasil',
+    'zara', 'zarabrasil', 'shein', 'sheinbrasil', 'sheinbrasil_', 'sheinofficial', 'shein_official',
+    'shopee', 'shopee_br', 'shopeebrasil', 'lojasriachuelo', 'riachuelo', 'marisa', 'voudemarisa',
+    'pernambucanas', 'casasbahia', 'pontofrio', 'extra', 'carrefourbrasil', 'carrefour', 'americanas',
+    'sephora', 'sephorabrasil', 'eudora', 'quemdisseberenice', 'marykaybrasil', 'marykay',
+    'maccosmetics', 'maccosmeticsbrasil', 'amaro', 'adorofarm', 'farmrio', 'animalebrasil',
+    'animale', 'arezzo', 'schutzoficial', 'schutz', 'anacapri', 'anacaprioficial', 'melissaoficial',
+    'melissa', 'havaianas', 'vivaraonline', 'vivara', 'pandorabrasil', 'pandora', 'aliexpressbr',
+    'mercadolivre', 'dafiti', 'netshoes', 'centauroesporte', 'colccioficial', 'colcci',
+    'hering_oficial', 'hering', 'dudalina', 'lelisblanc', 'johnjohndenim', 'shoulderoficial',
+    'cantao', 'osklen', 'forumoficial', 'ellusjeansdeluxe', 'ellus', 'tramontina', 'tokstok',
+    'mobly', 'camicado', 'polishop', 'fastshop', 'kalunga', 'kalungacom', 'submarino',
+    'shoptime', 'panvel', 'drogasil', 'droga_raia', 'drogaraia', 'paguemenos'
+  ]),
+
+  // Tokens no Username indicativos de Lojas, Empresas e Perfis Comerciais
+  brandUsernameTokens: [
+    'lojas', 'loja', 'store', 'shop', 'shopping', 'boutique', 'varejo', 'atacado',
+    'atacadista', 'outlet', 'multimarcas', 'confeccoes', 'calcados', 'semijoias',
+    'joalheria', 'bijuterias', 'cosmeticos', 'perfumaria', 'distribuidora', 'otica',
+    'modaintima', 'modapraia', 'biquinis', 'lingerie', 'moveis', 'eletro', 'farmacia', 'drogaria'
   ],
+
+  // Termos na Bio indicativos de Lojas e E-commerces comerciais
+  brandBioKeywords: [
+    'compre no site', 'compre pelo site', 'compre no nosso site', 'compre online', 'compre agora',
+    'clique no link para comprar', 'link de compras', 'link da loja', 'loja online', 'loja virtual',
+    'loja oficial', 'loja física', 'lojas físicas', 'nossas lojas', 'baixe o app', 'baixe nosso app',
+    'nosso app', 'site oficial', 'e-commerce', 'ecommerce', 'varejo', 'atacado e varejo',
+    'somente atacado', 'vendas no atacado', 'atacadista', 'revenda autorizada', 'produtos importados',
+    'catálogo disponível', 'catalogo disponivel', 'cardápio no link', 'cardapio no link',
+    'enviamos para todo', 'enviamos p/ todo', 'entregamos para todo', 'entregamos em todo',
+    'frete grátis', 'frete gratis', 'frete fixo', 'parcelamos em até', 'parcelamento em até',
+    'sem juros', 'trocas e devoluções', 'trocas e devolucoes', 'peças limitadas',
+    'pronta entrega', 'pedidos pelo direct', 'vendas pelo direct', 'vendas pelo whatsapp',
+    'faça seu pedido', 'faca seu pedido', 'encomendas pelo direct',
+    'cnpj:', 'sac:', 'razão social', 'razao social', 'marca registrada', 'marca autoral',
+    'marca brasileira', 'marca de moda', 'marca de cosméticos', 'marca de roupas',
+    'coleção disponível', 'colecao disponivel', 'nova coleção', 'nova colecao',
+    'endereço da loja', 'rua:', 'av:', 'shopping center', 'loja de departamentos'
+  ],
+
+  // Categorias do Instagram indicativas de Empresa / Negócio Comercial
+  corporateCategories: [
+    'loja de departamento', 'loja de departamentos', 'loja de roupas', 'loja de cosméticos',
+    'loja de calçados', 'loja de conveniência', 'loja de móveis', 'loja de artigos',
+    'loja virtual', 'loja online', 'loja de varejo', 'comércio', 'comercio', 'comércio varejista',
+    'varejo', 'marca', 'marca de cosméticos', 'marca de roupas', 'marca de calçados',
+    'empresa', 'empresa de varejo', 'shopping e varejo', 'serviço de comércio eletrônico',
+    'supermercado', 'restaurante', 'lanchonete', 'joalheria', 'acessórios', 'produto/serviço',
+    'produtos/serviços', 'atacadista', 'distribuidora'
+  ],
+
+  /**
+   * Verifica se o perfil é uma empresa, marca corporativa ou loja comercial
+   */
+  isCorporateBrand(username = '', fullName = '', bio = '') {
+    const u = (username || '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
+    const fn = (fullName || '').toLowerCase().trim();
+    const b = (bio || '').toLowerCase();
+
+    // 1. Checa marcas corporativas conhecidas diretamente no username ou nome
+    if (this.knownCorporateBrands.has(u)) return true;
+    for (const brand of this.knownCorporateBrands) {
+      if (u === brand || u.startsWith(brand + '_') || u.endsWith('_' + brand) || u.startsWith(brand + '.') || u.endsWith('.' + brand)) {
+        return true;
+      }
+      if (fn.includes(brand)) return true;
+    }
+
+    // 2. Tokens comerciais no username
+    for (const token of this.brandUsernameTokens) {
+      if (
+        u.startsWith(token + '_') || u.endsWith('_' + token) ||
+        u.startsWith(token + '.') || u.endsWith('.' + token) ||
+        u === token || u.startsWith(token + 's_') ||
+        (token.length >= 6 && u.includes(token))
+      ) {
+        return true;
+      }
+    }
+
+    // 3. Nome de exibição com marcas ou termos de loja
+    const commercialNameTokens = [
+      'c&a', 'renner', 'magalu', 'magazine luiza', 'avon', 'boticário', 'boticario',
+      'natura', 'zara', 'shein', 'shopee', 'riachuelo', 'marisa', 'casas bahia',
+      'sephora', 'eudora', 'quem disse berenice', 'mary kay', 'arezzo', 'schutz',
+      'melissa', 'vivara', 'pandora', 'loja ', 'lojas ', 'store', 'boutique ',
+      'outlet ', 'atacado', 'multimarcas', 'confeccoes', 'calcados', 'semijoias'
+    ];
+    if (commercialNameTokens.some(t => fn.includes(t))) {
+      return true;
+    }
+
+    // 4. Bio ou categoria com termos de e-commerce e varejo
+    const extraBrandKeywords = window.__innfluDynamicRules?.blacklistBioKeywords || [];
+    const allKeywords = [...this.brandBioKeywords, ...this.corporateCategories, ...extraBrandKeywords];
+    if (allKeywords.some(kw => kw && (b.includes(kw) || fn.includes(kw)))) {
+      return true;
+    }
+
+    return false;
+  },
 
   /**
    * Avalia se um perfil é feminino / criadora de conteúdo
@@ -80,12 +180,9 @@ window.InnfluGenderDetector = {
     const bioClean = (bio || '').toLowerCase();
     const userClean = (username || '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
 
-    // 1. Checar marcas comerciais estritas (inclui regras dinâmicas OTA em tempo real)
-    const extraBrandKeywords = window.__innfluDynamicRules?.blacklistBioKeywords || [];
-    const allBrandKeywords = [...this.brandBioKeywords, ...extraBrandKeywords];
-    const isBrand = allBrandKeywords.some(kw => kw && bioClean.includes(kw.toLowerCase()));
-    if (isBrand) {
-      return { isFemale: false, isBrand: true, reason: 'Identificado padrão de loja ou marca comercial' };
+    // 1. Checar se é empresa corporativa, grande marca ou loja comercial (Elimina C&A, Renner, Magalu, Avon, Boticário...)
+    if (this.isCorporateBrand(username, fullName, bio)) {
+      return { isFemale: false, isBrand: true, reason: 'Identificado como empresa / loja comercial (não é influenciador)' };
     }
 
     // 2. Checar se o primeiro nome é explicitamente MASCULINO

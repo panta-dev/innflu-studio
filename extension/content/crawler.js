@@ -98,6 +98,11 @@ window.InnfluCrawler = {
     
     // Blacklist
     if (this._blacklist.has(u)) return false;
+
+    // Filtra marcas corporativas e perfis de lojas para não minerar perfis comerciais
+    if (window.InnfluGenderDetector && typeof window.InnfluGenderDetector.isCorporateBrand === 'function') {
+      if (window.InnfluGenderDetector.isCorporateBrand(u)) return false;
+    }
     
     // Muito curto sem caracteres especiais = provavelmente lixo
     if (u.length < 4 && !u.includes('.') && !u.includes('_')) return false;
