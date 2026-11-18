@@ -146,7 +146,7 @@
           <!-- 3. MENSAGEM & INTERVALO -->
           <div class="innflu-section-title" style="margin-top:6px;">3. Mensagem & Intervalo</div>
           <div class="innflu-template-section">
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="6" style="height:125px;min-height:115px;line-height:1.45;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="10" style="min-height:185px !important;height:190px !important;line-height:1.5;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
             <div class="innflu-delay-row">
               <div class="innflu-delay-inputs">
                 <span class="innflu-form-label" style="margin:0;">Delay:</span>
@@ -321,7 +321,7 @@
         <div id="viewSender" class="innflu-tab-content" style="display:none;">
           <div class="innflu-template-section">
             <label class="innflu-form-label">Mensagem Spintax {Olá|Oi|Oie} e {nome}:</label>
-            <textarea class="innflu-template-textarea" id="hudTemplateContent" rows="6" style="height:125px;min-height:115px;line-height:1.45;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}
+            <textarea class="innflu-template-textarea" id="hudTemplateContent" rows="10" style="min-height:185px !important;height:190px !important;line-height:1.5;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}
 
 {Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!
 
@@ -1107,7 +1107,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   function autoExpandTextarea(ta) {
     if (!ta) return;
     ta.style.height = 'auto';
-    ta.style.height = Math.max(125, ta.scrollHeight + 4) + 'px';
+    const computedH = Math.max(185, ta.scrollHeight + 8);
+    ta.style.height = computedH + 'px';
   }
 
   if (hudAutoTemplateContent) {
@@ -1530,17 +1531,18 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         fullName: profile.fullName 
       });
 
-      hudCurrentAction.innerText = `[Automação] Digitando DM para @${cleanUser}...`;
-      await window.InnfluSender.sendDirectMessage(msg);
+      hudCurrentAction.innerText = `[Automação] Digitando mensagem para @${cleanUser}...`;
+      const sendRes = await window.InnfluSender.sendDirectMessage(msg);
       window.InnfluIsSendingDM = false;
 
-      // SÓ ENTRA AQUI SE FOI 100% CONFIRMADO O ENVIO DA MENSAGEM NO DIRECT
+      // SÓ ENTRA AQUI SE FOI 100% CONFIRMADO O ENVIO DA MENSAGEM NO DIRECT / STORY
       const newSent = (bot.sentCount || 0) + 1;
       await saveBot({ sentCount: newSent });
       hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
-      await logActivity({ username: cleanUser, status: 'DM Enviada ✓' });
+      const tagStatus = sendRes && sendRes.viaStory ? 'Story Respondido ⚡' : 'DM Enviada ✓';
+      await logActivity({ username: cleanUser, status: tagStatus });
       await updateLocalLeadStatus(cleanUser, 'contatada');
-      showToast({ type: 'success', title: `DM Confirmada! @${cleanUser}`, message: 'Mensagem enviada com sucesso no Direct.' });
+      showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: sendRes && sendRes.viaStory ? 'Story respondido com a mensagem de captação.' : 'Mensagem enviada com sucesso no Direct.' });
 
       // Registra no Cloudflare D1
       try {
@@ -2182,8 +2184,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       } catch (e) {}
 
       const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username, nome: influencerName, fullName: influencerName });
-      hudCurrentAction.innerText = `Digitando DM para @${username}...`;
-      await window.InnfluSender.sendDirectMessage(msg);
+      hudCurrentAction.innerText = `Digitando mensagem para @${username}...`;
+      const sendRes = await window.InnfluSender.sendDirectMessage(msg);
       window.InnfluIsSendingDM = false;
 
       const cleanUser = username.toLowerCase();
@@ -2200,9 +2202,10 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
       hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
       hudQueueCount.innerText = remainingQueue.length;
-      await logActivity({ username: cleanUser, status: 'DM Enviada ✉️' });
+      const tagStatus = sendRes && sendRes.viaStory ? 'Story Respondido ⚡' : 'DM Enviada ✉️';
+      await logActivity({ username: cleanUser, status: tagStatus });
       await updateLocalLeadStatus(cleanUser, 'contatada');
-      showToast({ type: 'success', title: `DM Enviada! @${cleanUser}`, message: 'Digitação humana concluída.' });
+      showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: sendRes && sendRes.viaStory ? 'Story respondido com sucesso.' : 'Digitação humana concluída.' });
 
       try {
         await fetch(`${apiBaseUrl}/api/leads`, {

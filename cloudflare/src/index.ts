@@ -548,9 +548,9 @@ app.get('/api/health', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.3.0',
+    version: '1.3.1',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.3.0: Filtro inteligente anti-empresas (pula C&A, Renner, Magalu, Avon, Boticário, Zara, Shein e lojas comerciais, focando exclusivamente em influenciadores reais).',
+    releaseNotes: 'v1.3.1: Envio prioritário via resposta de Story ativo com mensagem de captação e layout expandido 100% visível da mensagem.',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-17T17:00:00Z',
     dynamicRules: {
