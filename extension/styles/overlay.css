@@ -37,9 +37,22 @@
 }
 
 .innflu-hud.minimized {
-  width: 240px;
+  width: 220px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  border-radius: 19px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border: 1px solid #38bdf8 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8) !important;
 }
 
+.innflu-hud.minimized .innflu-resize-handle-top,
+.innflu-hud.minimized .innflu-resize-handle-bottom,
+.innflu-hud.minimized .innflu-resize-handle-corner,
+.innflu-hud.minimized .innflu-auth-strip,
+.innflu-hud.minimized .innflu-login-overlay,
 .innflu-hud.minimized .innflu-hud-body,
 .innflu-hud.minimized .innflu-hud-footer,
 .innflu-hud.minimized .innflu-toast-container,
@@ -47,8 +60,17 @@
 .innflu-hud.minimized .innflu-delay-bar-container,
 .innflu-hud.minimized .innflu-alert-banner,
 .innflu-hud.minimized .innflu-live-dock,
-.innflu-hud.minimized .innflu-nav-tabs {
+.innflu-hud.minimized .innflu-nav-tabs,
+.innflu-hud.minimized #hudDiagnosticsModal {
   display: none !important;
+}
+
+.innflu-hud.minimized .innflu-hud-header {
+  height: 38px !important;
+  padding: 6px 10px !important;
+  border-bottom: none !important;
+  border-radius: 19px !important;
+  background: #161b22 !important;
 }
 
 /* Header */
@@ -1070,6 +1092,69 @@
 .innflu-resize-handle-top.active::before {
   background: #2563eb;
   width: 56px;
+}
+
+.innflu-resize-handle-bottom {
+  height: 8px;
+  width: calc(100% - 16px);
+  cursor: ns-resize;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  transition: background 0.2s ease;
+}
+
+.innflu-resize-handle-bottom::before {
+  content: '';
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: #30363d;
+  transition: all 0.2s ease;
+}
+
+.innflu-resize-handle-bottom:hover {
+  background: rgba(37, 99, 235, 0.2);
+}
+
+.innflu-resize-handle-bottom:hover::before,
+.innflu-resize-handle-bottom.active::before {
+  background: #2563eb;
+  width: 56px;
+}
+
+.innflu-resize-handle-corner {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  z-index: 1001;
+  background: transparent;
+}
+
+.innflu-resize-handle-corner::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 1px;
+  transition: border-color 0.2s ease;
+}
+
+.innflu-resize-handle-corner:hover::after,
+.innflu-resize-handle-corner.active::after {
+  border-color: #38bdf8;
 }
 
 /* ==========================================================

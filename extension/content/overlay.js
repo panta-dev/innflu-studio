@@ -100,7 +100,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.3.6</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.3.7</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -508,8 +508,13 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.6 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.7 🔄</button>
       </div>
+
+      <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
+      <div class="innflu-resize-handle-bottom" id="hudResizeHandleBottom" title="Arraste para aumentar ou diminuir a altura do painel"></div>
+      <!-- Alça de Redimensionamento do Canto -->
+      <div class="innflu-resize-handle-corner" id="hudResizeHandleCorner" title="Arraste para redimensionar largura e altura livremente"></div>
     </div>
   `;
   document.body.appendChild(root);
@@ -1409,7 +1414,40 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     root.style.right = 'auto';
   }
   function onDragEnd() { isDragging = false; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', onDragEnd); }
-  $('btnMinimize').addEventListener('click', () => hud.classList.toggle('minimized'));
+  let savedHudHeightBeforeMinimize = null;
+  let savedHudWidthBeforeMinimize = null;
+  const btnMinimize = $('btnMinimize');
+  if (btnMinimize) {
+    btnMinimize.addEventListener('click', () => {
+      const isMin = hud.classList.toggle('minimized');
+      if (isMin) {
+        savedHudHeightBeforeMinimize = hud.style.height || `${hud.offsetHeight}px`;
+        savedHudWidthBeforeMinimize = hud.style.width || `${hud.offsetWidth}px`;
+        hud.style.setProperty('height', '38px', 'important');
+        hud.style.setProperty('min-height', '38px', 'important');
+        hud.style.setProperty('max-height', '38px', 'important');
+        hud.style.setProperty('width', '220px', 'important');
+        btnMinimize.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>';
+        btnMinimize.title = 'Restaurar Painel';
+      } else {
+        hud.style.removeProperty('height');
+        hud.style.removeProperty('min-height');
+        hud.style.removeProperty('max-height');
+        hud.style.removeProperty('width');
+        if (savedHudHeightBeforeMinimize) {
+          hud.style.height = savedHudHeightBeforeMinimize;
+          const parsed = parseInt(savedHudHeightBeforeMinimize, 10);
+          const bodyEl = hud.querySelector('.innflu-hud-body');
+          if (bodyEl && parsed) bodyEl.style.maxHeight = `${parsed - 85}px`;
+        }
+        if (savedHudWidthBeforeMinimize) {
+          hud.style.width = savedHudWidthBeforeMinimize;
+        }
+        btnMinimize.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>';
+        btnMinimize.title = 'Minimizar';
+      }
+    });
+  }
 
   // Abrir Dashboard Web
   $('btnOpenDashboard').onclick = () => {
@@ -1508,62 +1546,163 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   }
 
   // ==========================================
-  // REDIMENSIONAMENTO VERTICAL DO HUD (ARRASTAR PRA CIMA / BAIXO)
+  // REDIMENSIONAMENTO VERTICAL E LIVRE DO HUD (CIMA, BAIXO E CANTO)
   // ==========================================
   const hudResizeHandleTop = $('hudResizeHandleTop');
+  const hudResizeHandleBottom = $('hudResizeHandleBottom');
+  const hudResizeHandleCorner = $('hudResizeHandleCorner');
   const hudElement = $('innfluHud');
   const hudBodyElement = hudElement ? hudElement.querySelector('.innflu-hud-body') : null;
 
-  if (hudResizeHandleTop && hudElement) {
-    let isResizing = false;
-    let startY = 0;
-    let startHeight = 0;
-
-    // Restaura altura prévia salva
-    chrome.storage.local.get(['hudHeight'], (data) => {
-      if (data && data.hudHeight) {
-        const savedH = parseInt(data.hudHeight, 10);
-        if (savedH >= 260 && savedH <= window.innerHeight - 20) {
-          hudElement.style.height = `${savedH}px`;
-          if (hudBodyElement) hudBodyElement.style.maxHeight = `${savedH - 85}px`;
+  if (hudElement) {
+    // Restaura dimensões salvas previamente
+    chrome.storage.local.get(['hudHeight', 'hudWidth'], (data) => {
+      if (data) {
+        if (data.hudHeight) {
+          const savedH = parseInt(data.hudHeight, 10);
+          if (savedH >= 160 && savedH <= window.innerHeight - 20) {
+            hudElement.style.height = `${savedH}px`;
+            if (hudBodyElement) hudBodyElement.style.maxHeight = `${savedH - 85}px`;
+          }
+        }
+        if (data.hudWidth) {
+          const savedW = parseInt(data.hudWidth, 10);
+          if (savedW >= 280 && savedW <= 600) {
+            hudElement.style.width = `${savedW}px`;
+          }
         }
       }
     });
 
-    hudResizeHandleTop.addEventListener('mousedown', (e) => {
-      isResizing = true;
-      startY = e.clientY;
-      startHeight = hudElement.offsetHeight;
-      hudResizeHandleTop.classList.add('active');
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'ns-resize';
-      e.preventDefault();
-      e.stopPropagation();
-    });
+    // 1. Alça Superior (Top) - Aumenta puxando pra cima, diminui puxando pra baixo
+    if (hudResizeHandleTop) {
+      let isResizingTop = false;
+      let startY = 0;
+      let startHeight = 0;
 
-    window.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
-      // Como o HUD está fixado embaixo (bottom: 12px), mover o mouse pra cima AUMENTA a altura!
-      const deltaY = startY - e.clientY;
-      const minHeight = 260;
-      const maxHeight = Math.min(window.innerHeight - 24, 960);
-      const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
+      hudResizeHandleTop.addEventListener('mousedown', (e) => {
+        if (hudElement.classList.contains('minimized')) return;
+        isResizingTop = true;
+        startY = e.clientY;
+        startHeight = hudElement.offsetHeight;
+        hudResizeHandleTop.classList.add('active');
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'ns-resize';
+        e.preventDefault();
+        e.stopPropagation();
+      });
 
-      hudElement.style.height = `${newHeight}px`;
-      if (hudBodyElement) {
-        hudBodyElement.style.maxHeight = `${newHeight - 85}px`;
-      }
-    });
+      window.addEventListener('mousemove', (e) => {
+        if (!isResizingTop) return;
+        const deltaY = startY - e.clientY;
+        const minHeight = 160;
+        const maxHeight = Math.min(window.innerHeight - 24, 980);
+        const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
-    window.addEventListener('mouseup', () => {
-      if (!isResizing) return;
-      isResizing = false;
-      hudResizeHandleTop.classList.remove('active');
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-      const finalH = hudElement.offsetHeight;
-      chrome.storage.local.set({ hudHeight: finalH });
-    });
+        hudElement.style.height = `${newHeight}px`;
+        if (hudBodyElement) hudBodyElement.style.maxHeight = `${newHeight - 85}px`;
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (!isResizingTop) return;
+        isResizingTop = false;
+        hudResizeHandleTop.classList.remove('active');
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        chrome.storage.local.set({ hudHeight: hudElement.offsetHeight });
+      });
+    }
+
+    // 2. Alça Inferior (Bottom) - Aumenta puxando pra baixo, diminui puxando pra cima
+    if (hudResizeHandleBottom) {
+      let isResizingBottom = false;
+      let startY = 0;
+      let startHeight = 0;
+
+      hudResizeHandleBottom.addEventListener('mousedown', (e) => {
+        if (hudElement.classList.contains('minimized')) return;
+        isResizingBottom = true;
+        startY = e.clientY;
+        startHeight = hudElement.offsetHeight;
+        hudResizeHandleBottom.classList.add('active');
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'ns-resize';
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isResizingBottom) return;
+        const deltaY = e.clientY - startY; // Descer mouse = aumenta; subir mouse = diminui
+        const minHeight = 160;
+        const maxHeight = Math.min(window.innerHeight - 24, 980);
+        const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
+
+        hudElement.style.height = `${newHeight}px`;
+        if (hudBodyElement) hudBodyElement.style.maxHeight = `${newHeight - 85}px`;
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (!isResizingBottom) return;
+        isResizingBottom = false;
+        hudResizeHandleBottom.classList.remove('active');
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        chrome.storage.local.set({ hudHeight: hudElement.offsetHeight });
+      });
+    }
+
+    // 3. Alça do Canto (Corner) - Redimensiona altura e largura simultaneamente
+    if (hudResizeHandleCorner) {
+      let isResizingCorner = false;
+      let startY = 0;
+      let startX = 0;
+      let startHeight = 0;
+      let startWidth = 0;
+
+      hudResizeHandleCorner.addEventListener('mousedown', (e) => {
+        if (hudElement.classList.contains('minimized')) return;
+        isResizingCorner = true;
+        startY = e.clientY;
+        startX = e.clientX;
+        startHeight = hudElement.offsetHeight;
+        startWidth = hudElement.offsetWidth;
+        hudResizeHandleCorner.classList.add('active');
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'nwse-resize';
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isResizingCorner) return;
+        const deltaY = e.clientY - startY;
+        const deltaX = e.clientX - startX;
+        const minHeight = 160;
+        const maxHeight = Math.min(window.innerHeight - 24, 980);
+        const minWidth = 280;
+        const maxWidth = 550;
+
+        const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
+        const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + deltaX));
+
+        hudElement.style.height = `${newHeight}px`;
+        hudElement.style.width = `${newWidth}px`;
+        if (hudBodyElement) hudBodyElement.style.maxHeight = `${newHeight - 85}px`;
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (!isResizingCorner) return;
+        isResizingCorner = false;
+        hudResizeHandleCorner.classList.remove('active');
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        chrome.storage.local.set({
+          hudHeight: hudElement.offsetHeight,
+          hudWidth: hudElement.offsetWidth
+        });
+      });
+    }
   }
 
   // ==========================================
@@ -1614,13 +1753,40 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // TELEMETRIA & BUFFER DE LOGS DE DIAGNÓSTICO (BUG REPORT 🐛)
   // ==========================================
   window.InnfluDiagnosticLogs = window.InnfluDiagnosticLogs || [];
+  window.InnfluUncaughtErrors = window.InnfluUncaughtErrors || [];
+  window.InnfluLastCandidateEvaluation = window.InnfluLastCandidateEvaluation || null;
+
+  // Captura erros globais de runtime
+  window.addEventListener('error', (event) => {
+    const errInfo = {
+      time: new Date().toLocaleTimeString('pt-BR'),
+      message: event.message || 'Erro de execução desconhecido',
+      filename: event.filename || '',
+      lineno: event.lineno,
+      colno: event.colno
+    };
+    window.InnfluUncaughtErrors.push(errInfo);
+    if (window.InnfluUncaughtErrors.length > 50) window.InnfluUncaughtErrors.shift();
+    addDiagLog('error', `[Erro JS] ${errInfo.message} (${errInfo.filename}:${errInfo.lineno})`);
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const reasonMsg = event.reason ? (event.reason.message || String(event.reason)) : 'Promise Rejection';
+    const errInfo = {
+      time: new Date().toLocaleTimeString('pt-BR'),
+      message: `UnhandledRejection: ${reasonMsg}`
+    };
+    window.InnfluUncaughtErrors.push(errInfo);
+    if (window.InnfluUncaughtErrors.length > 50) window.InnfluUncaughtErrors.shift();
+    addDiagLog('error', `[Promise Rejection] ${reasonMsg}`);
+  });
 
   function addDiagLog(type, message, details = '') {
     const now = new Date();
     const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     const logItem = { time, type: type || 'info', message: String(message), details };
     window.InnfluDiagnosticLogs.push(logItem);
-    if (window.InnfluDiagnosticLogs.length > 250) {
+    if (window.InnfluDiagnosticLogs.length > 300) {
       window.InnfluDiagnosticLogs.shift();
     }
     renderDiagLogs();
@@ -1694,7 +1860,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.3.5';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.3.7';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -1717,28 +1883,81 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   }
 
   function generateDiagnosticsReport() {
-    const pageType = window.InnfluCrawler.detectCurrentPage();
-    const curUser = window.InnfluCrawler.getCurrentProfileUsername() || 'Nenhum';
+    const pageType = window.InnfluCrawler ? window.InnfluCrawler.detectCurrentPage() : 'desconhecida';
+    const curUser = window.InnfluCrawler ? (window.InnfluCrawler.getCurrentProfileUsername() || 'Nenhum') : 'Nenhum';
+    const dialogs = document.querySelectorAll('div[role="dialog"], div[aria-modal="true"]');
+    const postLinks = document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]');
+    const storiesRing = window.InnfluInspector ? window.InnfluInspector.hasActiveStories() : false;
+    const dmInputs = document.querySelectorAll('textarea, input[placeholder*="Mensagem" i], div[role="textbox"]');
+
     const lines = [
-      `# 📋 RELATÓRIO DE DIAGNÓSTICO DO INNFLU STUDIO (BUG REPORT)`,
-      `- Data/Hora: ${new Date().toLocaleString('pt-BR')}`,
-      `- Versão: v1.3.5`,
+      `================================================================================`,
+      `📋 RELATÓRIO FORENSE DE DIAGNÓSTICO DO INNFLU STUDIO (BUG REPORT COMPLETO)`,
+      `================================================================================`,
+      `[METADADOS DO SISTEMA]`,
+      `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
+      `- Versão do Script: v1.3.7`,
       `- URL Atual: ${window.location.href}`,
+      `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
       `- Perfil Aberto: @${curUser}`,
-      `- Modo Ativo: ${localBotCache?.activeMode || 'Nenhum'}`,
-      `- Bot Rodando: ${localBotCache?.isRunning ? 'SIM' : 'NÃO'}`,
-      `- Bot Pausado: ${localBotCache?.isPaused ? 'SIM' : 'NÃO'}`,
-      `- Fonte / Alvo: ${localBotCache?.miningSource || 'N/A'} -> "${localBotCache?.miningTarget || 'N/A'}"`,
+      `- Resolução da Tela: ${window.innerWidth}x${window.innerHeight} (DevicePixelRatio: ${window.devicePixelRatio || 1})`,
+      `- User-Agent: ${navigator.userAgent}`,
+      ``,
+      `[SESSÃO & AUTENTICAÇÃO]`,
+      `- Usuário Logado: ${currentUserEmail || 'Não autenticado'}`,
+      `- Plano: ${currentUserPlan || 'FREE'}`,
+      `- Token Presente: ${currentBearerToken ? 'SIM (token ativo)' : 'NÃO'}`,
+      `- Status Sincronização Cloudflare D1: ${cachedLeads.length} leads em cache local`,
+      ``,
+      `[ESTADO DO MOTOR DE AUTOMAÇÃO]`,
+      `- isRunning: ${localBotCache?.isRunning ? 'TRUE' : 'FALSE'}`,
+      `- isPaused: ${localBotCache?.isPaused ? 'TRUE' : 'FALSE'}`,
+      `- activeMode: ${localBotCache?.activeMode || 'Nenhum'}`,
+      `- miningSource: ${localBotCache?.miningSource || 'N/A'}`,
+      `- miningTarget: "${localBotCache?.miningTarget || 'N/A'}"`,
+      `- currentAction: "${hudCurrentAction ? hudCurrentAction.innerText : 'N/A'}"`,
       `- Disparos Hoje: ${localBotCache?.sentCount || 0} / ${localBotCache?.dailyLimit || 40}`,
       `- Mineradas Salvas: ${localBotCache?.minedCount || 0}`,
-      `- Fila Atual (${(localBotCache?.queue || []).length}): ${(localBotCache?.queue || []).slice(0, 15).join(', ')}`,
-      `- Total Visitadas: ${(localBotCache?.visited || []).length}`,
+      `- searchStallCount: ${localBotCache?.searchStallCount || 0}`,
+      `- Intervalo Anti-Ban Configurado: ${localBotCache?.minDelaySec || 60}s a ${localBotCache?.maxDelaySec || 120}s`,
+      `- Próxima Ação Agendada (nextActionAt): ${localBotCache?.nextActionAt ? new Date(localBotCache.nextActionAt).toLocaleTimeString('pt-BR') : 'Nenhuma'}`,
       ``,
-      `## 📜 HISTÓRICO DE EVENTOS RECENTES (${window.InnfluDiagnosticLogs.length} LOGS):`,
-      '```log',
-      ...window.InnfluDiagnosticLogs.slice(-150).map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.message}`),
-      '```'
+      `[FILTROS & CRITÉRIOS DE AVALIAÇÃO ATIVOS]`,
+      `- Mínimo de Seguidores: ${localBotCache?.minFollowers || 10000}`,
+      `- Máximo de Seguidores: ${localBotCache?.maxFollowers || 10000000}`,
+      `- Exige Stories Ativos (24h): ${localBotCache?.requireStories !== false ? 'SIM' : 'NÃO'}`,
+      `- Gênero Alvo: ${localBotCache?.targetGender || 'female'}`,
+      `- Exigência de Contato: ${localBotCache?.requireContact || 'all'}`,
+      ``,
+      `[FILAS & MEMÓRIA ANTI-REPETIÇÃO]`,
+      `- Fila Atual (${(localBotCache?.queue || []).length} criadoras): ${(localBotCache?.queue || []).slice(0, 30).map(u => '@' + u).join(', ') || 'Vazia'}`,
+      `- Total de Visitadas (${(localBotCache?.visited || []).length} criadoras): ${(localBotCache?.visited || []).slice(-20).map(u => '@' + u).join(', ') || 'Nenhuma'}`,
+      `- Posts Inspecionados (${(localBotCache?.visitedPosts || []).length} posts): ${(localBotCache?.visitedPosts || []).slice(-15).join(', ') || 'Nenhum'}`,
+      `- CRM Cache Size: ${knownCRMUsersCache ? knownCRMUsersCache.size : 0} usuárias conhecidas`,
+      ``,
+      `[SNAPSHOT DO DOM DO INSTAGRAM]`,
+      `- Modais de Diálogo Abertos (div[role="dialog"]): ${dialogs.length}`,
+      ...Array.from(dialogs).map((d, i) => `  * Dialog #${i+1}: aria-label="${d.getAttribute('aria-label') || ''}", linksCount=${d.querySelectorAll('a').length}, textSnippet="${(d.innerText || '').substring(0, 100).replace(/\n/g, ' ')}"`),
+      `- Publicações / Reels Visíveis na Grade: ${postLinks.length}`,
+      `- Header de Perfil Presente: ${!!document.querySelector('header') ? 'SIM' : 'NÃO'}`,
+      `- Stories Ativos Detectados na Página Atual: ${storiesRing ? 'SIM' : 'NÃO'}`,
+      `- Campos de Input / DM na Página: ${dmInputs.length}`,
+      ``,
+      `[ÚLTIMA AVALIAÇÃO DE CANDIDATA REALIZADA]`,
+      window.InnfluLastCandidateEvaluation ? JSON.stringify(window.InnfluLastCandidateEvaluation, null, 2) : 'Nenhuma candidata avaliada nesta sessão.',
+      ``,
+      `[ERROS & EXCEÇÕES DE RUNTIME CAPTURADAS (${window.InnfluUncaughtErrors ? window.InnfluUncaughtErrors.length : 0})]`,
+      ...(window.InnfluUncaughtErrors && window.InnfluUncaughtErrors.length > 0
+        ? window.InnfluUncaughtErrors.map(e => `* [${e.time}] ${e.message} (${e.filename || 'local'}:${e.lineno || '0'})`)
+        : ['Nenhum erro de runtime capturado até o momento.']),
+      ``,
+      `================================================================================`,
+      `[HISTÓRICO COMPLETO DE EVENTOS INTERNOS (${(window.InnfluDiagnosticLogs || []).length} LOGS)]`,
+      `================================================================================`,
+      ...(window.InnfluDiagnosticLogs || []).slice(-200).map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.message}`),
+      `================================================================================`,
+      `[FIM DO RELATÓRIO]`
     ];
     return lines.join('\n');
   }
@@ -1804,6 +2023,46 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   }
 
   // ==========================================
+  // CONTROLE CENTRAL DE PARADA LIMPA & GRACEFUL STOP
+  // ==========================================
+  window.__innfluNextScheduleTimer = null;
+
+  async function stopAutomationGracefully(reason, message) {
+    if (window.__innfluNextScheduleTimer) {
+      clearTimeout(window.__innfluNextScheduleTimer);
+      window.__innfluNextScheduleTimer = null;
+    }
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+    const { bot } = await getState();
+    const updated = {
+      ...bot,
+      isRunning: false,
+      isPaused: false,
+      activeMode: null,
+      nextActionAt: 0,
+      searchStallCount: 0
+    };
+    await saveBot(updated);
+    syncUI(updated);
+
+    if (hudCurrentAction) {
+      hudCurrentAction.innerText = message || `Operação parada (${reason}).`;
+    }
+    addDiagLog('info', `Operação finalizada: ${reason} - ${message || ''}`);
+
+    const isError = reason === 'error' || reason === 'blocked';
+    const isSuccess = reason === 'daily_limit' || reason === 'completed';
+    showToast({
+      type: isError ? 'error' : (isSuccess ? 'success' : 'info'),
+      title: isSuccess ? 'Operação Concluída!' : 'Operação Parada',
+      message: message || `Finalizada (${reason})`
+    });
+  }
+
+  // ==========================================
   // BOTÕES PRINCIPAIS DE EXECUÇÃO
   // ==========================================
   btnToggleMining.onclick = async () => {
@@ -1815,10 +2074,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     const { bot, apiBaseUrl } = await getState();
     if (bot.isRunning && bot.activeMode === 'miner') {
-      await saveBot({ isRunning: false, activeMode: null, nextActionAt: 0 });
-      clearInterval(countdownInterval);
-      syncUI({ ...bot, isRunning: false, activeMode: null });
-      showToast({ type: 'info', title: 'Mineração Pausada', message: 'Operação interrompida.' });
+      await stopAutomationGracefully('manual', 'Mineração interrompida pelo usuário.');
       return;
     }
 
@@ -1877,10 +2133,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     const { bot, apiBaseUrl } = await getState();
     if (bot.isRunning && bot.activeMode === 'auto') {
-      await saveBot({ isRunning: false, isPaused: false, activeMode: null, nextActionAt: 0 });
-      clearInterval(countdownInterval);
-      syncUI({ ...bot, isRunning: false, isPaused: false, activeMode: null });
-      showToast({ type: 'info', title: 'Automação Encerrada', message: 'Ciclo interrompido.' });
+      await stopAutomationGracefully('manual', 'Automação interrompida pelo usuário.');
       return;
     }
 
@@ -1962,10 +2215,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     const { bot, savedLeads } = await getState();
     if (bot.isRunning && bot.activeMode === 'sender') {
-      await saveBot({ isRunning: false, isPaused: false, activeMode: null, nextActionAt: 0 });
-      clearInterval(countdownInterval);
-      syncUI({ ...bot, isRunning: false, isPaused: false, activeMode: null });
-      showToast({ type: 'info', title: 'Captação Encerrada', message: 'Envio interrompido.' });
+      await stopAutomationGracefully('manual', 'Captação interrompida pelo usuário.');
       return;
     }
 
@@ -2022,13 +2272,20 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     syncUI({ ...bot, isPaused: newPauseState });
 
     if (newPauseState) {
-      showToast({ type: 'warning', title: 'Operação Pausada', message: 'Fila e histórico preservados. Clique em Retomar quando desejar.' });
-      hudCurrentAction.innerText = 'Operação pausada pelo usuário.';
+      if (window.__innfluNextScheduleTimer) {
+        clearTimeout(window.__innfluNextScheduleTimer);
+        window.__innfluNextScheduleTimer = null;
+      }
       if (countdownInterval) {
         clearInterval(countdownInterval);
+        countdownInterval = null;
       }
+      showToast({ type: 'warning', title: 'Operação Pausada', message: 'Fila e histórico preservados. Clique em Retomar quando desejar.' });
+      hudCurrentAction.innerText = 'Operação pausada pelo usuário.';
+      addDiagLog('info', 'Operação pausada pelo usuário.');
     } else {
       showToast({ type: 'success', title: 'Operação Retomada', message: 'Continuando de onde parou!' });
+      addDiagLog('info', 'Operação retomada.');
       runLoop();
     }
   }
@@ -2076,9 +2333,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // ==========================================
   async function stepAutomation(bot, apiBaseUrl, activeTemplate, pageType) {
     if ((bot.sentCount || 0) >= (bot.dailyLimit || 40)) {
-      showToast({ type: 'warning', title: 'Meta Diária Atingida', message: 'Limite diário de abordagens alcançado por hoje!' });
-      await saveBot({ isRunning: false, isPaused: false, activeMode: null });
-      syncUI({ ...bot, isRunning: false, activeMode: null });
+      await stopAutomationGracefully('daily_limit', 'Meta diária de abordagens alcançada por hoje!');
       return;
     }
 
@@ -2143,11 +2398,21 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
    * Avalia os filtros da influenciadora, salva lead e dispara DM com delay humano seguro
    */
   async function processCandidateInAutomation(cleanUser, bot, apiBaseUrl, activeTemplate) {
-    hudCurrentAction.innerText = `[⚡ Automação] Avaliando critérios de @${cleanUser}...`;
+    hudCurrentAction.innerText = `[⚡ Automação] Carregando perfil de @${cleanUser}...`;
+    addDiagLog('info', `Iniciando análise do perfil @${cleanUser}...`);
 
     const rawTarget = (bot.miningTarget || 'Geral').trim();
     const currentNiche = bot.miningSource === 'hashtag' ? ('#' + rawTarget.replace(/^#/, '')) : rawTarget;
-    const profile = window.InnfluInspector.extractCurrentProfileData(currentNiche);
+
+    // Aguarda o header e dados do perfil renderizarem no DOM do React (até 3600ms)
+    let profile = null;
+    for (let attempt = 0; attempt < 12; attempt++) {
+      profile = window.InnfluInspector.extractCurrentProfileData(currentNiche);
+      if (profile && (profile.followersCount > 0 || profile.fullName || profile.bio || profile.isPrivate)) {
+        break;
+      }
+      await window.InnfluCrawler.sleep(300);
+    }
 
     const remainingQueue = (bot.queue || []).filter(u => u && u.toLowerCase() !== cleanUser);
     const visitedSet = new Set(bot.visited || []);
@@ -2155,24 +2420,38 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     knownCRMUsersCache.add(cleanUser);
 
     if (!profile) {
-      hudCurrentAction.innerText = `[⚡ Automação] Falha ao ler @${cleanUser}. Avançando...`;
+      hudCurrentAction.innerText = `[⚡ Automação] Falha ao carregar @${cleanUser}. Avançando...`;
+      addDiagLog('error', `Falha ao carregar DOM do perfil @${cleanUser}`);
       await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
       scheduleNext(1200);
       return;
     }
 
     // Validação estrita de critérios (Filtros configurados)
-    const evalResult = window.InnfluInspector.evaluateCandidate(profile, {
+    const campaignCriteria = {
       minFollowers: bot.minFollowers !== undefined ? bot.minFollowers : 10000,
       maxFollowers: bot.maxFollowers || 10000000,
       requireActiveStories: bot.requireStories !== false,
       targetGender: bot.targetGender || 'female',
       requireContact: bot.requireContact || 'all'
-    });
+    };
+    const evalResult = window.InnfluInspector.evaluateCandidate(profile, campaignCriteria);
+
+    // Registra na telemetria forense para o relatório de diagnóstico do bug report
+    window.InnfluLastCandidateEvaluation = {
+      username: cleanUser,
+      profile,
+      criteria: campaignCriteria,
+      result: evalResult,
+      evaluatedAt: new Date().toISOString()
+    };
+
+    addDiagLog('info', `Avaliação de @${cleanUser}: Seg=${profile.followersCount}, Stories=${profile.hasActiveStories}, Gênero=${profile.isFemale ? 'F' : 'M/Marca'}, Aprovada=${evalResult.approved}`);
 
     if (!evalResult.approved) {
       const rejectReason = evalResult.reasons.join(', ');
       hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada: ${rejectReason}`;
+      addDiagLog('warn', `@${cleanUser} pulada: ${rejectReason}`);
       await logActivity({ username: cleanUser, status: `Pulada (${rejectReason})` });
       await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
       if (remainingQueue.length > 0) {
@@ -2223,6 +2502,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       await logActivity({ username: cleanUser, status: tagStatus });
       await updateLocalLeadStatus(cleanUser, 'contatada');
       showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: 'Story respondido com a mensagem de captação.' });
+      addDiagLog('success', `Captação enviada com sucesso para @${cleanUser} via Story!`);
 
       // Registra no Cloudflare D1
       try {
@@ -2231,6 +2511,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
           body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
         });
       } catch (e) {}
+
+      // Se bateu a meta diária após este envio, para imediatamente
+      if (newSent >= (bot.dailyLimit || 40)) {
+        await stopAutomationGracefully('daily_limit', 'Meta diária de envios alcançada com sucesso!');
+        return;
+      }
 
       // ENTRA NO DESCANSO ANTI-BAN SOMENTE APÓS CONFIRMAÇÃO DO ENVIO
       const minS = Math.max(5, parseInt(bot.minDelaySec, 10) || 60);
@@ -2252,9 +2538,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       const isBlocked = err.message && (err.message.includes('bloque') || err.message.includes('blocked') || err.message.includes('checkpoint'));
       if (isBlocked) {
         showSafetyBanner('Bloqueio Detectado', err.message);
-        await saveBot({ isRunning: false, isPaused: true, activeMode: null });
-        syncUI({ ...bot, isRunning: false, isPaused: true, activeMode: null });
-        showToast({ type: 'error', title: 'Operação Interrompida', message: 'Ação bloqueada temporariamente pelo Instagram.' });
+        addDiagLog('error', `Bloqueio detectado no Instagram: ${err.message}`);
+        await stopAutomationGracefully('blocked', 'Ação bloqueada temporariamente pelo Instagram.');
         return;
       }
 
@@ -2548,17 +2833,18 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         const stallCount = (bot.searchStallCount || 0) + 1;
         await saveBot({ searchStallCount: stallCount });
 
-        // Se após várias rolagens não houver mais posts na busca, alerta o usuário ou recarrega
-        if (stallCount >= 8) {
-          hudCurrentAction.innerText = `Feed esgotado para "${target}". Recarregando página de busca...`;
-          await saveBot({ searchStallCount: 0 });
-          await window.InnfluCrawler.sleep(1500);
-          window.InnfluCrawler.navigateToSource(source, target);
-          return;
+        // Se após várias rolagens não houver mais posts e a fila estiver vazia, para automaticamente
+        if (stallCount >= 4) {
+          if ((bot.queue || []).length === 0) {
+            hudCurrentAction.innerText = `Todas as publicações de "${target}" foram analisadas!`;
+            addDiagLog('info', `Feed de "${target}" esgotado após múltiplas rolagens.`);
+            await stopAutomationGracefully('feed_exhausted', `Mineração de "${target}" finalizada. Não há mais publicações disponíveis.`);
+            return;
+          }
         }
 
         // Rola suavemente para carregar novas publicações no feed
-        hudCurrentAction.innerText = `Rolando feed para carregar novas publicações (${stallCount}/8)...`;
+        hudCurrentAction.innerText = `Rolando feed para carregar novas publicações (${stallCount}/4)...`;
         await window.InnfluCrawler.scrollDown();
         await window.InnfluCrawler.sleep(2200);
 
@@ -2596,33 +2882,55 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     hudCurrentAction.innerText = `Inspecionando publicação (${href})...`;
     addDiagLog('info', `Inspecionando publicação: ${href}`);
-    try {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } catch (e) {}
-    await window.InnfluCrawler.sleep(350);
 
-    // Clica na publicação com simulateClick tanto na imagem/div quanto no link
-    const clickableChild = element.querySelector('img') || element.querySelector('div') || element;
-    if (window.InnfluSender && typeof window.InnfluSender.simulateClick === 'function') {
-      window.InnfluSender.simulateClick(clickableChild);
-      window.InnfluSender.simulateClick(element);
-    } else {
-      clickableChild.click();
-      element.click();
+    // VERIFICAÇÃO RÁPIDA: A publicação já traz @username no alt da imagem?
+    let author = null;
+    const innerImg = element.querySelector('img[alt]');
+    if (innerImg) {
+      const altText = innerImg.getAttribute('alt') || '';
+      const atMatch = altText.match(/@([a-zA-Z0-9._]{3,30})/);
+      if (atMatch && window.InnfluCrawler.isValidUsername(atMatch[1])) {
+        author = atMatch[1].toLowerCase();
+        addDiagLog('info', `Autor extraído diretamente do alt-text: @${author}`);
+      }
     }
 
-    // Aguarda o autor da publicação carregar no DOM (até 4000ms)
-    let author = null;
-    let curPath = '';
-    for (let t = 0; t < 16; t++) {
-      await window.InnfluCrawler.sleep(250);
-      curPath = window.location.pathname.toLowerCase();
-      if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
-        const directNorm = window.InnfluCrawler.normalizePostHref(curPath);
-        visitedPostsSet.add(directNorm);
+    let curPath = window.location.pathname.toLowerCase();
+
+    // Se não encontrou no alt text, abre a publicação para inspecionar
+    if (!author) {
+      try {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (e) {}
+      await window.InnfluCrawler.sleep(300);
+
+      // Clica UMA VEZ no elemento do post
+      if (window.InnfluSender && typeof window.InnfluSender.simulateClick === 'function') {
+        window.InnfluSender.simulateClick(element);
+      } else {
+        element.click();
       }
-      author = window.InnfluCrawler.extractPostAuthor();
-      if (author) break;
+
+      // Aguarda o modal ou página do post carregar no DOM (até 4000ms)
+      for (let t = 0; t < 16; t++) {
+        await window.InnfluCrawler.sleep(250);
+        curPath = window.location.pathname.toLowerCase();
+        if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
+          const directNorm = window.InnfluCrawler.normalizePostHref(curPath);
+          visitedPostsSet.add(directNorm);
+        }
+        author = window.InnfluCrawler.extractPostAuthor();
+        if (author) break;
+
+        // Se após 1.5s o modal ainda não abriu, tenta fallback no link <a> direto
+        if (t === 6 && !document.querySelector('div[role="dialog"]') && !curPath.startsWith('/p/') && !curPath.startsWith('/reel/')) {
+          const anchor = element.tagName === 'A' ? element : element.closest('a') || element.querySelector('a');
+          if (anchor) {
+            addDiagLog('info', 'Tentando clique direto no link do post como fallback...');
+            anchor.click();
+          }
+        }
+      }
     }
 
     if (author) {
@@ -2677,7 +2985,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
       window.history.back();
       await window.InnfluCrawler.sleep(1200);
-    } else {
+    } else if (document.querySelector('div[role="dialog"]')) {
       await window.InnfluCrawler._closeModal();
       await window.InnfluCrawler.sleep(500);
     }
@@ -2921,7 +3229,14 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   }
 
   function scheduleNext(ms) {
-    setTimeout(runLoop, ms);
+    if (window.__innfluNextScheduleTimer) {
+      clearTimeout(window.__innfluNextScheduleTimer);
+      window.__innfluNextScheduleTimer = null;
+    }
+    window.__innfluNextScheduleTimer = setTimeout(() => {
+      window.__innfluNextScheduleTimer = null;
+      runLoop();
+    }, ms);
   }
 
   // ==========================================

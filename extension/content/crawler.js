@@ -653,59 +653,75 @@ window.InnfluCrawler = {
 
   /**
    * Extrai o autor do post/reel atual (no modal ou na página direta /p/ ou /reel/)
-   * 100% Canônico e Exato — busca em todos os containers de modais, overlays e páginas
+   * 100% Canônico e Exato:
+   * 1. JSON-LD estruturado (<script type="application/ld+json">)
+   * 2. Meta tags (<meta property="og:title">) e document.title
+   * 3. Modal estrito (div[role="dialog"] / div[aria-modal="true"])
+   * 4. Cabeçalho de página direta (/p/ ou /reel/)
    * @returns {string | null}
    */
   extractPostAuthor() {
-    // 1. Procura em todos os possíveis containers de post/modal
-    const possibleContainers = Array.from(document.querySelectorAll([
-      'div[role="dialog"]',
-      'div[role="presentation"]',
-      'div[aria-modal="true"]',
-      'div.x1n2onr6',
-      'section[role="region"]',
-      'article',
-      'main'
-    ].join(','))).filter(c => !c.closest('#innflu-hud-root') && !c.closest('nav') && !c.closest('aside'));
-
-    // Se houver botão de fechar modal (X) característico de post aberto, prioriza o container dele
-    const closeBtn = document.querySelector('svg[aria-label="Fechar"], svg[aria-label="Close"], button[aria-label="Fechar"], button[aria-label="Close"]');
-    if (closeBtn && !closeBtn.closest('#innflu-hud-root')) {
-      const modalParent = closeBtn.closest('div[role="dialog"], div[role="presentation"], div[style*="z-index"], div[style*="position: fixed"]') || closeBtn.parentElement?.parentElement?.parentElement?.parentElement;
-      if (modalParent && !possibleContainers.includes(modalParent)) {
-        possibleContainers.unshift(modalParent);
+    // 1. Estratégia A: Metadados estruturados JSON-LD (Canônico do Instagram, imune a CSS)
+    try {
+      const jsonLdScripts = document.querySelectorAll('script[type="application/ld+json"]');
+      for (const s of jsonLdScripts) {
+        const text = s.textContent || s.innerText;
+        if (!text || (!text.includes('author') && !text.includes('Person'))) continue;
+        const parsed = JSON.parse(text);
+        const authorObj = parsed.author || (parsed['@graph'] && parsed['@graph'].find(item => item && item.author)?.author);
+        if (authorObj) {
+          const rawCand = authorObj.identifier || authorObj.alternateName || authorObj.name || '';
+          const candidate = rawCand.replace('@', '').trim().toLowerCase();
+          if (candidate && this.isValidUsername(candidate)) {
+            console.log(`[Innflu] Autor identificado via JSON-LD: @${candidate}`);
+            return candidate;
+          }
+        }
       }
-    }
+    } catch (e) {}
 
-    const headerSelectors = [
-      'header a[href^="/"]',
-      'div[role="button"] a[href^="/"]',
-      'a[role="link"][href^="/"]',
-      'h2 a[href^="/"]',
-      'span > a[href^="/"]'
-    ];
+    // 2. Estratégia B: Meta Tags e Título da Página (og:title, twitter:title, document.title)
+    try {
+      const metaTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+                        document.querySelector('meta[name="twitter:title"]')?.getAttribute('content') ||
+                        document.title || '';
+      if (metaTitle) {
+        const atMatch = metaTitle.match(/@([a-zA-Z0-9._]{3,30})/);
+        if (atMatch && this.isValidUsername(atMatch[1])) {
+          console.log(`[Innflu] Autor identificado via meta/título: @${atMatch[1]}`);
+          return atMatch[1].toLowerCase();
+        }
+      }
+    } catch (e) {}
 
-    for (const container of possibleContainers) {
-      // A. Links do cabeçalho do post
+    // 3. Estratégia C: Se houver modal aberto no DOM (div[role="dialog"] ou div[aria-modal="true"])
+    // ATENÇÃO CRÍTICA: Se o modal existe, a busca fica ESTRITAMENTE restrita a ele (zero contaminação com background grid)
+    const activeDialog = document.querySelector('div[role="dialog"], div[aria-modal="true"]');
+    if (activeDialog && !activeDialog.closest('#innflu-hud-root')) {
+      // C.1: Header do post no modal (links com /username/)
+      const headerSelectors = [
+        'header a[href^="/"]',
+        'div[role="button"] a[href^="/"]',
+        'a[role="link"][href^="/"]',
+        'h2 a[href^="/"]',
+        'span > a[href^="/"]'
+      ];
       for (const sel of headerSelectors) {
-        const links = container.querySelectorAll(sel);
+        const links = activeDialog.querySelectorAll(sel);
         for (const a of links) {
           if (a.closest('#innflu-hud-root') || a.closest('nav') || a.closest('aside')) continue;
           const hrefAttr = a.getAttribute('href') || '';
           const cleanPath = hrefAttr.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
           const parts = cleanPath.split('/').filter(Boolean);
-          if (parts.length === 1) {
-            const u = parts[0].toLowerCase();
-            if (this.isValidUsername(u)) {
-              console.log(`[Innflu] Autor do post identificado via link: @${u}`);
-              return u;
-            }
+          if (parts.length === 1 && this.isValidUsername(parts[0])) {
+            console.log(`[Innflu] Autor identificado no header do modal: @${parts[0]}`);
+            return parts[0].toLowerCase();
           }
         }
       }
 
-      // B. Avatar no cabeçalho com alt de foto de perfil
-      const avatarImgs = container.querySelectorAll('header img[alt], img[alt*="perfil" i], img[alt*="profile" i]');
+      // C.2: Avatar no cabeçalho com alt de foto de perfil
+      const avatarImgs = activeDialog.querySelectorAll('header img[alt], img[alt*="perfil" i], img[alt*="profile" i]');
       for (const img of avatarImgs) {
         if (img.closest('#innflu-hud-root')) continue;
         const alt = (img.getAttribute('alt') || '').toLowerCase();
@@ -713,39 +729,36 @@ window.InnfluCrawler = {
                       alt.match(/^([a-z0-9._]+)'s profile picture/i);
         if (match && match[1] && this.isValidUsername(match[1])) {
           const u = match[1].toLowerCase();
-          console.log(`[Innflu] Autor do post identificado via avatar: @${u}`);
+          console.log(`[Innflu] Autor identificado via avatar do modal: @${u}`);
           return u;
         }
       }
 
-      // C. Links com texto correspondente ao próprio @username
-      const allLinks = container.querySelectorAll('a[href^="/"]');
-      for (const a of allLinks) {
+      // C.3: Primeiro link de perfil dentro do article do modal
+      const articleLinks = activeDialog.querySelectorAll('article a[href^="/"]');
+      for (const a of articleLinks) {
         if (a.closest('#innflu-hud-root') || a.closest('nav') || a.closest('aside')) continue;
         const hrefAttr = a.getAttribute('href') || '';
         const cleanPath = hrefAttr.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
         const parts = cleanPath.split('/').filter(Boolean);
-        if (parts.length === 1) {
-          const u = parts[0].toLowerCase();
-          const txt = (a.innerText || a.getAttribute('aria-label') || '').trim().toLowerCase().replace('@', '');
-          if (txt === u && this.isValidUsername(u)) {
-            console.log(`[Innflu] Autor do post identificado via link/texto: @${u}`);
-            return u;
-          }
+        if (parts.length === 1 && this.isValidUsername(parts[0])) {
+          console.log(`[Innflu] Autor identificado no article do modal: @${parts[0]}`);
+          return parts[0].toLowerCase();
         }
       }
     }
 
-    // 2. Fallback geral para rotas /p/ ou /reel/
+    // 4. Estratégia D: Fallback para rota direta /p/ ou /reel/
     const curPath = window.location.pathname.toLowerCase();
     if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
-      const pageLinks = document.querySelectorAll('header a[href^="/"], h2 a[href^="/"], a[role="link"][href^="/"]');
-      for (const a of pageLinks) {
+      const pageHeaders = document.querySelectorAll('article header a[href^="/"], main header a[href^="/"], header a[href^="/"]');
+      for (const a of pageHeaders) {
         if (a.closest('#innflu-hud-root') || a.closest('nav') || a.closest('aside')) continue;
         const href = a.getAttribute('href') || '';
         const cleanPath = href.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
         const parts = cleanPath.split('/').filter(Boolean);
         if (parts.length === 1 && this.isValidUsername(parts[0])) {
+          console.log(`[Innflu] Autor identificado via cabeçalho direto de post: @${parts[0]}`);
           return parts[0].toLowerCase();
         }
       }

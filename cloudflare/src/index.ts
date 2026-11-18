@@ -548,11 +548,11 @@ app.get('/api/health', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.3.6',
+    version: '1.3.7',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.3.6: Login obrigatório integrado, sincronização multi-tenant direta com Cloudflare D1 e novo popup com visão de conta.',
+    releaseNotes: 'v1.3.7: Identificação precisa de influenciadoras no feed, relatório de diagnóstico 100% completo no ícone 🐛, parada automática inteligente e janela totalmente redimensionável e minimizável.',
     downloadUrl: '/innflu-extensao.zip',
-    publishedAt: '2026-11-18T10:00:00Z',
+    publishedAt: '2026-11-18T13:30:00Z',
     dynamicRules: {
       selectors: {
         messageButtons: ['enviar mensagem', 'mensagem', 'message', 'send message'],
