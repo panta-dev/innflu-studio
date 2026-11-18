@@ -1030,3 +1030,177 @@
   color: #ffffff;
   border-color: #8b949e;
 }
+
+/* ==========================================================
+   ALÇA DE REDIMENSIONAMENTO VERTICAL (PUXAR PRA CIMA / BAIXO)
+   ========================================================== */
+.innflu-hud {
+  position: relative;
+}
+
+.innflu-resize-handle-top {
+  height: 8px;
+  width: 100%;
+  cursor: ns-resize;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  transition: background 0.2s ease;
+}
+
+.innflu-resize-handle-top::before {
+  content: '';
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: #30363d;
+  transition: all 0.2s ease;
+}
+
+.innflu-resize-handle-top:hover {
+  background: rgba(37, 99, 235, 0.2);
+}
+
+.innflu-resize-handle-top:hover::before,
+.innflu-resize-handle-top.active::before {
+  background: #2563eb;
+  width: 56px;
+}
+
+/* ==========================================================
+   MODAL DE DIAGNÓSTICO E LOGS EM TEMPO REAL (ÍCONE DE BUG 🐛)
+   ========================================================== */
+.innflu-diag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(13, 17, 23, 0.96);
+  backdrop-filter: blur(6px);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  animation: innfluSlideDown 0.15s ease-out;
+}
+
+.innflu-diag-header {
+  padding: 8px 12px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.innflu-diag-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #f0f6fc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.innflu-diag-body {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.innflu-diag-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: #090d16;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #21262d;
+  font-size: 9.5px;
+}
+
+.innflu-diag-metrics-item {
+  color: #8b949e;
+}
+
+.innflu-diag-metrics-item strong {
+  color: #c9d1d9;
+}
+
+.innflu-diag-logs-container {
+  background: #010409;
+  border: 1px solid #21262d;
+  border-radius: 6px;
+  padding: 6px;
+  flex: 1;
+  min-height: 150px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 9px;
+  line-height: 1.4;
+  color: #7ee787;
+  user-select: text;
+}
+
+.innflu-diag-log-row {
+  margin-bottom: 3px;
+  word-break: break-all;
+}
+
+.innflu-diag-log-time {
+  color: #8b949e;
+  margin-right: 4px;
+}
+
+.innflu-diag-log-row.warn {
+  color: #f2cc60;
+}
+
+.innflu-diag-log-row.error {
+  color: #f85149;
+}
+
+.innflu-diag-log-row.info {
+  color: #79c0ff;
+}
+
+.innflu-diag-footer {
+  padding: 6px 10px;
+  background: #161b22;
+  border-top: 1px solid #21262d;
+  display: flex;
+  gap: 6px;
+}
+
+.innflu-btn-copy-diag {
+  flex: 1;
+  background: #238636;
+  border: 1px solid #2ea043;
+  color: #ffffff;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.innflu-btn-copy-diag:hover {
+  background: #2ea043;
+}
+

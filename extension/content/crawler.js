@@ -150,7 +150,12 @@ window.InnfluCrawler = {
 
   getCurrentProfileUsername() {
     const segments = window.location.pathname.split('/').filter(Boolean);
-    if (segments.length >= 1) {
+    const systemPaths = [
+      'explore', 'direct', 'stories', 'reels', 'accounts', 'p', 'reel',
+      'about', 'developer', 'legal', 'privacy', 'terms', 'api', 'help',
+      'nametag', 'settings', 'session', 'emails', 'challenge'
+    ];
+    if (segments.length >= 1 && !systemPaths.includes(segments[0].toLowerCase())) {
       return segments[0].toLowerCase();
     }
     return null;
@@ -217,7 +222,27 @@ window.InnfluCrawler = {
     }
 
     console.log(`[Innflu] Abrindo perfil: @${clean}`);
-    window.location.href = `https://www.instagram.com/${clean}/`;
+    const profileUrl = `https://www.instagram.com/${clean}/`;
+
+    // 1. Tenta clicar no link nativo do perfil se estiver no post/modal aberto (transição instantânea SPA)
+    const authorAnchor = Array.from(document.querySelectorAll(`a[href="/${clean}/"], a[href="/${clean}"]`)).find(a => {
+      if (a.closest('#innflu-hud-root')) return false;
+      const rect = a.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+
+    if (authorAnchor && window.InnfluSender && typeof window.InnfluSender.simulateClick === 'function') {
+      window.InnfluSender.simulateClick(authorAnchor);
+      setTimeout(() => {
+        if (this.getCurrentProfileUsername() !== clean) {
+          window.location.href = profileUrl;
+        }
+      }, 1200);
+      return true;
+    }
+
+    // 2. Navegação direta
+    window.location.href = profileUrl;
     return true;
   },
 
@@ -628,62 +653,100 @@ window.InnfluCrawler = {
 
   /**
    * Extrai o autor do post/reel atual (no modal ou na página direta /p/ ou /reel/)
-   * 100% Canônico e Exato — busca exclusivamente DENTRO do container da publicação
+   * 100% Canônico e Exato — busca em todos os containers de modais, overlays e páginas
    * @returns {string | null}
    */
   extractPostAuthor() {
-    const isDirectPost = window.location.pathname.startsWith('/p/') || window.location.pathname.startsWith('/reel/');
-    const postContainer = document.querySelector('div[role="dialog"]') || document.querySelector('article') || (isDirectPost ? document.querySelector('main') : null);
-    if (!postContainer) return null;
+    // 1. Procura em todos os possíveis containers de post/modal
+    const possibleContainers = Array.from(document.querySelectorAll([
+      'div[role="dialog"]',
+      'div[role="presentation"]',
+      'div[aria-modal="true"]',
+      'div.x1n2onr6',
+      'section[role="region"]',
+      'article',
+      'main'
+    ].join(','))).filter(c => !c.closest('#innflu-hud-root') && !c.closest('nav') && !c.closest('aside'));
 
-    // 1. Link canônico do autor no cabeçalho do post/modal
+    // Se houver botão de fechar modal (X) característico de post aberto, prioriza o container dele
+    const closeBtn = document.querySelector('svg[aria-label="Fechar"], svg[aria-label="Close"], button[aria-label="Fechar"], button[aria-label="Close"]');
+    if (closeBtn && !closeBtn.closest('#innflu-hud-root')) {
+      const modalParent = closeBtn.closest('div[role="dialog"], div[role="presentation"], div[style*="z-index"], div[style*="position: fixed"]') || closeBtn.parentElement?.parentElement?.parentElement?.parentElement;
+      if (modalParent && !possibleContainers.includes(modalParent)) {
+        possibleContainers.unshift(modalParent);
+      }
+    }
+
     const headerSelectors = [
       'header a[href^="/"]',
+      'div[role="button"] a[href^="/"]',
       'a[role="link"][href^="/"]',
       'h2 a[href^="/"]',
       'span > a[href^="/"]'
     ];
 
-    for (const sel of headerSelectors) {
-      const links = postContainer.querySelectorAll(sel);
-      for (const a of links) {
-        // Ignora links para tags, áudio, locais ou outros posts
+    for (const container of possibleContainers) {
+      // A. Links do cabeçalho do post
+      for (const sel of headerSelectors) {
+        const links = container.querySelectorAll(sel);
+        for (const a of links) {
+          if (a.closest('#innflu-hud-root') || a.closest('nav') || a.closest('aside')) continue;
+          const hrefAttr = a.getAttribute('href') || '';
+          const cleanPath = hrefAttr.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
+          const parts = cleanPath.split('/').filter(Boolean);
+          if (parts.length === 1) {
+            const u = parts[0].toLowerCase();
+            if (this.isValidUsername(u)) {
+              console.log(`[Innflu] Autor do post identificado via link: @${u}`);
+              return u;
+            }
+          }
+        }
+      }
+
+      // B. Avatar no cabeçalho com alt de foto de perfil
+      const avatarImgs = container.querySelectorAll('header img[alt], img[alt*="perfil" i], img[alt*="profile" i]');
+      for (const img of avatarImgs) {
+        if (img.closest('#innflu-hud-root')) continue;
+        const alt = (img.getAttribute('alt') || '').toLowerCase();
+        const match = alt.match(/(?:foto do perfil de|profile picture of|foto de perfil de)\s+([a-z0-9._]+)/i) ||
+                      alt.match(/^([a-z0-9._]+)'s profile picture/i);
+        if (match && match[1] && this.isValidUsername(match[1])) {
+          const u = match[1].toLowerCase();
+          console.log(`[Innflu] Autor do post identificado via avatar: @${u}`);
+          return u;
+        }
+      }
+
+      // C. Links com texto correspondente ao próprio @username
+      const allLinks = container.querySelectorAll('a[href^="/"]');
+      for (const a of allLinks) {
+        if (a.closest('#innflu-hud-root') || a.closest('nav') || a.closest('aside')) continue;
         const hrefAttr = a.getAttribute('href') || '';
-        const parts = hrefAttr.split('?')[0].split('#')[0].split('/').filter(Boolean);
+        const cleanPath = hrefAttr.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
+        const parts = cleanPath.split('/').filter(Boolean);
         if (parts.length === 1) {
           const u = parts[0].toLowerCase();
-          if (this.isValidUsername(u)) {
-            console.log(`[Innflu] Autor exato encontrado via link do post: @${u}`);
+          const txt = (a.innerText || a.getAttribute('aria-label') || '').trim().toLowerCase().replace('@', '');
+          if (txt === u && this.isValidUsername(u)) {
+            console.log(`[Innflu] Autor do post identificado via link/texto: @${u}`);
             return u;
           }
         }
       }
     }
 
-    // 2. Imagem de avatar com alt text específico de perfil ("foto do perfil de...")
-    const avatarImgs = postContainer.querySelectorAll('header img[alt], img[alt*="perfil" i], img[alt*="profile" i]');
-    for (const img of avatarImgs) {
-      const alt = (img.getAttribute('alt') || '').toLowerCase();
-      const match = alt.match(/(?:foto do perfil de|profile picture of)\s+([a-z0-9._]+)/i) ||
-                    alt.match(/^([a-z0-9._]+)'s profile picture/i);
-      if (match && match[1] && this.isValidUsername(match[1])) {
-        const u = match[1].toLowerCase();
-        console.log(`[Innflu] Autor exato encontrado via avatar de perfil: @${u}`);
-        return u;
-      }
-    }
-
-    // 3. Procura link cujo texto visível ou aria-label coincida com o href dentro do post
-    const allLinks = postContainer.querySelectorAll('a[href^="/"]');
-    for (const a of allLinks) {
-      const hrefAttr = a.getAttribute('href') || '';
-      const parts = hrefAttr.split('?')[0].split('#')[0].split('/').filter(Boolean);
-      if (parts.length === 1) {
-        const u = parts[0].toLowerCase();
-        const txt = (a.innerText || a.getAttribute('aria-label') || '').trim().toLowerCase().replace('@', '');
-        if (txt === u && this.isValidUsername(u)) {
-          console.log(`[Innflu] Autor exato encontrado via link/texto correspondente: @${u}`);
-          return u;
+    // 2. Fallback geral para rotas /p/ ou /reel/
+    const curPath = window.location.pathname.toLowerCase();
+    if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
+      const pageLinks = document.querySelectorAll('header a[href^="/"], h2 a[href^="/"], a[role="link"][href^="/"]');
+      for (const a of pageLinks) {
+        if (a.closest('#innflu-hud-root') || a.closest('nav') || a.closest('aside')) continue;
+        const href = a.getAttribute('href') || '';
+        const cleanPath = href.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
+        const parts = cleanPath.split('/').filter(Boolean);
+        if (parts.length === 1 && this.isValidUsername(parts[0])) {
+          return parts[0].toLowerCase();
         }
       }
     }
