@@ -396,8 +396,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <!-- Rodapé -->
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
-        <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.2.6 🔄</button>
+        <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.1 🔄</button>
       </div>
     </div>
   `;
@@ -1053,9 +1053,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   $('btnMinimize').addEventListener('click', () => hud.classList.toggle('minimized'));
 
   // Abrir Dashboard Web
-  $('btnOpenDashboard').onclick = async () => {
-    const { apiBaseUrl } = await getState();
-    window.open(apiBaseUrl, '_blank');
+  $('btnOpenDashboard').onclick = () => {
+    window.open('https://innflu-studio.pages.dev/dashboard/', '_blank');
   };
 
   // ==========================================

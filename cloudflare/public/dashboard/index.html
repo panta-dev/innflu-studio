@@ -369,14 +369,14 @@
           <div class="absolute -left-10 -top-10 w-64 h-64 bg-pink-600/10 rounded-full blur-3xl pointer-events-none"></div>
         </div>
 
-        <!-- Grid de 4 Cards Principais de Métricas -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Grid de 5 Cards Principais de Métricas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           
           <!-- Card 1: DMs Hoje & Quota -->
           <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-purple-500/40 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DMs Enviadas Hoje</p>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DMs Hoje</p>
                 <h3 id="statSentToday" class="text-3xl font-extrabold text-white mt-1.5 font-mono">0</h3>
               </div>
               <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
@@ -385,7 +385,7 @@
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border">
               <div class="flex justify-between text-[11px] text-slate-400 mb-1.5">
-                <span>Limite Diário Seguro</span>
+                <span>Limite Seguro</span>
                 <span class="font-mono text-slate-300"><span id="statSentPercent">0</span>% (<span id="statDailySentCount">0</span>/40)</span>
               </div>
               <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
@@ -398,7 +398,7 @@
           <div class="glass-panel p-5 rounded-2xl group hover:border-pink-500/40 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Influenciadoras Mineradas</p>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Mineradas</p>
                 <h3 id="statTotalLeads" class="text-3xl font-extrabold text-white mt-1.5 font-mono">0</h3>
               </div>
               <div class="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center">
@@ -407,36 +407,17 @@
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
               <span class="text-emerald-400 flex items-center gap-1">
-                <i class="fa-solid fa-circle-check text-[10px]"></i> Qualificadas +10k
+                <i class="fa-solid fa-circle-check text-[10px]"></i> Qualificadas
               </span>
               <span id="statPendingCount" class="text-slate-400 font-mono">0 na fila</span>
             </div>
           </div>
 
-          <!-- Card 3: WhatsApps Capturados -->
-          <div class="glass-panel p-5 rounded-2xl group hover:border-emerald-500/40 transition">
-            <div class="flex justify-between items-start">
-              <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">WhatsApps Diretos</p>
-                <h3 id="statWithWhatsapp" class="text-3xl font-extrabold text-emerald-400 mt-1.5 font-mono">0</h3>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <i class="fa-brands fa-whatsapp text-base"></i>
-              </div>
-            </div>
-            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
-              <span class="text-slate-400 flex items-center gap-1">
-                <i class="fa-solid fa-envelope text-sky-400"></i> <b id="statWithEmail" class="text-slate-200">0</b> com e-mail
-              </span>
-              <button onclick="copyAllWhatsApps()" class="text-emerald-400 hover:underline font-semibold">Copiar Todos</button>
-            </div>
-          </div>
-
-          <!-- Card 4: Taxa de Resposta / DMs Totais -->
+          <!-- Card 3: Total Abordagens Realizadas -->
           <div class="glass-panel p-5 rounded-2xl group hover:border-amber-500/40 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Abordagens Realizadas</p>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total DMs</p>
                 <h3 id="statTotalSent" class="text-3xl font-extrabold text-amber-300 mt-1.5 font-mono">0</h3>
               </div>
               <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
@@ -445,9 +426,47 @@
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
               <span class="text-slate-400 flex items-center gap-1">
-                <i class="fa-solid fa-shield-halved text-amber-400"></i> Proteção Ativa
+                <i class="fa-solid fa-shield-halved text-amber-400"></i> Anti-Ban Ativo
               </span>
-              <span class="text-purple-400 font-semibold font-mono">Intervalos 60-180s</span>
+              <span class="text-purple-400 font-semibold font-mono">60-180s</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Respostas de Influenciadoras -->
+          <div class="glass-panel p-5 rounded-2xl group hover:border-cyan-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Responderam</p>
+                <h3 id="statTotalReplied" class="text-3xl font-extrabold text-cyan-400 mt-1.5 font-mono">0</h3>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                <i class="fa-solid fa-comments text-sm"></i>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
+              <span class="text-cyan-400 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-bolt text-[10px]"></i> Taxa de Resposta
+              </span>
+              <span class="text-slate-200 font-mono font-bold"><span id="statReplyRate">0.0</span>%</span>
+            </div>
+          </div>
+
+          <!-- Card 5: WhatsApps Capturados -->
+          <div class="glass-panel p-5 rounded-2xl group hover:border-emerald-500/40 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">WhatsApps</p>
+                <h3 id="statWithWhatsapp" class="text-3xl font-extrabold text-emerald-400 mt-1.5 font-mono">0</h3>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i class="fa-brands fa-whatsapp text-base"></i>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
+              <span class="text-slate-400 flex items-center gap-1">
+                <i class="fa-solid fa-envelope text-sky-400"></i> <b id="statWithEmail" class="text-slate-200">0</b> emails
+              </span>
+              <button onclick="copyAllWhatsApps()" class="text-emerald-400 hover:underline font-semibold">Copiar</button>
             </div>
           </div>
 
@@ -919,7 +938,7 @@
                   <label class="block text-[11px] font-semibold text-slate-300">Mensagem com Spintax</label>
                   <span id="editorCharCount" class="text-[10px] text-slate-500 font-mono">0 caracteres</span>
                 </div>
-                <textarea id="tmplContent" oninput="handleTemplateInput()" rows="8" required class="w-full bg-surface-card border border-surface-border rounded-xl p-3.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 leading-relaxed transition"></textarea>
+                <textarea id="tmplContent" oninput="handleTemplateInput()" rows="12" style="min-height: 190px;" required class="w-full bg-surface-card border border-surface-border rounded-xl p-3.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 leading-relaxed transition"></textarea>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
@@ -1828,6 +1847,12 @@ Parcerias: assessoria@marialuiza.com.br
         document.getElementById('statWithWhatsapp').innerText = data.withWhatsapp || 0;
         document.getElementById('statWithEmail').innerText = data.withEmail || 0;
         document.getElementById('statTotalSent').innerText = data.totalSent || 0;
+        if (document.getElementById('statTotalReplied')) {
+          document.getElementById('statTotalReplied').innerText = data.totalReplied || 0;
+        }
+        if (document.getElementById('statReplyRate')) {
+          document.getElementById('statReplyRate').innerText = data.replyRate || '0.0';
+        }
         document.getElementById('badgeSidebarLeads').innerText = data.totalLeads || 0;
         document.getElementById('statPendingCount').innerText = `${data.pendingLeads || 0} na fila`;
         document.getElementById('statDailySentCount').innerText = data.sentToday || 0;
@@ -1952,10 +1977,12 @@ Parcerias: assessoria@marialuiza.com.br
           statusBadge = `<span class="status-badge bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap inline-flex items-center gap-1 font-bold"><i class="fa-solid fa-handshake text-[10px]"></i> Fechou Parceria</span>`;
         } else if (l.status === 'negotiating') {
           statusBadge = `<span class="status-badge bg-amber-500/15 text-amber-300 border border-amber-500/30 whitespace-nowrap inline-flex items-center gap-1 font-bold"><i class="fa-solid fa-comments text-[10px]"></i> Em Negociação</span>`;
-        } else if (l.status === 'sent') {
+        } else if (l.status === 'sent' || l.status === 'contatada') {
           statusBadge = `<span class="status-badge bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap inline-flex items-center gap-1"><i class="fa-solid fa-check text-[9px]"></i> DM Enviada</span>`;
-        } else if (l.status === 'blacklisted') {
-          statusBadge = `<span class="status-badge bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap inline-flex items-center gap-1 font-bold"><i class="fa-solid fa-ban text-[10px]"></i> Blacklist</span>`;
+        } else if (l.status === 'story' || l.status === 'story_reply' || (l.status && l.status.toLowerCase().includes('story'))) {
+          statusBadge = `<span class="status-badge bg-pink-500/15 text-pink-400 border border-pink-500/30 whitespace-nowrap inline-flex items-center gap-1 font-bold"><i class="fa-solid fa-bolt text-[10px]"></i> Story Respondido</span>`;
+        } else if (l.status === 'blacklisted' || l.status === 'skipped') {
+          statusBadge = `<span class="status-badge bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap inline-flex items-center gap-1 font-bold"><i class="fa-solid fa-ban text-[10px]"></i> Pulada</span>`;
         } else {
           statusBadge = `<span class="status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap inline-flex items-center gap-1"><i class="fa-solid fa-circle text-[6px]"></i> Minerada</span>`;
         }
@@ -1982,7 +2009,7 @@ Parcerias: assessoria@marialuiza.com.br
             </td>
             <td class="px-5 py-3.5 whitespace-nowrap">
               <span class="text-[10px] font-mono px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold uppercase whitespace-nowrap inline-block">
-                ${l.niche || 'Maternidade'}
+                ${l.niche || 'Geral'}
               </span>
             </td>
             <td class="px-5 py-3.5 font-mono font-semibold text-slate-200 whitespace-nowrap">
@@ -2668,28 +2695,28 @@ Parcerias: assessoria@marialuiza.com.br
     let templatesList = [
       {
         id: 'tmpl_slot_01',
-        title: 'Modelo 1: Apresentação & Presente de Boas-Vindas',
-        content: '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Espero que esteja tendo uma ótima semana!}\n\n{Adorei|Achei incrível|Muito bacana} seu conteúdo e a forma {leve|autêntica|dedicada} como você compartilha {sua rotina e maternidade|seu dia a dia|suas dicas} por aqui!\n\nSomos da {nossa marca|nossa equipe} e adoraríamos te presentear com alguns dos nossos produtos {exclusivos|mais pedidos}, sem custo nenhum, para você conhecer. {Teria interesse em receber esse mimo?|Podemos te enviar essa caixinha?|Toparia conhecer nossa proposta?}'
+        title: 'Modelo 1: Publicidade nos Stories (Infoproduto Digital - Proposta Direta)',
+        content: '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}\n\n{Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!\n\nGostaria de saber se você faz publicidade nos stories. Temos uma proposta de publicidade nos stories de um infoproduto digital.\n\n{Podemos conversar a respeito?|Topa saber mais detalhes?|Você tem disponibilidade?}'
       },
       {
         id: 'tmpl_slot_02',
-        title: 'Modelo 2: Elogio Específico & Convite de Parceria',
-        content: '{Oi|Olá} {nome}, {tudo bem?|como vai?|tudo certinho por aí?}\n\nPassando para dizer que {sou fã do seu perfil|acompanho seus posts e adoro a sua energia|seu perfil tem tudo a ver com o nosso propósito}!\n\nEstamos selecionando algumas criadoras de conteúdo do nicho para uma {ação especial|parceria exclusiva|campanha incrível} este mês. {Gostaria de saber se você aceita propostas de parceria?|Você teria interesse em conversar sobre uma parceria com envio de produtos?|Podemos te apresentar nossa ideia?}'
+        title: 'Modelo 2: Parceria Remunerada nos Stories (Ação de Divulgação)',
+        content: '{Oi|Olá|Oie} {nome}, {como vai?|tudo bem?|tudo joia?}\n\n{Acompanho suas publicações|Admiro muito seu trabalho e engajamento|Seu perfil tem uma energia incrível}!\n\nEstamos selecionando algumas criadoras para uma ação de publicidade nos stories de um infoproduto digital. {Você trabalha com publicidade nos stories?|Podemos te apresentar a proposta?|Teria interesse em conversar sobre essa ação?}'
       },
       {
         id: 'tmpl_slot_03',
-        title: 'Modelo 3: Direto ao Ponto & Mimo Especial',
-        content: '{Oie|Oi|Olá} {nome}! {Tudo bem?|Tudo joia?}\n\n{Vimos o seu perfil|Conhecemos seu trabalho} e achamos {maravilhoso|impecável|muito lindo}!\n\nPreparamos uma {cortesia especial|seleção de produtos incrível|caixinha personalizada} e pensamos imediatamente em você. {Você nos autoriza a te enviar essa proposta de parceria?|Para onde podemos enviar os detalhes da ação?|Teria interesse em saber mais?}'
+        title: 'Modelo 3: Divulgação nos Stories (Ação com Orçamento / Cachê)',
+        content: '{Oie|Oi|Olá} {nome}! {Espero que seu dia esteja ótimo!|Tudo certinho com você?}\n\n{Vi seu perfil|Conheci seu conteúdo} e achamos excelente para uma ação que vamos rodar este mês.\n\nTemos orçamento para fechar publicidade nos stories para divulgação de um infoproduto digital. {Para onde podemos enviar a proposta detalhada?|Topa saber mais informações sobre a ação?|Podemos falar por aqui?}'
       },
       {
         id: 'tmpl_slot_04',
-        title: 'Modelo 4: Pergunta de Engajamento & Proposta',
-        content: '{Olá|Oi} {nome}! {Como estão as coisas por aí?|Espero que tudo ótimo por aí!}\n\nEstávamos analisando alguns perfis {relevantes|inspiradores} e o seu se destacou muito pela {conexão genuína com seus seguidores|qualidade das suas postagens|forma leve de se comunicar}.\n\nEstamos com uma {campanha aberta de parcerias|oportunidade de colaboração} e queremos saber: {você costuma fechar parcerias com marcas para conhecer produtos?|está aberta a receber mimos de marcas que têm sinergia com você?|teria interesse em conhecer a nossa proposta de collab?}'
+        title: 'Modelo 4: Proposta Comercial nos Stories',
+        content: '{Olá|Oi} {nome}! {Tudo bem?|Como você está?}\n\nEstávamos analisando criadoras do nicho e seu perfil se destacou muito pela qualidade e autenticidade!\n\nTemos interesse em fechar uma publicidade nos stories com você para divulgar um infoproduto digital. {Você tem disponibilidade para ações este mês?|Poderia me passar seus formatos e valores de stories?|Podemos conversar a respeito?}'
       },
       {
         id: 'tmpl_slot_05',
-        title: 'Modelo 5: Exclusividade VIP & Contato WhatsApp',
-        content: '{Oi|Olá|Oie} {nome}, {tudo bem com você?|como você está?}\n\n{Que perfil incrível você tem!|Admiramos muito a forma como você cria conteúdo por aqui!}\n\nNossa equipe quer te convidar para ser uma das nossas embaixadoras {desta coleção|deste lançamento|deste mês}. {Se você tiver interesse, podemos te mandar os detalhes por aqui ou pelo WhatsApp, o que preferir!|Teria interesse em conhecer a proposta? Podemos enviar por aqui ou conversar pelo WhatsApp!|Se topar, me dá um alô por aqui!}'
+        title: 'Modelo 5: Convite Rápido & WhatsApp Comercial',
+        content: '{Oi|Olá|Oie} {nome}, {tudo bem?|tudo certo?}\n\n{Que perfil bacana você tem!|Muito bom o seu conteúdo por aqui!}\n\nGostaríamos de te fazer uma proposta de publicidade nos stories de um infoproduto digital. {Se preferir, podemos conversar por aqui ou você pode nos passar seu WhatsApp comercial!|Podemos falar por aqui ou pelo WhatsApp comercial?|Se tiver interesse, me dá um retorno por aqui!}'
       }
     ];
 
@@ -3628,7 +3655,7 @@ Parcerias: assessoria@marialuiza.com.br
             // Reseta contadores da interface
             const zeroElements = [
               'statSentToday', 'statTotalLeads', 'statWithWhatsapp',
-              'statWithEmail', 'statTotalSent', 'badgeSidebarLeads',
+              'statWithEmail', 'statTotalSent', 'statTotalReplied', 'badgeSidebarLeads',
               'statDailySentCount', 'statSentPercent'
             ];
             zeroElements.forEach(id => {

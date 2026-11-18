@@ -5,7 +5,7 @@
 
 // Configurações padrão
 const DEFAULT_CONFIG = {
-  apiBaseUrl: 'http://127.0.0.1:8787',
+  apiBaseUrl: 'https://innflu-studio.pages.dev',
   apiToken: 'innflu_secret_token_12345',
   dailyCount: 0,
   dailyLimit: 40,
@@ -18,7 +18,11 @@ const DEFAULT_CONFIG = {
 // Inicialização de armazenamento e checagem de atualizações OTA
 chrome.runtime.onInstalled.addListener(async () => {
   const current = await chrome.storage.local.get(null);
-  await chrome.storage.local.set({ ...DEFAULT_CONFIG, ...current });
+  let effectiveBaseUrl = current.apiBaseUrl || DEFAULT_CONFIG.apiBaseUrl;
+  if (!effectiveBaseUrl || effectiveBaseUrl.includes('127.0.0.1') || effectiveBaseUrl.includes('localhost')) {
+    effectiveBaseUrl = 'https://innflu-studio.pages.dev';
+  }
+  await chrome.storage.local.set({ ...DEFAULT_CONFIG, ...current, apiBaseUrl: effectiveBaseUrl });
   console.log('[Innflu] Service Worker instalado e configurado.');
 
   // Cria alarme para verificar atualizações OTA a cada 60 minutos
