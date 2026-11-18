@@ -158,10 +158,9 @@
           <!-- 3. MENSAGEM & INTERVALO -->
           <div class="innflu-section-title" style="margin-top:2px;">
             <span>3. Mensagem dos Stories</span>
-            <span id="btnToggleExpandMsg" style="font-size:9.5px;color:#58a6ff;cursor:pointer;font-weight:600;">⤢ Expandir</span>
           </div>
           <div class="innflu-template-section">
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="3" style="min-height:65px;height:70px;max-height:160px;font-size:11px;line-height:1.4;padding:6px;transition:height 0.2s;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="4" style="min-height:95px;height:auto;font-size:11px;line-height:1.45;padding:8px;resize:vertical;overflow-y:visible;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
             <div class="innflu-delay-row" style="margin-top:3px;">
               <div class="innflu-delay-inputs">
                 <span class="innflu-form-label" style="margin:0;">Delay:</span>
@@ -412,7 +411,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.3 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.4 🔄</button>
       </div>
     </div>
   `;
@@ -1151,28 +1150,18 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     updateAutoFiltersSummary();
   }
 
-  // Toggle de Expandir / Recolher Texto da Mensagem
-  const btnToggleExpandMsg = $('btnToggleExpandMsg');
-  if (btnToggleExpandMsg && hudAutoTemplateContent) {
-    btnToggleExpandMsg.onclick = () => {
-      const isExpanded = hudAutoTemplateContent.style.height === '160px';
-      hudAutoTemplateContent.style.height = isExpanded ? '70px' : '160px';
-      hudAutoTemplateContent.style.maxHeight = isExpanded ? '160px' : '260px';
-      btnToggleExpandMsg.innerText = isExpanded ? '⤢ Expandir' : '⤡ Recolher';
-    };
-  }
-
+  // Auto-expansão do campo de mensagem para exibir TODO o texto completo sem cortes nem rolagem interna
   function autoExpandTextarea(ta) {
     if (!ta) return;
-    if (ta === hudAutoTemplateContent) {
-      // Mantém a altura compacta do painel de automação sem quebrar a tela
-      return;
-    }
     ta.style.height = 'auto';
-    const computedH = Math.min(160, Math.max(70, ta.scrollHeight + 4));
+    const computedH = Math.max(90, ta.scrollHeight + 6);
     ta.style.height = computedH + 'px';
   }
 
+  if (hudAutoTemplateContent) {
+    hudAutoTemplateContent.addEventListener('input', () => autoExpandTextarea(hudAutoTemplateContent));
+    hudAutoTemplateContent.addEventListener('change', () => autoExpandTextarea(hudAutoTemplateContent));
+  }
   if (hudTemplateContent) {
     hudTemplateContent.addEventListener('input', () => autoExpandTextarea(hudTemplateContent));
   }
@@ -1563,8 +1552,17 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada: ${rejectReason}`;
       await logActivity({ username: cleanUser, status: `Pulada (${rejectReason})` });
       await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
-      scheduleNext(1200);
-      return;
+      if (remainingQueue.length > 0) {
+        hudCurrentAction.innerText = `[⚡ Automação] Pulada (${rejectReason}). Abrindo @${remainingQueue[0]}...`;
+        await window.InnfluCrawler.sleep(1200);
+        window.InnfluCrawler.openProfile(remainingQueue[0]);
+        return;
+      } else {
+        hudCurrentAction.innerText = `[⚡ Automação] Pulada (${rejectReason}). Retornando à busca...`;
+        await window.InnfluCrawler.sleep(1200);
+        window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
+        return;
+      }
     }
 
     // Perfil 100% qualificado: Salva no D1 e no CRM local
@@ -1579,7 +1577,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     });
     hudMinedCount.innerText = newMined;
 
-    // Disparo de DM com Spintax
+    // Disparo de Mensagem no Story com Spintax
     try {
       window.InnfluIsSendingDM = true;
       const fallbackTpl = '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}';
@@ -1590,18 +1588,18 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         fullName: profile.fullName 
       });
 
-      hudCurrentAction.innerText = `[Automação] Digitando mensagem para @${cleanUser}...`;
+      hudCurrentAction.innerText = `[Automação] Digitando mensagem nos stories de @${cleanUser}...`;
       const sendRes = await window.InnfluSender.sendDirectMessage(msg);
       window.InnfluIsSendingDM = false;
 
-      // SÓ ENTRA AQUI SE FOI 100% CONFIRMADO O ENVIO DA MENSAGEM NO DIRECT / STORY
+      // SÓ ENTRA AQUI SE FOI 100% CONFIRMADO O ENVIO DA MENSAGEM NO STORY
       const newSent = (bot.sentCount || 0) + 1;
       await saveBot({ sentCount: newSent });
       hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
       const tagStatus = sendRes && sendRes.viaStory ? 'Story Respondido ⚡' : 'DM Enviada ✓';
       await logActivity({ username: cleanUser, status: tagStatus });
       await updateLocalLeadStatus(cleanUser, 'contatada');
-      showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: sendRes && sendRes.viaStory ? 'Story respondido com a mensagem de captação.' : 'Mensagem enviada com sucesso no Direct.' });
+      showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: 'Story respondido com a mensagem de captação.' });
 
       // Registra no Cloudflare D1
       try {
@@ -1619,7 +1617,13 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       const nextAt = Date.now() + delaySec * 1000;
       await saveBot({ nextActionAt: nextAt });
       hudCurrentAction.innerText = `[Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
-      startCountdown(nextAt, runLoop, delaySec * 1000);
+      startCountdown(nextAt, () => {
+        if (remainingQueue.length > 0) {
+          window.InnfluCrawler.openProfile(remainingQueue[0]);
+        } else {
+          window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
+        }
+      }, delaySec * 1000);
       return;
     } catch (err) {
       window.InnfluIsSendingDM = false;
@@ -1633,15 +1637,21 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       }
 
       // NÃO FOI ENVIADA! Não entra no descanso anti-ban longo!
-      console.warn('[Innflu] Falha ao enviar DM para @' + cleanUser + ':', err.message);
+      console.warn('[Innflu] Falha ao enviar Story para @' + cleanUser + ':', err.message);
       await logActivity({ username: cleanUser, status: `Não Enviada (${err.message.substring(0, 24)})` });
-      showToast({ type: 'warning', title: `DM Não Enviada (@${cleanUser})`, message: err.message });
+      showToast({ type: 'warning', title: `Story Não Respondido (@${cleanUser})`, message: err.message });
       
-      const retryDelay = 6;
+      const retryDelay = 4;
       const nextAt = Date.now() + retryDelay * 1000;
       await saveBot({ nextActionAt: nextAt });
-      hudCurrentAction.innerText = `[Automação] Pulando @${cleanUser} (não enviou)...`;
-      startCountdown(nextAt, runLoop, retryDelay * 1000);
+      hudCurrentAction.innerText = `[Automação] Pulando @${cleanUser}...`;
+      startCountdown(nextAt, () => {
+        if (remainingQueue.length > 0) {
+          window.InnfluCrawler.openProfile(remainingQueue[0]);
+        } else {
+          window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
+        }
+      }, retryDelay * 1000);
       return;
     } finally {
       window.InnfluIsSendingDM = false;
@@ -1670,7 +1680,9 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         hudHeaderCountdown.innerText = '';
         hudHeaderCountdown.style.display = 'none';
         hudDelayBarContainer.style.display = 'none';
-        callback();
+        saveBot({ nextActionAt: null }).then(() => {
+          callback();
+        });
         return;
       }
 
@@ -1914,33 +1926,19 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         const stallCount = (bot.searchStallCount || 0) + 1;
         await saveBot({ searchStallCount: stallCount });
 
-        // Auto-Pivot: se a busca/hashtag não trouxer mais resultados novos após rolagens consecutivas,
-        // pivota automaticamente para sugestões / contas semelhantes dos perfis já visitados/salvos
-        if (stallCount >= 2) {
-          const pivotPool = [...(bot.visited || []), ...Array.from(knownCRMUsersCache)].filter(u => u && u.length > 2);
-          if (pivotPool.length > 0) {
-            const pivotUser = pivotPool[Math.floor(Math.random() * pivotPool.length)].toLowerCase();
-            hudCurrentAction.innerText = `[⚡ Auto-Pivot] Feed esgotado. Minerando semelhantes a @${pivotUser}...`;
-            showToast({
-              type: 'info',
-              title: '⚡ Auto-Pivot de Prospecção',
-              message: `Feed travado. Buscando sugestões de contas semelhantes a @${pivotUser}...`
-            });
-            await saveBot({
-              searchStallCount: 0,
-              miningSource: 'similar',
-              miningTarget: pivotUser,
-              queue: []
-            });
-            window.InnfluCrawler.openProfile(pivotUser);
-            return;
-          }
+        // Se após várias rolagens não houver mais posts na busca, alerta o usuário ou recarrega
+        if (stallCount >= 8) {
+          hudCurrentAction.innerText = `Feed esgotado para "${target}". Recarregando página de busca...`;
+          await saveBot({ searchStallCount: 0 });
+          await window.InnfluCrawler.sleep(1500);
+          window.InnfluCrawler.navigateToSource(source, target);
+          return;
         }
 
-        // Todos os posts visíveis foram inspecionados! Rola para carregar novos posts
-        hudCurrentAction.innerText = `Rolando feed para carregar novas publicações (${stallCount}/2)...`;
+        // Rola suavemente para carregar novas publicações no feed
+        hudCurrentAction.innerText = `Rolando feed para carregar novas publicações (${stallCount}/8)...`;
         await window.InnfluCrawler.scrollDown();
-        await window.InnfluCrawler.sleep(2000);
+        await window.InnfluCrawler.sleep(2200);
 
         const retryPost = window.InnfluCrawler.getNextUnvisitedPost(Array.from(visitedPosts));
         if (!retryPost) {
@@ -1975,17 +1973,23 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     await saveBot({ visitedPosts: Array.from(visitedPostsSet).slice(-600) });
 
     hudCurrentAction.innerText = `Inspecionando publicação (${href})...`;
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {}
     await window.InnfluCrawler.sleep(300);
 
-    // Clica na publicação
-    element.click();
+    // Clica na publicação com simulateClick (React 18 compatible)
+    if (window.InnfluSender && typeof window.InnfluSender.simulateClick === 'function') {
+      window.InnfluSender.simulateClick(element);
+    } else {
+      element.click();
+    }
 
-    // Aguarda o autor da publicação carregar de forma responsiva e rápida (máx 1400ms)
+    // Aguarda o autor da publicação carregar no DOM (até 3500ms)
     let author = null;
     let curPath = '';
-    for (let t = 0; t < 7; t++) {
-      await window.InnfluCrawler.sleep(200);
+    for (let t = 0; t < 14; t++) {
+      await window.InnfluCrawler.sleep(250);
       curPath = window.location.pathname.toLowerCase();
       if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
         const directNorm = window.InnfluCrawler.normalizePostHref(curPath);
@@ -1997,31 +2001,42 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     if (author) {
       const authorLower = author.toLowerCase();
-      // VERIFICAÇÃO INSTANTÂNEA: Está no CRM ou já foi visitada?
-      const isAlreadyInCRM = visitedUsersSet.has(authorLower) || knownCRMUsersCache.has(authorLower);
 
-      if (isAlreadyInCRM) {
-        hudCurrentAction.innerText = `@${author} já está no CRM / visitada. Descartando na hora! ⚡`;
-        console.log(`[Innflu] ⚡ Descarte rápido: @${author} já consta no CRM. Não precisa abrir perfil.`);
-        await logActivity({ username: author, status: 'Descartada (Já no CRM ⚡)' });
+      // Checagem imediata de empresa corporativa / lojas comerciais (C&A, Renner, Magalu, etc.)
+      const isBrand = window.InnfluGenderDetector && typeof window.InnfluGenderDetector.isCorporateBrand === 'function' && window.InnfluGenderDetector.isCorporateBrand(authorLower);
+      if (isBrand) {
+        hudCurrentAction.innerText = `@${author} é empresa/marca comercial. Descartando...`;
+        console.log(`[Innflu] Descarte rápido: @${author} é marca corporativa / loja comercial.`);
+        await logActivity({ username: author, status: 'Descartada (Empresa/Loja)' });
+        visitedUsersSet.add(authorLower);
+        await saveBot({ visited: Array.from(visitedUsersSet).slice(-1000) });
       } else {
-        // Checagem de elegibilidade da regra dos 7 dias antes de abrir perfil
-        const check7d = await check7DayRule(apiBaseUrl, authorLower);
-        if (!check7d.eligible) {
-          hudCurrentAction.innerText = `@${author} contatada nos últimos 7 dias. Descartando na hora! ⚡`;
-          visitedUsersSet.add(authorLower);
-          knownCRMUsersCache.add(authorLower);
-          await saveBot({ visited: Array.from(visitedUsersSet).slice(-1000) });
-          await logActivity({ username: author, status: 'Descartada (Regra 7d ⚡)' });
+        // VERIFICAÇÃO INSTANTÂNEA: Está no CRM ou já foi visitada?
+        const isAlreadyInCRM = visitedUsersSet.has(authorLower) || knownCRMUsersCache.has(authorLower);
+
+        if (isAlreadyInCRM) {
+          hudCurrentAction.innerText = `@${author} já está no CRM / visitada. Descartando na hora! ⚡`;
+          console.log(`[Innflu] ⚡ Descarte rápido: @${author} já consta no CRM. Não precisa abrir perfil.`);
+          await logActivity({ username: author, status: 'Descartada (Já no CRM ⚡)' });
         } else {
-          // ELEGÍVEL E INÉDITA! Adiciona na fila e abre o perfil para auditar e contatar!
-          hudCurrentAction.innerText = `Nova criadora: @${author}! Abrindo perfil...`;
-          const currentQueue = bot.queue || [];
-          const updatedQueue = [authorLower, ...currentQueue.filter(u => u.toLowerCase() !== authorLower)];
-          await saveBot({ queue: updatedQueue });
-          await window.InnfluCrawler.sleep(600);
-          window.InnfluCrawler.openProfile(author);
-          return;
+          // Checagem de elegibilidade da regra dos 7 dias antes de abrir perfil
+          const check7d = await check7DayRule(apiBaseUrl, authorLower);
+          if (!check7d.eligible) {
+            hudCurrentAction.innerText = `@${author} contatada nos últimos 7 dias. Descartando na hora! ⚡`;
+            visitedUsersSet.add(authorLower);
+            knownCRMUsersCache.add(authorLower);
+            await saveBot({ visited: Array.from(visitedUsersSet).slice(-1000) });
+            await logActivity({ username: author, status: 'Descartada (Regra 7d ⚡)' });
+          } else {
+            // ELEGÍVEL E INÉDITA! Adiciona na fila e abre o perfil para auditar e contatar!
+            hudCurrentAction.innerText = `Criadora confirmada: @${author}! Abrindo perfil...`;
+            const currentQueue = bot.queue || [];
+            const updatedQueue = [authorLower, ...currentQueue.filter(u => u.toLowerCase() !== authorLower)];
+            await saveBot({ queue: updatedQueue });
+            await window.InnfluCrawler.sleep(400);
+            window.InnfluCrawler.openProfile(author);
+            return;
+          }
         }
       }
     } else {
@@ -2031,7 +2046,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     // Fecha modal ou volta se navegou
     if (curPath.startsWith('/p/') || curPath.startsWith('/reel/')) {
       window.history.back();
-      await window.InnfluCrawler.sleep(1400);
+      await window.InnfluCrawler.sleep(1200);
     } else {
       await window.InnfluCrawler._closeModal();
       await window.InnfluCrawler.sleep(500);

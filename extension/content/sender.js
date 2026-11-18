@@ -421,12 +421,15 @@ window.InnfluSender = {
       if (rect.width > 0 && rect.height > 0) return anchor;
     }
 
-    // 2. Canvas do anel de stories (anel gradiente característico)
+    // 2. Elemento clicável que contém o canvas do anel de stories
     const canvas = header.querySelector('canvas');
     if (canvas) {
-      const btn = canvas.closest('div[role="button"]') || canvas.closest('div[tabindex="0"]') || canvas.parentElement || canvas;
-      const rect = btn.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) return btn;
+      const btn = canvas.closest('div[role="button"]') || canvas.closest('div[tabindex="0"]') || canvas.parentElement;
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) return btn;
+      }
+      return canvas;
     }
 
     // 3. Div de botão com aria-label de stories
@@ -446,9 +449,11 @@ window.InnfluSender = {
     // 4. Imagem do avatar no cabeçalho
     const avatarImg = header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img');
     if (avatarImg) {
-      const btn = avatarImg.closest('div[role="button"]') || avatarImg.closest('a') || avatarImg;
-      const rect = btn.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) return btn;
+      const btn = avatarImg.closest('div[role="button"]') || avatarImg.closest('a') || avatarImg.parentElement;
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) return btn;
+      }
     }
 
     return null;
@@ -456,6 +461,7 @@ window.InnfluSender = {
 
   /**
    * Abre o Story garantindo que o visualizador de Stories seja carregado
+   * NUNCA faz window.location.assign para rota direta (evita loop de recarregamento caso não tenha stories)
    */
   async openStoryViewer(username) {
     const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main');
@@ -464,88 +470,76 @@ window.InnfluSender = {
     console.log(`[Innflu] Tentando abrir Stories de @${cleanUser}...`);
 
     // 1. Procura link explícito para /stories/
-    const anchor = header ? header.querySelector(`a[href*="/stories/${cleanUser}"]`) || header.querySelector('a[href*="/stories/"]') : null;
+    const anchor = header ? (header.querySelector(`a[href*="/stories/${cleanUser}"]`) || header.querySelector('a[href*="/stories/"]')) : null;
     if (anchor) {
-      try { anchor.click(); } catch (e) {}
       this.simulateClick(anchor);
-      await this.sleep(1200);
-      if (window.location.pathname.toLowerCase().includes('/stories/')) return true;
+      await this.sleep(1500);
+      if (this.isStoryViewerOpen()) return true;
     }
 
-    // 2. Procura canvas do anel de stories e clica
+    // 2. Procura avatar / anel de stories e clica
+    const avatarBtn = this.findStoryAvatar();
+    if (avatarBtn) {
+      this.simulateClick(avatarBtn);
+      await this.sleep(1500);
+      if (this.isStoryViewerOpen()) return true;
+    }
+
+    // 3. Se houver canvas no header, clica nele diretamente
     const canvas = header ? header.querySelector('canvas') : null;
     if (canvas) {
       this.simulateClick(canvas);
       if (canvas.parentElement) this.simulateClick(canvas.parentElement);
-      const btn = canvas.closest('[role="button"]') || canvas.closest('div[tabindex="0"]');
-      if (btn) this.simulateClick(btn);
-      await this.sleep(1200);
-      if (window.location.pathname.toLowerCase().includes('/stories/')) return true;
+      await this.sleep(1500);
+      if (this.isStoryViewerOpen()) return true;
     }
 
-    // 3. Procura imagem do avatar e clica
-    const img = header ? header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img') : null;
-    if (img) {
-      this.simulateClick(img);
-      const btn = img.closest('[role="button"]') || img.closest('a') || img.parentElement;
-      if (btn) this.simulateClick(btn);
-      await this.sleep(1200);
-      if (window.location.pathname.toLowerCase().includes('/stories/')) return true;
+    // Aguarda até mais 1500ms para confirmação de abertura assíncrona do modal de stories
+    for (let t = 0; t < 5; t++) {
+      if (this.isStoryViewerOpen()) return true;
+      await this.sleep(300);
     }
 
-    // 4. Procura div com role="button" no header
-    const avatarBtn = this.findStoryAvatar();
-    if (avatarBtn) {
-      this.simulateClick(avatarBtn);
-      await this.sleep(1200);
-      if (window.location.pathname.toLowerCase().includes('/stories/')) return true;
-    }
+    return this.isStoryViewerOpen();
+  },
 
-    // 5. Garantia absoluta: navega diretamente para /stories/${cleanUser}/
-    if (cleanUser && !window.location.pathname.toLowerCase().includes('/stories/')) {
-      console.log(`[Innflu] Disparando rota direta de Stories: /stories/${cleanUser}/`);
-      const storyUrl = `/stories/${cleanUser}/`;
-      try {
-        const link = document.createElement('a');
-        link.href = storyUrl;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } catch (e) {}
+  /**
+   * Verifica se o visualizador de Stories está atualmente aberto na tela
+   */
+  isStoryViewerOpen() {
+    const path = window.location.pathname.toLowerCase();
+    if (path.includes('/stories/')) return true;
 
-      await this.sleep(1800);
-      if (!window.location.pathname.toLowerCase().includes('/stories/')) {
-        window.location.assign(storyUrl);
-        await this.sleep(2500);
-      }
-    }
-
-    return window.location.pathname.toLowerCase().includes('/stories/');
+    // Detecta elementos exclusivos do visualizador de Stories do Instagram Web
+    const storyProgress = document.querySelector('div[role="progressbar"], div[style*="animation"]');
+    const storyDialog = document.querySelector('section._ac7v, div[role="dialog"] section, section[role="region"]');
+    const storyInput = document.querySelector('textarea[placeholder*="Responder" i], textarea[placeholder*="Reply" i], input[placeholder*="Responder" i]');
+    return !!(storyProgress && (storyDialog || storyInput));
   },
 
   /**
    * Aguarda o campo de resposta de Story aparecer e o ativa
    */
-  async waitForStoryReplyInput(timeoutMs = 9000) {
+  async waitForStoryReplyInput(timeoutMs = 6000) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
-      // 1. Clica em placeholders do tipo "Responder a..." para ativar o textarea
+      // 1. Clica em placeholders/botões do tipo "Responder a..." para ativar o textarea
       const clickables = Array.from(document.querySelectorAll([
         'div[role="button"][aria-label*="Responder" i]',
         'div[role="button"][aria-label*="Reply" i]',
         'div[role="button"][aria-label*="Enviar mensagem" i]',
         'div[role="button"][aria-label*="Send message" i]',
-        'span:has(textarea)',
-        'div[tabindex="0"]:has(textarea)'
+        'div[tabindex="0"][aria-label*="Responder" i]',
+        'div[tabindex="0"][aria-label*="Reply" i]'
       ].join(',')));
 
       for (const btn of clickables) {
         if (btn.closest('#innflu-hud-root')) continue;
         const rect = btn.getBoundingClientRect();
-        if (rect.width > 30 && rect.height > 15 && rect.bottom > window.innerHeight * 0.3) {
+        if (rect.width > 20 && rect.height > 15 && rect.bottom > window.innerHeight * 0.3) {
           this.simulateClick(btn);
-          await this.sleep(250);
+          await this.sleep(300);
+          break;
         }
       }
 
@@ -579,7 +573,7 @@ window.InnfluSender = {
   },
 
   /**
-   * Insere o texto da mensagem no campo de resposta do Story
+   * Insere o texto da mensagem no campo de resposta do Story de forma limpa (sem duplicar!)
    */
   async typeMessageIntoStoryInput(inputEl, text) {
     inputEl.focus();
@@ -589,6 +583,7 @@ window.InnfluSender = {
     const isInput = inputEl.tagName === 'INPUT';
 
     if (isTextarea || isInput) {
+      inputEl.value = '';
       const proto = isTextarea ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
       const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
       if (setter) {
@@ -599,11 +594,6 @@ window.InnfluSender = {
 
       inputEl.dispatchEvent(new Event('input', { bubbles: true }));
       inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-
-      try {
-        inputEl.select();
-        document.execCommand('insertText', false, text);
-      } catch (e) {}
 
       try {
         inputEl.dispatchEvent(new InputEvent('input', {
@@ -617,31 +607,34 @@ window.InnfluSender = {
       await this.typeMessageIntoReact(inputEl, text);
     }
 
-    await this.sleep(350);
+    await this.sleep(400);
   },
 
   /**
-   * Submete a resposta do Story com Enter e clique no Enviar
+   * Submete a resposta do Story com botão Enviar e tecla Enter
    */
   async submitStoryReply(inputEl) {
     inputEl.focus();
     await this.sleep(250);
 
-    // 1. Procura botão Enviar próximo ao input do Story
+    // 1. Procura botão Enviar / Send ou ícone de envio próximo ao input do Story
     const sendBtn = Array.from(document.querySelectorAll('button, div[role="button"]')).find(b => {
-      if (b.closest('#innflu-hud-root')) return false;
+      if (b.closest('#innflu-hud-root') || b === inputEl) return false;
       const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
       const rect = b.getBoundingClientRect();
-      return (t === 'enviar' || t === 'send' || t.includes('enviar')) && rect.width > 0 && rect.height > 0 && rect.bottom > window.innerHeight * 0.3;
+      const isVisible = rect.width > 0 && rect.height > 0 && rect.bottom > window.innerHeight * 0.3;
+      const isSendText = t === 'enviar' || t === 'send' || t.includes('enviar') || t.includes('send');
+      const hasSendSvg = !!b.querySelector('svg[aria-label*="Enviar" i], svg[aria-label*="Send" i]');
+      return (isSendText || hasSendSvg) && isVisible;
     });
 
     if (sendBtn) {
       console.log('[Innflu] Clicando no botão Enviar do Story...');
       this.simulateClick(sendBtn);
-      await this.sleep(400);
+      await this.sleep(500);
     }
 
-    // 2. Dispara tecla Enter
+    // 2. Dispara tecla Enter como garantia com sequência completa de eventos
     const enterProps = {
       key: 'Enter',
       code: 'Enter',
@@ -669,7 +662,9 @@ window.InnfluSender = {
       'svg[aria-label="Fechar"]',
       'svg[aria-label="Close"]',
       'button[aria-label="Fechar"]',
-      'button[aria-label="Close"]'
+      'button[aria-label="Close"]',
+      'div[role="button"][aria-label="Fechar"]',
+      'div[role="button"][aria-label="Close"]'
     ].join(','));
 
     if (closeBtn) {
@@ -698,13 +693,13 @@ window.InnfluSender = {
 
     console.log(`[Innflu] Abrindo Stories de @${cleanUser} para envio de mensagem...`);
     const opened = await this.openStoryViewer(cleanUser);
-    if (!opened && !window.location.pathname.toLowerCase().includes('/stories/')) {
-      throw new Error(`Não foi possível abrir os Stories de @${cleanUser} (sem stories ativos ou não carregou)`);
+    if (!opened && !this.isStoryViewerOpen()) {
+      throw new Error(`Não foi possível abrir os Stories de @${cleanUser} (sem stories ativos ou privados)`);
     }
 
     await this.sleep(1200);
 
-    const inputEl = await this.waitForStoryReplyInput(8000);
+    const inputEl = await this.waitForStoryReplyInput(6000);
     if (!inputEl) {
       throw new Error(`Campo de resposta de Story não disponível para @${cleanUser} (respostas desativadas neste story)`);
     }
@@ -737,8 +732,8 @@ window.InnfluSender = {
     const curPath = window.location.pathname.toLowerCase();
     const cleanUser = curPath.split('/').filter(Boolean)[0] || '';
 
-    // MANDATÓRIO: SEMPRE tentar abrir Stories e enviar mensagem pelo Story!
-    console.log(`[Innflu] OBRIGATÓRIO: Abrindo Stories de @${cleanUser} para envio...`);
+    // MANDATÓRIO: SEMPRE responder ao Story ativo da influenciadora!
+    console.log(`[Innflu] OBRIGATÓRIO: Respondendo ao Story de @${cleanUser}...`);
     try {
       const ok = await this.replyToActiveStory(messageText, cleanUser);
       if (ok) {
@@ -747,69 +742,10 @@ window.InnfluSender = {
     } catch (storyErr) {
       console.warn(`[Innflu] Falha ao enviar via Story: ${storyErr.message}`);
       this.closeStoryViewer();
-      // Lança o erro com clareza para que o robô não tente Direct comum que é bloqueado pelo Instagram
+      // Não cai em Direct comum porque o Instagram bloqueia DMs para não-seguidores!
       throw new Error(`Envio via Stories não concluído: ${storyErr.message}`);
     }
 
-    const curPath = window.location.pathname.toLowerCase();
-    let inputEl = null;
-
-    if (curPath.startsWith('/direct/')) {
-      inputEl = await this.waitForMessageInput(5000);
-    }
-
-    // Se estamos no perfil, clica no botão "Enviar mensagem"
-    if (!inputEl) {
-      let messageBtn = this.findMessageButton();
-      if (!messageBtn) {
-        window.scrollBy({ top: 120, behavior: 'auto' });
-        await this.sleep(600);
-        window.scrollBy({ top: -120, behavior: 'auto' });
-        await this.sleep(400);
-        messageBtn = this.findMessageButton();
-      }
-
-      if (!messageBtn) {
-        throw new Error('Botão "Enviar mensagem" não encontrado no perfil');
-      }
-
-      console.log('[Innflu] Clicando no botão Enviar mensagem do perfil...');
-      await this.openDirectChat(messageBtn);
-
-      // Aguarda abertura do chat e montagem da caixa de texto
-      inputEl = await this.waitForMessageInput(15000);
-    }
-
-    if (!inputEl) {
-      throw new Error('O chat do Direct não abriu a tempo (caixa de texto não encontrada)');
-    }
-
-    // Digita a mensagem
-    console.log('[Innflu] Digitando mensagem via React...');
-    await this.typeMessageIntoReact(inputEl, messageText);
-
-    // Envia a mensagem
-    console.log('[Innflu] Despachando envio...');
-    await this.submitMessage(inputEl);
-
-    // VERIFICAÇÃO MANDATÓRIA: Confirma se foi realmente enviada
-    console.log('[Innflu] Aguardando confirmação do envio...');
-    const result = await this.waitForSendConfirmation(inputEl, messageText, 9000);
-
-    if (!result.confirmed) {
-      if (result.blocked) {
-        throw new Error(`Ação bloqueada pelo Instagram: ${result.message}`);
-      }
-      throw new Error(result.message || 'Falha ao confirmar envio da mensagem no Direct');
-    }
-
-    // Se estiver na tela do direct, volta ao perfil
-    if (window.location.pathname.toLowerCase().startsWith('/direct/')) {
-      console.log('[Innflu] DM confirmada com sucesso! Retornando...');
-      window.history.back();
-      await this.sleep(1200);
-    }
-
-    return { success: true, viaStory: false };
+    throw new Error('Stories não disponíveis para envio');
   }
 };

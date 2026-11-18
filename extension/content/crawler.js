@@ -567,8 +567,8 @@ window.InnfluCrawler = {
   },
 
   /**
-   * Extrai criadores diretamente da grade visível (alt-text de Reels/Posts)
-   * Sem precisar clicar ou abrir modais!
+   * Extrai criadores diretamente da grade visível APENAS com @username explícito
+   * ZERO adivinhação por nome próprio ("foto de...")
    * @param {string[]} visitedUsers Lista de usernames já visitados
    * @returns {{ creators: string[], postHrefs: string[] }}
    */
@@ -587,16 +587,10 @@ window.InnfluCrawler = {
       const alt = img.getAttribute('alt') || '';
       let author = null;
 
-      // Padrão 1: @username
+      // Padrão ÚNICO aceito: @username explícito no alt text
       const atMatch = alt.match(/@([a-zA-Z0-9._]{3,30})/);
       if (atMatch && this.isValidUsername(atMatch[1])) {
         author = atMatch[1].toLowerCase();
-      } else {
-        // Padrão 2: "Reel de Fulana (@fulana)" ou "Foto de/por Fulana"
-        const byMatch = alt.match(/(?:foto\s+(?:de|por)|photo\s+(?:by|shared\s+by)|v[íi]deo\s+(?:de|por)|reel\s+(?:de|por))\s+([a-zA-Z0-9._]{3,30})/i);
-        if (byMatch && this.isValidUsername(byMatch[1])) {
-          author = byMatch[1].toLowerCase();
-        }
       }
 
       if (author && !visitedSet.has(author)) {
@@ -609,7 +603,7 @@ window.InnfluCrawler = {
       }
     }
 
-    console.log(`[Innflu] Grade visível → ${discovered.length} criadoras novas descobertas:`, discovered);
+    console.log(`[Innflu] Grade visível → ${discovered.length} criadoras novas descobertas com @:`, discovered);
     return { creators: discovered, postHrefs: discoveredPosts };
   },
 
@@ -634,31 +628,32 @@ window.InnfluCrawler = {
 
   /**
    * Extrai o autor do post/reel atual (no modal ou na página direta /p/ ou /reel/)
+   * 100% Canônico e Exato — busca exclusivamente DENTRO do container da publicação
    * @returns {string | null}
    */
   extractPostAuthor() {
-    // 1. PRIORIDADE ABSOLUTA: Link do autor no cabeçalho do post/modal (100% canônico e exato)
-    const dialog = document.querySelector('div[role="dialog"]') || document.querySelector('article') || document.querySelector('main');
-    
-    // Seletores específicos do cabeçalho da publicação
+    const isDirectPost = window.location.pathname.startsWith('/p/') || window.location.pathname.startsWith('/reel/');
+    const postContainer = document.querySelector('div[role="dialog"]') || document.querySelector('article') || (isDirectPost ? document.querySelector('main') : null);
+    if (!postContainer) return null;
+
+    // 1. Link canônico do autor no cabeçalho do post/modal
     const headerSelectors = [
-      'div[role="dialog"] header a[href^="/"]',
-      'div[role="dialog"] a[role="link"][href^="/"]',
-      'article header a[href^="/"]',
-      'article a[role="link"][href^="/"]',
       'header a[href^="/"]',
-      'h2 a[href^="/"]'
+      'a[role="link"][href^="/"]',
+      'h2 a[href^="/"]',
+      'span > a[href^="/"]'
     ];
 
     for (const sel of headerSelectors) {
-      const links = document.querySelectorAll(sel);
+      const links = postContainer.querySelectorAll(sel);
       for (const a of links) {
+        // Ignora links para tags, áudio, locais ou outros posts
         const hrefAttr = a.getAttribute('href') || '';
-        const parts = hrefAttr.split('/').filter(Boolean);
+        const parts = hrefAttr.split('?')[0].split('#')[0].split('/').filter(Boolean);
         if (parts.length === 1) {
           const u = parts[0].toLowerCase();
           if (this.isValidUsername(u)) {
-            console.log(`[Innflu] Autor exato encontrado via link do cabeçalho: @${u}`);
+            console.log(`[Innflu] Autor exato encontrado via link do post: @${u}`);
             return u;
           }
         }
@@ -666,10 +661,9 @@ window.InnfluCrawler = {
     }
 
     // 2. Imagem de avatar com alt text específico de perfil ("foto do perfil de...")
-    const avatarImgs = document.querySelectorAll('div[role="dialog"] header img[alt], article header img[alt], main header img[alt]');
+    const avatarImgs = postContainer.querySelectorAll('header img[alt], img[alt*="perfil" i], img[alt*="profile" i]');
     for (const img of avatarImgs) {
       const alt = (img.getAttribute('alt') || '').toLowerCase();
-      // Formatos: "foto do perfil de usuario", "profile picture of user", "user's profile picture"
       const match = alt.match(/(?:foto do perfil de|profile picture of)\s+([a-z0-9._]+)/i) ||
                     alt.match(/^([a-z0-9._]+)'s profile picture/i);
       if (match && match[1] && this.isValidUsername(match[1])) {
@@ -679,19 +673,17 @@ window.InnfluCrawler = {
       }
     }
 
-    // 3. Procura link cujo texto visível ou aria-label coincida com o href
-    if (dialog) {
-      const allLinks = dialog.querySelectorAll('a[href^="/"]');
-      for (const a of allLinks) {
-        const hrefAttr = a.getAttribute('href') || '';
-        const parts = hrefAttr.split('/').filter(Boolean);
-        if (parts.length === 1) {
-          const u = parts[0].toLowerCase();
-          const txt = (a.innerText || a.getAttribute('aria-label') || '').trim().toLowerCase().replace('@', '');
-          if (txt === u && this.isValidUsername(u)) {
-            console.log(`[Innflu] Autor exato encontrado via link/texto correspondente: @${u}`);
-            return u;
-          }
+    // 3. Procura link cujo texto visível ou aria-label coincida com o href dentro do post
+    const allLinks = postContainer.querySelectorAll('a[href^="/"]');
+    for (const a of allLinks) {
+      const hrefAttr = a.getAttribute('href') || '';
+      const parts = hrefAttr.split('?')[0].split('#')[0].split('/').filter(Boolean);
+      if (parts.length === 1) {
+        const u = parts[0].toLowerCase();
+        const txt = (a.innerText || a.getAttribute('aria-label') || '').trim().toLowerCase().replace('@', '');
+        if (txt === u && this.isValidUsername(u)) {
+          console.log(`[Innflu] Autor exato encontrado via link/texto correspondente: @${u}`);
+          return u;
         }
       }
     }
