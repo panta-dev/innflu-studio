@@ -2,56 +2,124 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Innflu | Configurações</title>
+  <title>Innflu Studio | Extensão</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="popup-container">
+    <!-- Header Global -->
     <div class="popup-header">
       <div class="logo">
         <span class="logo-badge">I</span>
-        <span class="logo-title">Innflu</span>
+        <div class="logo-info">
+          <span class="logo-title">Innflu</span>
+          <span class="logo-sub">Studio Prospector</span>
+        </div>
       </div>
-      <span class="version">v1.0.0</span>
+      <span class="version">v1.3.6</span>
     </div>
 
-    <!-- Status Hoje -->
-    <div class="stats-box">
-      <div class="stats-item">
-        <span class="stats-label">Enviadas Hoje</span>
-        <span class="stats-val" id="popDailyCount">0</span>
-      </div>
-      <div class="stats-item">
-        <span class="stats-label">Limite Seguro</span>
-        <span class="stats-val" id="popDailyLimit">40</span>
+    <!-- VIEW 1: NÃO LOGADO (LOGIN OBRIGATÓRIO) -->
+    <div id="viewLoggedOut" class="auth-view" style="display:none;">
+      <div class="auth-card">
+        <div class="auth-card-header">
+          <div class="lock-icon">🔒</div>
+          <h2 class="auth-title">Login Obrigatório</h2>
+          <p class="auth-desc">Entre com sua conta do Innflu Studio para sincronizar a mineração de influenciadoras e os disparos em tempo real com seu banco de dados.</p>
+        </div>
+
+        <form id="formLogin" class="auth-form" onsubmit="return false;">
+          <div class="form-group">
+            <label class="input-label" for="loginEmail">E-mail</label>
+            <input type="email" id="loginEmail" placeholder="seu@email.com" class="text-input" autocomplete="email" required>
+          </div>
+
+          <div class="form-group">
+            <label class="input-label" for="loginPassword">Senha</label>
+            <input type="password" id="loginPassword" placeholder="Sua senha secreta" class="text-input" autocomplete="current-password" required>
+          </div>
+
+          <div id="loginFeedback" class="feedback-msg" style="display:none;"></div>
+
+          <button type="submit" id="btnLoginSubmit" class="btn-primary">
+            <span id="btnLoginText">⚡ Entrar na Conta</span>
+          </button>
+        </form>
+
+        <div class="auth-footer-links">
+          <a href="https://innflu-studio.pages.dev/login.html" target="_blank" class="link-subtle">
+            Criar conta ou redefinir senha ↗
+          </a>
+        </div>
       </div>
     </div>
 
-    <!-- Formulário de Conexão Cloudflare -->
-    <div class="form-section">
-      <label class="input-label">URL da API Cloudflare</label>
-      <input type="text" id="apiBaseUrl" placeholder="http://127.0.0.1:8787" class="text-input">
-
-      <label class="input-label">API Token</label>
-      <input type="password" id="apiToken" placeholder="innflu_secret_token_12345" class="text-input">
-
-      <label class="input-label">Palavra-chave Ativa</label>
-      <input type="text" id="campaignKeyword" placeholder="ex: provador, moda, beleza" class="text-input">
-
-      <div class="range-group">
-        <label class="input-label">Delays Randômicos (Segurança)</label>
-        <div class="delay-tags">
-          <span>Mín: <b>60s</b></span>
-          <span>Máx: <b>180s</b></span>
+    <!-- VIEW 2: LOGADO (SINCRONIZADO COM CLOUDFLARE D1) -->
+    <div id="viewLoggedIn" class="auth-view" style="display:none;">
+      <!-- Card do Usuário Logado -->
+      <div class="user-card">
+        <div class="user-avatar" id="popUserAvatar">U</div>
+        <div class="user-details">
+          <div class="user-top-line">
+            <span class="user-name" id="popUserName">Carregando...</span>
+            <span class="plan-pill" id="popUserPlan">PRO</span>
+          </div>
+          <span class="user-email" id="popUserEmail">usuario@email.com</span>
+          <div class="sync-status">
+            <span class="sync-dot"></span>
+            <span class="sync-label">Sincronizado ao Painel Web</span>
+          </div>
         </div>
       </div>
 
-      <button id="btnSaveConfig" class="btn-primary">Salvar Configurações</button>
-      <div id="saveFeedback" class="feedback-msg"></div>
+      <!-- Métricas Rápidas Hoje -->
+      <div class="stats-box">
+        <div class="stats-item">
+          <span class="stats-label">DMs Hoje</span>
+          <div class="stats-val-row">
+            <span class="stats-val highlight" id="popDailyCount">0</span>
+            <span class="stats-limit">/ 40</span>
+          </div>
+        </div>
+        <div class="stats-divider"></div>
+        <div class="stats-item">
+          <span class="stats-label">CRM Nuvem</span>
+          <div class="stats-val-row">
+            <span class="stats-val" id="popTotalLeads">0</span>
+            <span class="stats-limit">leads</span>
+          </div>
+        </div>
+        <div class="stats-divider"></div>
+        <div class="stats-item">
+          <span class="stats-label">WhatsApp</span>
+          <div class="stats-val-row">
+            <span class="stats-val success" id="popWaCount">0</span>
+            <span class="stats-limit">diretos</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ações do Usuário -->
+      <div class="actions-section">
+        <button id="btnOpenDashboard" class="btn-primary btn-dashboard">
+          <span>📊 Abrir Painel Web</span>
+          <span class="btn-arrow">↗</span>
+        </button>
+
+        <button id="btnOpenInstagram" class="btn-secondary">
+          <span>📸 Ir para o Instagram</span>
+        </button>
+
+        <div class="footer-actions-row">
+          <span class="anti-ban-pill" title="Proteção de cadência ativa">🛡️ Anti-ban Ativo</span>
+          <button id="btnLogout" class="btn-logout">Sair da Conta</button>
+        </div>
+      </div>
     </div>
 
+    <!-- Rodapé -->
     <div class="popup-footer">
-      <span>Anti-ban ativo: 1 a 1 com atrasos humanos</span>
+      <span>Innflu Studio • Cloudflare Serverless D1</span>
     </div>
   </div>
 

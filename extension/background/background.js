@@ -80,6 +80,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function handleStartCycle(sendResponse) {
   const config = await chrome.storage.local.get(null);
 
+  // 0. Trava de autenticação obrigatória
+  if (!config.authToken && !config.apiToken) {
+    sendResponse({ error: 'Login obrigatório. Faça login com sua conta do Innflu Studio para iniciar o robô.' });
+    return;
+  }
+
   // 1. Reseta contagem se mudou o dia
   const today = new Date().toISOString().split('T')[0];
   if (config.lastResetDate !== today) {
@@ -209,10 +215,12 @@ async function executeSendingStep() {
  */
 async function syncSentWithCloudflare(baseUrl, apiToken, username, messageText) {
   try {
+    const stored = await chrome.storage.local.get(['authToken', 'apiToken']);
+    const effectiveToken = stored.authToken || stored.apiToken || apiToken;
     const headers = { 'Content-Type': 'application/json' };
-    if (apiToken) {
-      headers['Authorization'] = `Bearer ${apiToken}`;
-      headers['X-API-Key'] = apiToken;
+    if (effectiveToken) {
+      headers['Authorization'] = `Bearer ${effectiveToken}`;
+      headers['X-API-Key'] = effectiveToken;
     }
 
     await fetch(`${baseUrl}/api/log-sent`, {

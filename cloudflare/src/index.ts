@@ -548,11 +548,11 @@ app.get('/api/health', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.3.1',
+    version: '1.3.6',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.3.1: Envio prioritário via resposta de Story ativo com mensagem de captação e layout expandido 100% visível da mensagem.',
+    releaseNotes: 'v1.3.6: Login obrigatório integrado, sincronização multi-tenant direta com Cloudflare D1 e novo popup com visão de conta.',
     downloadUrl: '/innflu-extensao.zip',
-    publishedAt: '2026-11-17T17:00:00Z',
+    publishedAt: '2026-11-18T10:00:00Z',
     dynamicRules: {
       selectors: {
         messageButtons: ['enviar mensagem', 'mensagem', 'message', 'send message'],

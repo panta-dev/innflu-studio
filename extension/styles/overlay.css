@@ -1204,3 +1204,178 @@
   background: #2ea043;
 }
 
+/* ==========================================================
+   TELA DE LOGIN OBRIGATÓRIO NA EXTENSÃO (HUD OVERLAY)
+   ========================================================== */
+.innflu-login-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(9, 13, 22, 0.97);
+  backdrop-filter: blur(8px);
+  z-index: 999998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 12px;
+  animation: innfluSlideDown 0.2s ease-out;
+}
+
+.innflu-login-card {
+  width: 100%;
+  max-width: 290px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.innflu-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.innflu-login-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.innflu-login-badge-sub {
+  font-size: 9.5px;
+  color: #f85149;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.innflu-login-desc {
+  font-size: 10px;
+  color: #8b949e;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.innflu-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.innflu-login-feedback {
+  font-size: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.innflu-login-feedback.error {
+  background: #370c0c;
+  color: #ffa198;
+  border: 1px solid #cf222e;
+}
+
+.innflu-login-feedback.success {
+  background: #0e2a18;
+  color: #7ee787;
+  border: 1px solid #238636;
+}
+
+.innflu-login-footer {
+  text-align: center;
+  margin-top: 4px;
+}
+
+.innflu-login-link {
+  font-size: 10px;
+  color: #58a6ff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.innflu-login-link:hover {
+  text-decoration: underline;
+}
+
+/* Faixa de Usuário Logado (Abaixo do Header) */
+.innflu-auth-strip {
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.innflu-auth-user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #c9d1d9;
+  min-width: 0;
+}
+
+.innflu-auth-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 8.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.innflu-auth-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+  color: #f0f6fc;
+}
+
+.innflu-plan-badge {
+  font-size: 8px;
+  font-weight: 800;
+  color: #ffffff;
+  background: #2563eb;
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.innflu-sync-dot {
+  font-size: 8px;
+  cursor: help;
+}
+
+.innflu-btn-logout {
+  background: transparent;
+  border: none;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #f85149;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.innflu-btn-logout:hover {
+  background: rgba(248, 81, 73, 0.15);
+}
+
+

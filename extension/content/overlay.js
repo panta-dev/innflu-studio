@@ -38,6 +38,58 @@
         </div>
       </div>
 
+      <!-- Faixa de Usuário Conectado -->
+      <div class="innflu-auth-strip" id="hudAuthStrip" style="display:none;">
+        <div class="innflu-auth-user-info">
+          <span class="innflu-auth-avatar" id="hudAuthAvatar">U</span>
+          <span class="innflu-auth-name" id="hudAuthEmail">Carregando...</span>
+          <span class="innflu-plan-badge" id="hudAuthPlan">PRO</span>
+          <span class="innflu-sync-dot" title="Sincronizado com Nuvem Cloudflare D1">🟢</span>
+        </div>
+        <button class="innflu-btn-logout" id="btnHudLogout" title="Sair da Conta">Sair</button>
+      </div>
+
+      <!-- Modal de Login Obrigatório na Extensão (Trava o robô até o usuário autenticar) -->
+      <div class="innflu-login-overlay" id="hudLoginOverlay" style="display:none;">
+        <div class="innflu-login-card">
+          <div class="innflu-login-brand">
+            <div class="innflu-logo-badge" style="width:30px;height:30px;font-size:15px;">I</div>
+            <div class="innflu-login-title-group">
+              <span class="innflu-brand-text" style="font-size:14px;">Innflu Studio</span>
+              <span class="innflu-login-badge-sub">Login Obrigatório</span>
+            </div>
+          </div>
+          
+          <p class="innflu-login-desc">
+            Entre com sua conta do Innflu Studio para sincronizar influenciadoras, disparos e automações diretamente com seu Painel Web.
+          </p>
+
+          <form id="hudLoginForm" class="innflu-login-form" onsubmit="return false;">
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">E-mail:</label>
+              <input type="email" class="innflu-input" id="inputHudLoginEmail" placeholder="seu@email.com" autocomplete="email" style="font-size:11px;padding:6px 8px;" required />
+            </div>
+
+            <div class="innflu-form-group" style="margin-bottom:0;">
+              <label class="innflu-form-label">Senha:</label>
+              <input type="password" class="innflu-input" id="inputHudLoginPassword" placeholder="Sua senha secreta" autocomplete="current-password" style="font-size:11px;padding:6px 8px;" required />
+            </div>
+
+            <div id="hudLoginFeedback" class="innflu-login-feedback" style="display:none;"></div>
+
+            <button type="submit" class="innflu-cta-btn start" id="btnHudLoginSubmit" style="margin-top:4px;padding:7px 10px;font-size:11.5px;width:100%;">
+              <span id="btnHudLoginLabel">⚡ Entrar na Conta</span>
+            </button>
+          </form>
+
+          <div class="innflu-login-footer">
+            <a href="https://innflu-studio.pages.dev/login.html" target="_blank" class="innflu-login-link">
+              Criar conta ou redefinir senha ↗
+            </a>
+          </div>
+        </div>
+      </div>
+
       <!-- Modal de Diagnóstico & Logs em Tempo Real (Bug Report 🐛) -->
       <div class="innflu-diag-overlay" id="hudDiagnosticsModal" style="display:none;">
         <div class="innflu-diag-header">
@@ -48,7 +100,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.3.5</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.3.6</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -456,7 +508,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.5 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.6 🔄</button>
       </div>
     </div>
   `;
@@ -467,6 +519,19 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
   // Referências aos elementos
   const hud = $('innfluHud');
+  const hudAuthStrip = $('hudAuthStrip');
+  const hudAuthAvatar = $('hudAuthAvatar');
+  const hudAuthEmail = $('hudAuthEmail');
+  const hudAuthPlan = $('hudAuthPlan');
+  const btnHudLogout = $('btnHudLogout');
+
+  const hudLoginOverlay = $('hudLoginOverlay');
+  const hudLoginForm = $('hudLoginForm');
+  const inputHudLoginEmail = $('inputHudLoginEmail');
+  const inputHudLoginPassword = $('inputHudLoginPassword');
+  const btnHudLoginSubmit = $('btnHudLoginSubmit');
+  const btnHudLoginLabel = $('btnHudLoginLabel');
+  const hudLoginFeedback = $('hudLoginFeedback');
   const hudHeader = $('innfluHudHeader');
   const hudToastContainer = $('hudToastContainer');
   const hudStatusBadgeText = $('hudStatusBadgeText');
@@ -680,7 +745,10 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
           nextActionAt: 0,
           activityFeed: []
         },
-        apiBaseUrl: 'http://127.0.0.1:8787',
+        apiBaseUrl: 'https://innflu-studio.pages.dev',
+        authToken: null,
+        authUser: null,
+        apiToken: null,
         activeTemplate: hudTemplateContent ? hudTemplateContent.value : '',
         savedLeads: []
       };
@@ -692,7 +760,11 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       }
 
       try {
-        chrome.storage.local.get(['innfluBot', 'apiBaseUrl', 'activeTemplate', 'savedLeadsCache', 'dynamicRules', 'remoteUpdateAvailable', 'remoteVersion', 'releaseNotes', 'downloadUrl'], res => {
+        chrome.storage.local.get([
+          'innfluBot', 'apiBaseUrl', 'authToken', 'authUser', 'apiToken',
+          'activeTemplate', 'savedLeadsCache', 'dynamicRules',
+          'remoteUpdateAvailable', 'remoteVersion', 'releaseNotes', 'downloadUrl'
+        ], res => {
           if (chrome.runtime.lastError) {
             localBotCache = fallback.bot;
             resolve(fallback);
@@ -716,9 +788,17 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
           localBotCache = { ...bot };
 
+          let effectiveUrl = res?.apiBaseUrl || fallback.apiBaseUrl;
+          if (effectiveUrl.includes('127.0.0.1') || effectiveUrl.includes('localhost')) {
+            effectiveUrl = fallback.apiBaseUrl;
+          }
+
           resolve({
             bot,
-            apiBaseUrl: res?.apiBaseUrl || fallback.apiBaseUrl,
+            apiBaseUrl: effectiveUrl,
+            authToken: res?.authToken || null,
+            authUser: res?.authUser || null,
+            apiToken: res?.apiToken || null,
             activeTemplate: res?.activeTemplate || fallback.activeTemplate,
             savedLeads: res?.savedLeadsCache || []
           });
@@ -728,6 +808,137 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         resolve(fallback);
       }
     });
+  }
+
+  // ==========================================
+  // CLIENTE DE API AUTENTICADO CENTRALIZADO (CLOUDFLARE D1)
+  // ==========================================
+  async function innfluApiFetch(endpoint, options = {}) {
+    const { apiBaseUrl, authToken, apiToken } = await getState();
+    const baseUrl = apiBaseUrl || 'https://innflu-studio.pages.dev';
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${baseUrl}${cleanEndpoint}`;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    };
+
+    const token = authToken || apiToken;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      headers['X-API-Key'] = token;
+    }
+
+    try {
+      const res = await fetch(url, {
+        ...options,
+        headers
+      });
+
+      if (res.status === 401) {
+        logDiagnostics('warn', `API 401 Não Autorizado em ${cleanEndpoint}. Sessão expirada ou não autenticado.`);
+        await chrome.storage.local.set({ authToken: null, authUser: null });
+        showLoginGate(true, 'Sessão expirada. Faça login novamente.');
+        throw new Error('Sessão expirada ou não autenticado.');
+      }
+
+      return res;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  // ==========================================
+  // CONTROLE DO LOGIN GATE & SESSÃO SAAS
+  // ==========================================
+  function showLoginFeedback(text, type = 'error') {
+    if (!hudLoginFeedback) return;
+    if (!text) {
+      hudLoginFeedback.style.display = 'none';
+      hudLoginFeedback.innerText = '';
+      return;
+    }
+    hudLoginFeedback.className = `innflu-login-feedback ${type}`;
+    hudLoginFeedback.innerText = text;
+    hudLoginFeedback.style.display = 'block';
+  }
+
+  function showLoginGate(show, errorMsg = '') {
+    if (hudLoginOverlay) {
+      hudLoginOverlay.style.display = show ? 'flex' : 'none';
+      if (show && errorMsg) {
+        showLoginFeedback(errorMsg, 'error');
+      } else if (show) {
+        showLoginFeedback('');
+      }
+    }
+    if (hudAuthStrip) {
+      hudAuthStrip.style.display = show ? 'none' : 'flex';
+    }
+    if (show) {
+      if (localBotCache && localBotCache.isRunning) {
+        saveBot({ isRunning: false, activeMode: null, isPaused: false });
+        syncUI({ ...localBotCache, isRunning: false, activeMode: null, isPaused: false });
+      }
+      logDiagnostics('warn', 'Acesso bloqueado pelo Login Gate Obrigatório.');
+    }
+  }
+
+  function updateUserUI(user) {
+    if (!user) return;
+    if (hudAuthEmail) {
+      hudAuthEmail.innerText = user.full_name || user.email;
+      hudAuthEmail.title = user.email;
+    }
+    if (hudAuthPlan) {
+      hudAuthPlan.innerText = (user.plan || 'PRO').toUpperCase();
+    }
+    if (hudAuthAvatar) {
+      const initial = (user.full_name ? user.full_name.charAt(0) : user.email.charAt(0)).toUpperCase();
+      hudAuthAvatar.innerText = initial;
+    }
+  }
+
+  async function checkAndApplyAuth() {
+    const { authToken, authUser, apiBaseUrl } = await getState();
+    const baseUrl = apiBaseUrl || 'https://innflu-studio.pages.dev';
+
+    if (!authToken) {
+      showLoginGate(true);
+      return false;
+    }
+
+    try {
+      const res = await fetch(`${baseUrl}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'X-API-Key': authToken
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+          await chrome.storage.local.set({ authUser: data.user });
+          showLoginGate(false);
+          updateUserUI(data.user);
+          flushPendingLeadsBuffer();
+          syncKnownCRMUsers();
+          return true;
+        }
+      }
+    } catch (e) {
+      if (authUser) {
+        showLoginGate(false);
+        updateUserUI(authUser);
+        return true;
+      }
+    }
+
+    await chrome.storage.local.set({ authToken: null, authUser: null });
+    showLoginGate(true, 'Sessão expirada. Faça login para continuar.');
+    return false;
   }
 
   async function saveBot(partial) {
@@ -1057,6 +1268,95 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   }
 
   // ==========================================
+  // EVENTOS DO LOGIN OBRIGATÓRIO (HUD OVERLAY)
+  // ==========================================
+  if (hudLoginForm) {
+    hudLoginForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = (inputHudLoginEmail ? inputHudLoginEmail.value : '').trim().toLowerCase();
+      const password = inputHudLoginPassword ? inputHudLoginPassword.value : '';
+
+      if (!email || !password) {
+        showLoginFeedback('Preencha seu e-mail e senha.');
+        return;
+      }
+
+      if (btnHudLoginSubmit) btnHudLoginSubmit.disabled = true;
+      if (btnHudLoginLabel) btnHudLoginLabel.innerText = 'Autenticando...';
+      showLoginFeedback('');
+
+      try {
+        const { apiBaseUrl } = await getState();
+        const baseUrl = apiBaseUrl || 'https://innflu-studio.pages.dev';
+        const res = await fetch(`${baseUrl}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showLoginFeedback(data.error || 'Credenciais inválidas. Verifique seu e-mail e senha.');
+          if (btnHudLoginSubmit) btnHudLoginSubmit.disabled = false;
+          if (btnHudLoginLabel) btnHudLoginLabel.innerText = '⚡ Entrar na Conta';
+          return;
+        }
+
+        await chrome.storage.local.set({
+          authToken: data.token,
+          authUser: data.user,
+          apiToken: data.user.api_token || data.token,
+          apiBaseUrl: baseUrl
+        });
+
+        showLoginFeedback('Login realizado com sucesso!', 'success');
+        updateUserUI(data.user);
+
+        setTimeout(() => {
+          showLoginGate(false);
+          if (btnHudLoginSubmit) btnHudLoginSubmit.disabled = false;
+          if (btnHudLoginLabel) btnHudLoginLabel.innerText = '⚡ Entrar na Conta';
+          if (inputHudLoginPassword) inputHudLoginPassword.value = '';
+          showToast({ type: 'success', title: 'Conectado!', message: `Bem-vindo(a), ${data.user.full_name || data.user.email}!` });
+          flushPendingLeadsBuffer();
+          syncKnownCRMUsers();
+          loadSavedLeads();
+        }, 400);
+
+      } catch (err) {
+        showLoginFeedback('Erro de conexão ao servidor Innflu Studio.');
+        if (btnHudLoginSubmit) btnHudLoginSubmit.disabled = false;
+        if (btnHudLoginLabel) btnHudLoginLabel.innerText = '⚡ Entrar na Conta';
+      }
+    };
+  }
+
+  if (btnHudLogout) {
+    btnHudLogout.onclick = async () => {
+      const { authToken, apiBaseUrl } = await getState();
+      const baseUrl = apiBaseUrl || 'https://innflu-studio.pages.dev';
+      if (authToken) {
+        fetch(`${baseUrl}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        }).catch(() => {});
+      }
+      await chrome.storage.local.set({ authToken: null, authUser: null, apiToken: null });
+      showLoginGate(true, 'Você saiu da conta.');
+      showToast({ type: 'info', title: 'Sessão Encerrada', message: 'Você foi desconectado com sucesso.' });
+    };
+  }
+
+  // Ouvinte reativo para login/logout em outras abas (popup ou dashboard web)
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && (changes.authToken || changes.authUser)) {
+        checkAndApplyAuth();
+      }
+    });
+  }
+
+  // ==========================================
   // NAVEGAÇÃO ENTRE ABAS (3 ABAS: AUTOMAÇÃO, MINERAÇÃO E CAPTAÇÃO)
   // ==========================================
   const tabs = {
@@ -1126,11 +1426,9 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
   $('btnSaveTemplate').onclick = async () => {
     await chrome.storage.local.set({ activeTemplate: hudTemplateContent.value });
-    const { apiBaseUrl } = await getState();
     try {
-      await fetch(`${apiBaseUrl}/api/templates`, {
+      await innfluApiFetch('/api/templates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'Template Ativo', content: hudTemplateContent.value })
       });
     } catch (e) {}
@@ -1150,11 +1448,9 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       const tpl = (hudAutoTemplateContent ? hudAutoTemplateContent.value : '').trim();
       await chrome.storage.local.set({ activeTemplate: tpl });
       if (hudTemplateContent) hudTemplateContent.value = tpl;
-      const { apiBaseUrl } = await getState();
       try {
-        await fetch(`${apiBaseUrl}/api/templates`, {
+        await innfluApiFetch('/api/templates', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: 'Template Automação', content: tpl })
         });
       } catch (e) {}
@@ -1484,7 +1780,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     // 3. Busca lista remota do Cloudflare D1 (/api/leads)
     try {
-      const res = await fetch(`${apiBaseUrl}/api/leads`);
+      const res = await innfluApiFetch('/api/leads');
       if (res.ok) {
         const data = await res.json();
         if (data.leads && Array.isArray(data.leads)) {
@@ -1511,6 +1807,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // BOTÕES PRINCIPAIS DE EXECUÇÃO
   // ==========================================
   btnToggleMining.onclick = async () => {
+    const isAuth = await checkAndApplyAuth();
+    if (!isAuth) {
+      showLoginGate(true, 'Faça login na sua conta para iniciar a mineração.');
+      return;
+    }
+
     const { bot, apiBaseUrl } = await getState();
     if (bot.isRunning && bot.activeMode === 'miner') {
       await saveBot({ isRunning: false, activeMode: null, nextActionAt: 0 });
@@ -1567,6 +1869,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   };
 
   btnToggleAuto.onclick = async () => {
+    const isAuth = await checkAndApplyAuth();
+    if (!isAuth) {
+      showLoginGate(true, 'Faça login na sua conta para iniciar a automação.');
+      return;
+    }
+
     const { bot, apiBaseUrl } = await getState();
     if (bot.isRunning && bot.activeMode === 'auto') {
       await saveBot({ isRunning: false, isPaused: false, activeMode: null, nextActionAt: 0 });
@@ -1646,6 +1954,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   };
 
   btnToggleSender.onclick = async () => {
+    const isAuth = await checkAndApplyAuth();
+    if (!isAuth) {
+      showLoginGate(true, 'Faça login na sua conta para iniciar o disparo.');
+      return;
+    }
+
     const { bot, savedLeads } = await getState();
     if (bot.isRunning && bot.activeMode === 'sender') {
       await saveBot({ isRunning: false, isPaused: false, activeMode: null, nextActionAt: 0 });
@@ -1912,9 +2226,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
       // Registra no Cloudflare D1
       try {
-        await fetch(`${apiBaseUrl}/api/log-sent`, {
+        await innfluApiFetch('/api/log-sent', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
         });
       } catch (e) {}
@@ -2460,7 +2773,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     // 1. Tenta buscar da API remota Cloudflare D1
     try {
-      const res = await fetch(`${apiBaseUrl}/api/leads?status=minerada`);
+      const res = await innfluApiFetch('/api/leads?status=minerada');
       if (res.ok) {
         const data = await res.json();
         if (data.leads && Array.isArray(data.leads)) {
@@ -2507,9 +2820,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       hudCurrentAction.innerText = `@${target.username} contatada recentemente. Pulando...`;
       await logActivity({ username: target.username, status: 'Pulada (7d)' });
       try {
-        await fetch(`${apiBaseUrl}/api/leads`, {
+        await innfluApiFetch('/api/leads', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: target.username, status: 'skipped' })
         });
       } catch (e) {}
@@ -2532,9 +2844,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       window.InnfluIsSendingDM = true;
       let chosenTemplate = template;
       try {
-        const { apiKey } = await getState();
-        const headers = apiKey ? { 'X-API-Key': apiKey } : {};
-        const tmplRes = await fetch(`${apiBaseUrl}/api/templates`, { headers });
+        const tmplRes = await innfluApiFetch('/api/templates');
         if (tmplRes.ok) {
           const tmplData = await tmplRes.json();
           if (tmplData.templates && tmplData.templates.length > 0) {
@@ -2579,14 +2889,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: sendRes && sendRes.viaStory ? 'Story respondido com sucesso.' : 'Digitação humana concluída.' });
 
       try {
-        await fetch(`${apiBaseUrl}/api/leads`, {
+        await innfluApiFetch('/api/leads', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: cleanUser, status: 'contatada' })
         });
-        await fetch(`${apiBaseUrl}/api/log-sent`, {
+        await innfluApiFetch('/api/log-sent', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
         });
       } catch (e) {}
@@ -2680,7 +2988,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       let leads = savedLeads || [];
 
       try {
-        const res = await fetch(`${apiBaseUrl}/api/leads`);
+        const res = await innfluApiFetch('/api/leads');
         const data = await res.json();
         if (data.leads && Array.isArray(data.leads)) {
           leads = data.leads;
@@ -2986,10 +3294,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
         showToast({ type: 'info', title: 'Importando...', message: `Enviando ${leads.length} influenciadoras para o CRM...` });
 
-        const { apiBaseUrl } = await getState();
-        const res = await fetch(`${apiBaseUrl}/api/leads/import`, {
+        const res = await innfluApiFetch('/api/leads/import', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ leads })
         });
 
@@ -3062,35 +3368,33 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   }
 
   // ==========================================
-  // HELPERS DE REDE & API
+  // HELPERS DE REDE & API (SINCRONIZAÇÃO CLOUDFLARE D1)
   // ==========================================
-  async function check7DayRule(apiBaseUrl, username) {
+  async function check7DayRule(arg1, arg2) {
+    const username = (typeof arg2 === 'string' ? arg2 : arg1 || '').replace('@', '').trim().toLowerCase();
+    if (!username) return { eligible: true };
     try {
-      const res = await fetch(`${apiBaseUrl}/api/check-lead`, {
+      const res = await innfluApiFetch('/api/check-lead', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username })
       });
       return await res.json();
     } catch (e) { return { eligible: true }; }
   }
 
-  async function saveLead(apiBaseUrl, profile, status, niche) {
-    try {
-      const { bot } = await getState();
-      const headers = { 'Content-Type': 'application/json' };
-      const token = (bot && bot.apiToken) || (await chrome.storage.local.get('apiToken'))?.apiToken;
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-        headers['X-API-Key'] = token;
-      }
+  async function saveLead(arg1, arg2, arg3, arg4) {
+    const profile = (typeof arg1 === 'object' && arg1 !== null) ? arg1 : arg2;
+    const status = (typeof arg1 === 'object' && arg1 !== null) ? arg2 : arg3;
+    const niche = (typeof arg1 === 'object' && arg1 !== null) ? arg3 : arg4;
+    if (!profile || !profile.username) return;
 
+    try {
       const leadPayload = {
-        username: profile.username,
-        full_name: profile.fullName || '',
-        followers_count: profile.followersCount || 0,
-        has_active_stories: profile.hasActiveStories ? 1 : 0,
-        detected_gender: profile.isFemale ? 'female' : 'other',
+        username: profile.username.replace('@', '').trim().toLowerCase(),
+        full_name: profile.fullName || profile.full_name || '',
+        followers_count: profile.followersCount || profile.followers_count || 0,
+        has_active_stories: (profile.hasActiveStories || profile.has_active_stories) ? 1 : 0,
+        detected_gender: profile.isFemale ? 'female' : (profile.detected_gender || 'unknown'),
         whatsapp: profile.whatsapp || null,
         email: profile.email || null,
         bio: profile.bio || '',
@@ -3098,17 +3402,17 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         status: status || 'minerada'
       };
 
-      const res = await fetch(`${apiBaseUrl}/api/leads`, {
+      const res = await innfluApiFetch('/api/leads', {
         method: 'POST',
-        headers,
         body: JSON.stringify(leadPayload)
       });
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
+      logDiagnostics('info', `Lead @${profile.username} salvo no Cloudflare D1.`);
     } catch (e) {
-      // Guarda no buffer offline para sincronizar quando a conexão com o D1 estiver ativa
+      logDiagnostics('warn', `Buffer offline para @${profile.username}: ${e.message}`);
       try {
         const stored = await chrome.storage.local.get('pendingLeadsBuffer');
         const buf = stored.pendingLeadsBuffer || [];
@@ -3131,27 +3435,20 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   /**
    * Descarrega o buffer de leads pendentes no Cloudflare D1 em lote
    */
-  async function flushPendingLeadsBuffer(apiBaseUrl) {
+  async function flushPendingLeadsBuffer() {
     try {
-      const stored = await chrome.storage.local.get(['pendingLeadsBuffer', 'apiToken']);
+      const stored = await chrome.storage.local.get('pendingLeadsBuffer');
       const buf = stored.pendingLeadsBuffer || [];
       if (buf.length === 0) return;
 
-      const headers = { 'Content-Type': 'application/json' };
-      if (stored.apiToken) {
-        headers['Authorization'] = `Bearer ${stored.apiToken}`;
-        headers['X-API-Key'] = stored.apiToken;
-      }
-
-      const res = await fetch(`${apiBaseUrl}/api/leads/import`, {
+      const res = await innfluApiFetch('/api/leads/import', {
         method: 'POST',
-        headers,
         body: JSON.stringify({ leads: buf })
       });
 
       if (res.ok) {
         await chrome.storage.local.set({ pendingLeadsBuffer: [] });
-        console.log(`[Innflu] Sincronizados ${buf.length} leads pendentes no Cloudflare D1.`);
+        logDiagnostics('info', `Sincronizados ${buf.length} leads pendentes no Cloudflare D1.`);
       }
     } catch (err) {}
   }
@@ -3247,7 +3544,10 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // ==========================================
   // INICIALIZAÇÃO
   // ==========================================
-  getState().then(({ bot, apiBaseUrl, activeTemplate, savedLeads }) => {
+  getState().then(async ({ bot, apiBaseUrl, activeTemplate, savedLeads }) => {
+    // 1. Checa e aplica autenticação obrigatória (bloqueia o robô até login ativo)
+    const isAuth = await checkAndApplyAuth();
+
     const DEFAULT_UNIVERSAL_TEMPLATE = 
       '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}\n\n' +
       '{Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!\n\n' +
@@ -3280,9 +3580,13 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       updateLeadsCountHeader(savedLeads);
     }
     syncUI(bot);
-    flushPendingLeadsBuffer(apiBaseUrl);
+    
+    if (isAuth) {
+      flushPendingLeadsBuffer();
+      syncKnownCRMUsers();
+    }
 
-    if (bot.isRunning) {
+    if (isAuth && bot.isRunning) {
       console.log('[Innflu] Retomando operação automática após recarregamento...');
       setTimeout(runLoop, 2500);
     }
