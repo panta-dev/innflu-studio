@@ -85,7 +85,7 @@
               <span class="innflu-source-name">Semelhantes</span>
             </button>
             <button class="innflu-source-btn" data-source="keyword" id="srcBtnAutoKeyword" title="Palavra-chave (Busca geral)">
-              <span class="innflu-source-name">Palavra-chave</span>
+              <span class="innflu-source-name">Palavra</span>
             </button>
             <button class="innflu-source-btn" data-source="hashtag" id="srcBtnAutoHashtag" title="Hashtag (#)">
               <span class="innflu-source-name">Hashtag</span>
@@ -95,65 +95,80 @@
             </button>
           </div>
 
-          <div class="innflu-form-group">
-            <label class="innflu-form-label" id="lblAutoTarget">Alvo ou Nicho:</label>
-            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: @perfil, moda, provador, beleza" value="" />
+          <div class="innflu-form-group" style="margin-bottom:4px;">
+            <label class="innflu-form-label" id="lblAutoTarget" style="margin-bottom:2px;">Alvo ou Nicho:</label>
+            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: @perfil, moda, provador, beleza" value="" style="padding:5px 8px;font-size:11px;" />
           </div>
 
-          <div class="innflu-section-title">2. Filtros de Qualificação</div>
-          <div class="innflu-filters-row">
-            <div class="innflu-form-group" style="margin-bottom:0;">
-              <label class="innflu-form-label">Mín. Seguidores:</label>
-              <select class="innflu-select" id="selAutoMinFollowers">
-                <option value="0">Qualquer tamanho</option>
-                <option value="1000">1.000+ seg.</option>
-                <option value="2000">2.000+ seg.</option>
-                <option value="3000">3.000+ seg.</option>
-                <option value="5000">5.000+ seg.</option>
-                <option value="10000" selected>10.000+ seg.</option>
-                <option value="20000">20.000+ seg.</option>
-                <option value="50000">50.000+ seg.</option>
-                <option value="100000">100.000+ seg.</option>
-              </select>
-            </div>
-            <div class="innflu-form-group" style="margin-bottom:0;">
-              <label class="innflu-form-label">Stories Ativos (24h):</label>
-              <select class="innflu-select" id="selAutoStories">
-                <option value="true" selected>Apenas com Stories</option>
-                <option value="false">Todos os perfis</option>
-              </select>
-            </div>
+          <!-- Filtros de Qualificação (Acordeão Compacto) -->
+          <div class="innflu-section-title" id="btnToggleAutoFilters" style="cursor:pointer;margin-top:2px;" title="Clique para abrir/fechar filtros">
+            <span>2. Filtros de Qualificação</span>
+            <span id="lblToggleAutoFilters" style="font-size:9.5px;color:#58a6ff;font-weight:600;">⚙️ Configurar ▾</span>
           </div>
-          <div class="innflu-filters-row" style="margin-top:4px;">
-            <div class="innflu-form-group" style="margin-bottom:0;">
-              <label class="innflu-form-label">Filtro de Contato:</label>
-              <select class="innflu-select" id="selAutoContact">
-                <option value="all" selected>Todos os contatos</option>
-                <option value="any_contact">WhatsApp ou E-mail</option>
-                <option value="wa_only">Apenas WhatsApp</option>
-                <option value="email_only">Apenas E-mail</option>
-              </select>
+
+          <div id="barAutoFiltersSummary" style="font-size:9.5px;color:#8b949e;cursor:pointer;margin-bottom:4px;background:#161b22;padding:4px 6px;border-radius:4px;border:1px solid #30363d;display:flex;justify-content:space-between;align-items:center;">
+            <span id="txtAutoFiltersSummary">10k+ seg • Apenas c/ Stories • Feminino</span>
+            <span style="color:#58a6ff;font-size:9px;">Editar</span>
+          </div>
+
+          <div id="boxAutoFilters" style="display:none;background:#161b22;padding:6px;border-radius:6px;border:1px solid #30363d;margin-bottom:6px;">
+            <div class="innflu-filters-row">
+              <div class="innflu-form-group" style="margin-bottom:0;">
+                <label class="innflu-form-label">Mín. Seguidores:</label>
+                <select class="innflu-select" id="selAutoMinFollowers">
+                  <option value="0">Qualquer tamanho</option>
+                  <option value="1000">1.000+ seg.</option>
+                  <option value="2000">2.000+ seg.</option>
+                  <option value="3000">3.000+ seg.</option>
+                  <option value="5000">5.000+ seg.</option>
+                  <option value="10000" selected>10.000+ seg.</option>
+                  <option value="20000">20.000+ seg.</option>
+                  <option value="50000">50.000+ seg.</option>
+                  <option value="100000">100.000+ seg.</option>
+                </select>
+              </div>
+              <div class="innflu-form-group" style="margin-bottom:0;">
+                <label class="innflu-form-label">Stories Ativos (24h):</label>
+                <select class="innflu-select" id="selAutoStories">
+                  <option value="true" selected>Apenas com Stories</option>
+                  <option value="false">Todos os perfis</option>
+                </select>
+              </div>
             </div>
-            <div class="innflu-form-group" style="margin-bottom:0;">
-              <label class="innflu-form-label">Gênero Alvo:</label>
-              <select class="innflu-select" id="selAutoGender">
-                <option value="female" selected>Apenas Feminino</option>
-                <option value="all">Todos os Gêneros</option>
-              </select>
+            <div class="innflu-filters-row" style="margin-top:4px;">
+              <div class="innflu-form-group" style="margin-bottom:0;">
+                <label class="innflu-form-label">Filtro de Contato:</label>
+                <select class="innflu-select" id="selAutoContact">
+                  <option value="all" selected>Todos os contatos</option>
+                  <option value="any_contact">WhatsApp ou E-mail</option>
+                  <option value="wa_only">Apenas WhatsApp</option>
+                  <option value="email_only">Apenas E-mail</option>
+                </select>
+              </div>
+              <div class="innflu-form-group" style="margin-bottom:0;">
+                <label class="innflu-form-label">Gênero Alvo:</label>
+                <select class="innflu-select" id="selAutoGender">
+                  <option value="female" selected>Apenas Feminino</option>
+                  <option value="all">Todos os Gêneros</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <!-- 3. MENSAGEM & INTERVALO -->
-          <div class="innflu-section-title" style="margin-top:6px;">3. Mensagem & Intervalo</div>
+          <div class="innflu-section-title" style="margin-top:2px;">
+            <span>3. Mensagem dos Stories</span>
+            <span id="btnToggleExpandMsg" style="font-size:9.5px;color:#58a6ff;cursor:pointer;font-weight:600;">⤢ Expandir</span>
+          </div>
           <div class="innflu-template-section">
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="10" style="min-height:185px !important;height:190px !important;line-height:1.5;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
-            <div class="innflu-delay-row">
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="3" style="min-height:65px;height:70px;max-height:160px;font-size:11px;line-height:1.4;padding:6px;transition:height 0.2s;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
+            <div class="innflu-delay-row" style="margin-top:3px;">
               <div class="innflu-delay-inputs">
                 <span class="innflu-form-label" style="margin:0;">Delay:</span>
-                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMinDelay" value="60" min="5" max="900" title="Mínimo em segundos" />
+                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMinDelay" value="60" min="5" max="900" title="Mínimo em segundos" style="width:34px;padding:2px 4px;font-size:10px;" />
                 <span>a</span>
-                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMaxDelay" value="120" min="10" max="1800" title="Máximo em segundos" />
-                <span>seg</span>
+                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMaxDelay" value="120" min="10" max="1800" title="Máximo em segundos" style="width:34px;padding:2px 4px;font-size:10px;" />
+                <span>s</span>
               </div>
               <div class="innflu-template-actions">
                 <button class="innflu-btn-sub" id="btnAutoTestSpintax" title="Testar variação">🎲 Testar</button>
@@ -162,10 +177,10 @@
             </div>
           </div>
 
-          <div style="margin-top:6px;">
+          <div style="margin-top:4px;">
             <div class="innflu-btn-group-actions">
-              <button class="innflu-cta-btn start" id="btnToggleAuto" style="flex:2;">
-                <span id="btnAutoLabel">Iniciar Automação Contínua</span>
+              <button class="innflu-cta-btn start" id="btnToggleAuto" style="flex:2;padding:8px 10px;font-size:12px;">
+                <span id="btnAutoLabel">⚡ Iniciar Automação</span>
               </button>
               <button class="innflu-btn-pause" id="btnPauseAuto" style="display:none;" title="Pausar ou retomar automação">
                 <span id="btnPauseAutoIcon">⏸️</span>
@@ -397,7 +412,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.1 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.2 🔄</button>
       </div>
     </div>
   `;
@@ -1103,16 +1118,61 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     };
   }
 
+  // Acordeão de Filtros de Qualificação Compactos
+  const btnToggleAutoFilters = $('btnToggleAutoFilters');
+  const boxAutoFilters = $('boxAutoFilters');
+  const barAutoFiltersSummary = $('barAutoFiltersSummary');
+  const lblToggleAutoFilters = $('lblToggleAutoFilters');
+  const txtAutoFiltersSummary = $('txtAutoFiltersSummary');
+
+  function updateAutoFiltersSummary() {
+    if (!txtAutoFiltersSummary) return;
+    const minF = $('selAutoMinFollowers')?.value || '10000';
+    const minStr = minF === '0' ? 'Sem mín.' : `${parseInt(minF, 10) >= 1000 ? parseInt(minF, 10) / 1000 + 'k+' : minF} seg`;
+    const stVal = $('selAutoStories')?.value === 'true' ? 'Apenas c/ Stories' : 'Todos perfis';
+    const genVal = $('selAutoGender')?.value === 'female' ? 'Feminino' : 'Geral';
+    txtAutoFiltersSummary.innerText = `${minStr} • ${stVal} • ${genVal}`;
+  }
+
+  if (btnToggleAutoFilters && boxAutoFilters) {
+    const toggleF = () => {
+      const isHidden = boxAutoFilters.style.display === 'none';
+      boxAutoFilters.style.display = isHidden ? 'block' : 'none';
+      if (barAutoFiltersSummary) barAutoFiltersSummary.style.display = isHidden ? 'none' : 'flex';
+      if (lblToggleAutoFilters) lblToggleAutoFilters.innerText = isHidden ? 'Fechar ▲' : '⚙️ Configurar ▾';
+      updateAutoFiltersSummary();
+    };
+    btnToggleAutoFilters.onclick = toggleF;
+    if (barAutoFiltersSummary) barAutoFiltersSummary.onclick = toggleF;
+    ['selAutoMinFollowers', 'selAutoStories', 'selAutoContact', 'selAutoGender'].forEach(id => {
+      const el = $(id);
+      if (el) el.addEventListener('change', updateAutoFiltersSummary);
+    });
+    updateAutoFiltersSummary();
+  }
+
+  // Toggle de Expandir / Recolher Texto da Mensagem
+  const btnToggleExpandMsg = $('btnToggleExpandMsg');
+  if (btnToggleExpandMsg && hudAutoTemplateContent) {
+    btnToggleExpandMsg.onclick = () => {
+      const isExpanded = hudAutoTemplateContent.style.height === '160px';
+      hudAutoTemplateContent.style.height = isExpanded ? '70px' : '160px';
+      hudAutoTemplateContent.style.maxHeight = isExpanded ? '160px' : '260px';
+      btnToggleExpandMsg.innerText = isExpanded ? '⤢ Expandir' : '⤡ Recolher';
+    };
+  }
+
   function autoExpandTextarea(ta) {
     if (!ta) return;
+    if (ta === hudAutoTemplateContent) {
+      // Mantém a altura compacta do painel de automação sem quebrar a tela
+      return;
+    }
     ta.style.height = 'auto';
-    const computedH = Math.max(185, ta.scrollHeight + 8);
+    const computedH = Math.min(160, Math.max(70, ta.scrollHeight + 4));
     ta.style.height = computedH + 'px';
   }
 
-  if (hudAutoTemplateContent) {
-    hudAutoTemplateContent.addEventListener('input', () => autoExpandTextarea(hudAutoTemplateContent));
-  }
   if (hudTemplateContent) {
     hudTemplateContent.addEventListener('input', () => autoExpandTextarea(hudTemplateContent));
   }

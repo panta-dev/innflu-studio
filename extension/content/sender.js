@@ -455,30 +455,120 @@ window.InnfluSender = {
   },
 
   /**
-   * Aguarda o campo de resposta de Story aparecer
+   * Abre o Story garantindo que o visualizador de Stories seja carregado
    */
-  async waitForStoryReplyInput(timeoutMs = 8000) {
+  async openStoryViewer(username) {
+    const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main');
+    const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
+
+    console.log(`[Innflu] Tentando abrir Stories de @${cleanUser}...`);
+
+    // 1. Procura link explícito para /stories/
+    const anchor = header ? header.querySelector(`a[href*="/stories/${cleanUser}"]`) || header.querySelector('a[href*="/stories/"]') : null;
+    if (anchor) {
+      try { anchor.click(); } catch (e) {}
+      this.simulateClick(anchor);
+      await this.sleep(1200);
+      if (window.location.pathname.toLowerCase().includes('/stories/')) return true;
+    }
+
+    // 2. Procura canvas do anel de stories e clica
+    const canvas = header ? header.querySelector('canvas') : null;
+    if (canvas) {
+      this.simulateClick(canvas);
+      if (canvas.parentElement) this.simulateClick(canvas.parentElement);
+      const btn = canvas.closest('[role="button"]') || canvas.closest('div[tabindex="0"]');
+      if (btn) this.simulateClick(btn);
+      await this.sleep(1200);
+      if (window.location.pathname.toLowerCase().includes('/stories/')) return true;
+    }
+
+    // 3. Procura imagem do avatar e clica
+    const img = header ? header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img') : null;
+    if (img) {
+      this.simulateClick(img);
+      const btn = img.closest('[role="button"]') || img.closest('a') || img.parentElement;
+      if (btn) this.simulateClick(btn);
+      await this.sleep(1200);
+      if (window.location.pathname.toLowerCase().includes('/stories/')) return true;
+    }
+
+    // 4. Procura div com role="button" no header
+    const avatarBtn = this.findStoryAvatar();
+    if (avatarBtn) {
+      this.simulateClick(avatarBtn);
+      await this.sleep(1200);
+      if (window.location.pathname.toLowerCase().includes('/stories/')) return true;
+    }
+
+    // 5. Garantia absoluta: navega diretamente para /stories/${cleanUser}/
+    if (cleanUser && !window.location.pathname.toLowerCase().includes('/stories/')) {
+      console.log(`[Innflu] Disparando rota direta de Stories: /stories/${cleanUser}/`);
+      const storyUrl = `/stories/${cleanUser}/`;
+      try {
+        const link = document.createElement('a');
+        link.href = storyUrl;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch (e) {}
+
+      await this.sleep(1800);
+      if (!window.location.pathname.toLowerCase().includes('/stories/')) {
+        window.location.assign(storyUrl);
+        await this.sleep(2500);
+      }
+    }
+
+    return window.location.pathname.toLowerCase().includes('/stories/');
+  },
+
+  /**
+   * Aguarda o campo de resposta de Story aparecer e o ativa
+   */
+  async waitForStoryReplyInput(timeoutMs = 9000) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
+      // 1. Clica em placeholders do tipo "Responder a..." para ativar o textarea
+      const clickables = Array.from(document.querySelectorAll([
+        'div[role="button"][aria-label*="Responder" i]',
+        'div[role="button"][aria-label*="Reply" i]',
+        'div[role="button"][aria-label*="Enviar mensagem" i]',
+        'div[role="button"][aria-label*="Send message" i]',
+        'span:has(textarea)',
+        'div[tabindex="0"]:has(textarea)'
+      ].join(',')));
+
+      for (const btn of clickables) {
+        if (btn.closest('#innflu-hud-root')) continue;
+        const rect = btn.getBoundingClientRect();
+        if (rect.width > 30 && rect.height > 15 && rect.bottom > window.innerHeight * 0.3) {
+          this.simulateClick(btn);
+          await this.sleep(250);
+        }
+      }
+
+      // 2. Procura textarea ou input ativo no Story
       const candidates = Array.from(document.querySelectorAll([
         'textarea[placeholder*="Responder" i]',
         'textarea[placeholder*="Reply" i]',
-        'textarea[placeholder*="Enviar mensagem" i]',
-        'textarea[placeholder*="Send message" i]',
-        'input[placeholder*="Responder" i]',
-        'input[placeholder*="Reply" i]',
+        'textarea[placeholder*="Enviar" i]',
+        'textarea[placeholder*="Send" i]',
         'textarea[aria-label*="Responder" i]',
         'textarea[aria-label*="Reply" i]',
+        'input[placeholder*="Responder" i]',
+        'input[placeholder*="Reply" i]',
         'div[contenteditable="true"][role="textbox"]',
         'div[contenteditable="true"]',
-        'textarea',
-        'section input[type="text"]'
+        'textarea'
       ].join(',')));
 
       for (const el of candidates) {
         if (el.closest('#innflu-hud-root')) continue;
         const rect = el.getBoundingClientRect();
-        if (rect.width > 40 && rect.height > 15) {
+        // O input do story fica na metade inferior da tela
+        if (rect.width > 40 && rect.height > 15 && rect.bottom > window.innerHeight * 0.3) {
           return el;
         }
       }
@@ -493,7 +583,7 @@ window.InnfluSender = {
    */
   async typeMessageIntoStoryInput(inputEl, text) {
     inputEl.focus();
-    await this.sleep(250);
+    await this.sleep(200);
 
     const isTextarea = inputEl.tagName === 'TEXTAREA';
     const isInput = inputEl.tagName === 'INPUT';
@@ -514,6 +604,15 @@ window.InnfluSender = {
         inputEl.select();
         document.execCommand('insertText', false, text);
       } catch (e) {}
+
+      try {
+        inputEl.dispatchEvent(new InputEvent('input', {
+          bubbles: true,
+          cancelable: true,
+          inputType: 'insertText',
+          data: text
+        }));
+      } catch (e) {}
     } else {
       await this.typeMessageIntoReact(inputEl, text);
     }
@@ -533,7 +632,7 @@ window.InnfluSender = {
       if (b.closest('#innflu-hud-root')) return false;
       const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
       const rect = b.getBoundingClientRect();
-      return (t === 'enviar' || t === 'send') && rect.width > 0 && rect.height > 0;
+      return (t === 'enviar' || t === 'send' || t.includes('enviar')) && rect.width > 0 && rect.height > 0 && rect.bottom > window.innerHeight * 0.3;
     });
 
     if (sendBtn) {
@@ -556,7 +655,7 @@ window.InnfluSender = {
     inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
     inputEl.dispatchEvent(new KeyboardEvent('keypress', enterProps));
     inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
-    await this.sleep(800);
+    await this.sleep(1200);
   },
 
   /**
@@ -594,33 +693,32 @@ window.InnfluSender = {
   /**
    * Abre o Story ativo da criadora e responde diretamente com a mensagem de captação
    */
-  async replyToActiveStory(messageText) {
-    const avatarBtn = this.findStoryAvatar();
-    if (!avatarBtn) {
-      throw new Error('Avatar de Stories não encontrado no perfil');
+  async replyToActiveStory(messageText, username) {
+    const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
+
+    console.log(`[Innflu] Abrindo Stories de @${cleanUser} para envio de mensagem...`);
+    const opened = await this.openStoryViewer(cleanUser);
+    if (!opened && !window.location.pathname.toLowerCase().includes('/stories/')) {
+      throw new Error(`Não foi possível abrir os Stories de @${cleanUser} (sem stories ativos ou não carregou)`);
     }
 
-    console.log('[Innflu] Clicando no anel de Stories da influenciadora...');
-    this.simulateClick(avatarBtn);
-
-    // Aguarda o visualizador de stories abrir (rota /stories/ ou modal)
-    await this.sleep(1500);
-
-    const inputEl = await this.waitForStoryReplyInput(7000);
-    if (!inputEl) {
-      throw new Error('Campo de resposta de Story não disponível (respostas desativadas ou indisponíveis neste slide)');
-    }
-
-    console.log('[Innflu] Digitando mensagem de captação na resposta do Story...');
-    await this.typeMessageIntoStoryInput(inputEl, messageText);
-
-    console.log('[Innflu] Enviando resposta do Story...');
-    await this.submitStoryReply(inputEl);
-
-    // Confirma se o texto foi enviado (campo esvaziado)
     await this.sleep(1200);
 
-    console.log('[Innflu] Resposta do Story despachada! Fechando visualizador de Stories...');
+    const inputEl = await this.waitForStoryReplyInput(8000);
+    if (!inputEl) {
+      throw new Error(`Campo de resposta de Story não disponível para @${cleanUser} (respostas desativadas neste story)`);
+    }
+
+    console.log(`[Innflu] Digitando mensagem de captação no Story de @${cleanUser}...`);
+    await this.typeMessageIntoStoryInput(inputEl, messageText);
+
+    console.log(`[Innflu] Enviando resposta do Story para @${cleanUser}...`);
+    await this.submitStoryReply(inputEl);
+
+    // Confirma envio
+    await this.sleep(1200);
+
+    console.log(`[Innflu] Resposta do Story enviada com sucesso! Fechando visualizador de Stories...`);
     this.closeStoryViewer();
     await this.sleep(1000);
 
@@ -636,20 +734,21 @@ window.InnfluSender = {
       throw new Error(`Instagram bloqueou a ação: ${preCheck.message}`);
     }
 
-    // PRIORIDADE MÁXIMA: Se a criadora possui Stories ativos, abre e responde o Story!
-    const hasStories = window.InnfluInspector ? window.InnfluInspector.hasActiveStories() : false;
-    if (hasStories) {
-      try {
-        console.log('[Innflu] Perfil possui Stories ativos! Disparando captação via resposta de Story...');
-        const ok = await this.replyToActiveStory(messageText);
-        if (ok) {
-          return { success: true, viaStory: true };
-        }
-      } catch (storyErr) {
-        console.warn('[Innflu] Não foi possível responder via Story (' + storyErr.message + '). Tentando Direct comum...');
-        this.closeStoryViewer();
-        await this.sleep(1200);
+    const curPath = window.location.pathname.toLowerCase();
+    const cleanUser = curPath.split('/').filter(Boolean)[0] || '';
+
+    // MANDATÓRIO: SEMPRE tentar abrir Stories e enviar mensagem pelo Story!
+    console.log(`[Innflu] OBRIGATÓRIO: Abrindo Stories de @${cleanUser} para envio...`);
+    try {
+      const ok = await this.replyToActiveStory(messageText, cleanUser);
+      if (ok) {
+        return { success: true, viaStory: true };
       }
+    } catch (storyErr) {
+      console.warn(`[Innflu] Falha ao enviar via Story: ${storyErr.message}`);
+      this.closeStoryViewer();
+      // Lança o erro com clareza para que o robô não tente Direct comum que é bloqueado pelo Instagram
+      throw new Error(`Envio via Stories não concluído: ${storyErr.message}`);
     }
 
     const curPath = window.location.pathname.toLowerCase();
