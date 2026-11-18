@@ -468,26 +468,11 @@ window.InnfluCrawler = {
         }
       }
       
-      // Padrão 2: "Foto de USERNAME" / "Photo by USERNAME" / "publicada por USERNAME"
-      const byPatterns = [
-        /(?:foto\s+(?:de|por)|photo\s+(?:by|shared\s+by))\s+([a-zA-Z0-9._]{3,30})/gi,
-        /(?:publicad[oa]\s+por|posted\s+by)\s+([a-zA-Z0-9._]{3,30})/gi,
-        /(?:v[íi]deo\s+(?:de|por))\s+([a-zA-Z0-9._]{3,30})/gi
-      ];
-      
-      for (const pattern of byPatterns) {
-        pattern.lastIndex = 0; // Reset regex state
-        let match;
-        while ((match = pattern.exec(alt)) !== null) {
-          const u = match[1].toLowerCase();
-          if (this.isValidUsername(u)) {
-            usernames.add(u);
-          }
-        }
-      }
+      // Apenas aceita menção explícita com @ no alt text para não pegar nomes próprios (ex: "Foto de Maria")
+      // Usernames reais no Instagram têm @ na frente ou são links diretos <a>
     }
     
-    console.log(`[Innflu] Alt-text → ${usernames.size} usernames:`, Array.from(usernames));
+    console.log(`[Innflu] Alt-text (@mentions) → ${usernames.size} usernames:`, Array.from(usernames));
     return usernames;
   },
 
@@ -652,32 +637,20 @@ window.InnfluCrawler = {
    * @returns {string | null}
    */
   extractPostAuthor() {
-    // 1. Prioridade: Imagem do Avatar do Autor no cabeçalho do post (alt text ultra-estável)
-    const avatarImgs = document.querySelectorAll('div[role="dialog"] header img[alt], article header img[alt], main header img[alt]');
-    for (const img of avatarImgs) {
-      const alt = (img.getAttribute('alt') || '').toLowerCase();
-      // Formatos: "foto do perfil de usuario", "profile picture of user", "user's profile picture"
-      const match = alt.match(/(?:foto do perfil de|profile picture of|foto de)\s+([a-z0-9._]+)/i) ||
-                    alt.match(/^([a-z0-9._]+)'s profile picture/i);
-      if (match && match[1] && this.isValidUsername(match[1])) {
-        return match[1].toLowerCase();
-      }
-    }
-
-    // 2. Seletores multi-camadas de link do autor
-    const authorSelectors = [
+    // 1. PRIORIDADE ABSOLUTA: Link do autor no cabeçalho do post/modal (100% canônico e exato)
+    const dialog = document.querySelector('div[role="dialog"]') || document.querySelector('article') || document.querySelector('main');
+    
+    // Seletores específicos do cabeçalho da publicação
+    const headerSelectors = [
       'div[role="dialog"] header a[href^="/"]',
       'div[role="dialog"] a[role="link"][href^="/"]',
       'article header a[href^="/"]',
       'article a[role="link"][href^="/"]',
       'header a[href^="/"]',
-      'main header a[href^="/"]',
-      'h2 a[href^="/"]',
-      'h3 a[href^="/"]',
-      'span[dir="auto"] a[href^="/"]'
+      'h2 a[href^="/"]'
     ];
 
-    for (const sel of authorSelectors) {
+    for (const sel of headerSelectors) {
       const links = document.querySelectorAll(sel);
       for (const a of links) {
         const hrefAttr = a.getAttribute('href') || '';
@@ -685,16 +658,42 @@ window.InnfluCrawler = {
         if (parts.length === 1) {
           const u = parts[0].toLowerCase();
           if (this.isValidUsername(u)) {
+            console.log(`[Innflu] Autor exato encontrado via link do cabeçalho: @${u}`);
             return u;
           }
         }
       }
     }
 
-    // 3. Fallback: alt-text no modal/página
-    const altUsers = Array.from(this._extractFromAltText());
-    if (altUsers.length > 0) {
-      return altUsers[0];
+    // 2. Imagem de avatar com alt text específico de perfil ("foto do perfil de...")
+    const avatarImgs = document.querySelectorAll('div[role="dialog"] header img[alt], article header img[alt], main header img[alt]');
+    for (const img of avatarImgs) {
+      const alt = (img.getAttribute('alt') || '').toLowerCase();
+      // Formatos: "foto do perfil de usuario", "profile picture of user", "user's profile picture"
+      const match = alt.match(/(?:foto do perfil de|profile picture of)\s+([a-z0-9._]+)/i) ||
+                    alt.match(/^([a-z0-9._]+)'s profile picture/i);
+      if (match && match[1] && this.isValidUsername(match[1])) {
+        const u = match[1].toLowerCase();
+        console.log(`[Innflu] Autor exato encontrado via avatar de perfil: @${u}`);
+        return u;
+      }
+    }
+
+    // 3. Procura link cujo texto visível ou aria-label coincida com o href
+    if (dialog) {
+      const allLinks = dialog.querySelectorAll('a[href^="/"]');
+      for (const a of allLinks) {
+        const hrefAttr = a.getAttribute('href') || '';
+        const parts = hrefAttr.split('/').filter(Boolean);
+        if (parts.length === 1) {
+          const u = parts[0].toLowerCase();
+          const txt = (a.innerText || a.getAttribute('aria-label') || '').trim().toLowerCase().replace('@', '');
+          if (txt === u && this.isValidUsername(u)) {
+            console.log(`[Innflu] Autor exato encontrado via link/texto correspondente: @${u}`);
+            return u;
+          }
+        }
+      }
     }
 
     return null;

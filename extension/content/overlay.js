@@ -412,7 +412,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.2 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.3 🔄</button>
       </div>
     </div>
   `;
@@ -1906,28 +1906,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       const visitedUsers = new Set([...(bot.visited || []), ...Array.from(knownCRMUsersCache)]);
       const visitedPosts = new Set((bot.visitedPosts || []).map(h => window.InnfluCrawler.normalizePostHref(h)));
 
-      // PASSO 1: Extrai criadoras diretamente das imagens da grade (alt-text)
-      const { creators, postHrefs } = window.InnfluCrawler.extractCreatorsFromVisibleGrid(Array.from(visitedUsers));
-      (postHrefs || []).forEach(h => visitedPosts.add(h));
-
-      if (creators && creators.length > 0) {
-        const newQueue = creators.slice(0, 40);
-        await saveBot({
-          queue: newQueue,
-          visitedPosts: Array.from(visitedPosts).slice(-600)
-        });
-        hudQueueCount.innerText = newQueue.length;
-        showToast({
-          type: 'success',
-          title: `${newQueue.length} Criadoras Encontradas!`,
-          message: newQueue.slice(0, 4).map(u => `@${u}`).join(', ') + '...'
-        });
-        hudCurrentAction.innerText = `Abrindo primeira criadora: @${newQueue[0]}...`;
-        scheduleNext(800);
-        return;
-      }
-
-      // PASSO 2: Se não pegou criadoras novas no alt-text, seleciona a PRÓXIMA publicação ainda não inspecionada
+      // ABERTURA PRECISA POST A POST (ZERO ADIVINHAÇÃO):
+      // Abre cada publicação diretamente para extrair o @username oficial e exato da criadora
       const nextPost = window.InnfluCrawler.getNextUnvisitedPost(Array.from(visitedPosts));
 
       if (!nextPost) {
