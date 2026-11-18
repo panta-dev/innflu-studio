@@ -66,7 +66,7 @@
     ::-webkit-scrollbar-track { background: transparent; }
 
     body {
-      background: radial-gradient(circle at top left, #141c33 0%, #080c15 50%, #05070d 100%);
+      background: #090d16;
       color: #f1f5f9;
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
       min-height: 100vh;
@@ -74,33 +74,33 @@
     }
 
     .glass-panel {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
     }
 
     .glass-panel-glow {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.15);
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
     }
 
     .gradient-text {
-      background: linear-gradient(135deg, #c084fc 0%, #ec4899 50%, #f59e0b 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #ffffff;
+      background: none !important;
+      -webkit-text-fill-color: initial !important;
     }
 
     .gradient-btn {
-      background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
-      box-shadow: 0 4px 15px -3px rgba(124, 58, 237, 0.4);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background: #2563eb !important;
+      color: #ffffff !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      transition: all 0.15s ease;
     }
     .gradient-btn:hover {
-      box-shadow: 0 6px 20px -2px rgba(236, 72, 153, 0.5);
+      background: #1d4ed8 !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
       transform: translateY(-1px);
     }
 
@@ -114,8 +114,8 @@
       transition: all 0.15s ease;
     }
     .nav-item.active {
-      background: linear-gradient(90deg, rgba(124, 58, 237, 0.15) 0%, rgba(124, 58, 237, 0.02) 100%);
-      border-left: 3px solid #8b5cf6;
+      background: rgba(37, 99, 235, 0.12);
+      border-left: 2px solid #3b82f6;
       color: #f8fafc;
       font-weight: 600;
     }
@@ -138,25 +138,25 @@
       user-select: none;
       -webkit-user-select: none;
       scrollbar-width: thin;
-      scrollbar-color: rgba(139, 92, 246, 0.45) rgba(15, 23, 42, 0.6);
+      scrollbar-color: rgba(255, 255, 255, 0.2) rgba(15, 23, 42, 0.6);
     }
     .crm-table-container.is-panning {
       cursor: grabbing !important;
     }
     .crm-table-container::-webkit-scrollbar {
-      height: 8px;
+      height: 7px;
     }
     .crm-table-container::-webkit-scrollbar-track {
       background: rgba(15, 23, 42, 0.6);
       border-radius: 999px;
     }
     .crm-table-container::-webkit-scrollbar-thumb {
-      background: rgba(139, 92, 246, 0.4);
+      background: rgba(255, 255, 255, 0.2);
       border-radius: 999px;
       border: 2px solid rgba(15, 23, 42, 0.6);
     }
     .crm-table-container::-webkit-scrollbar-thumb:hover {
-      background: rgba(139, 92, 246, 0.7);
+      background: rgba(255, 255, 255, 0.35);
     }
   </style>
 </head>
@@ -171,31 +171,23 @@
     <!-- Top Branding -->
     <div>
       <div class="h-16 flex items-center px-6 gap-3 border-b border-surface-border">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-pink-500 to-amber-400 p-[1.5px] shadow-lg shadow-purple-500/25">
-          <div class="w-full h-full bg-[#0d1322] rounded-[10px] flex items-center justify-center font-black text-lg text-white">
-            <i class="fa-solid fa-bolt text-purple-400 text-sm"></i>
-          </div>
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm shadow-blue-500/20">
+          <i class="fa-solid fa-bolt text-white text-xs"></i>
         </div>
         <div>
-          <span class="text-base font-extrabold tracking-tight gradient-text">Innflu Studio</span>
-          <span class="text-[10px] text-slate-400 uppercase tracking-widest block font-bold -mt-0.5">SaaS Growth</span>
+          <span class="text-sm font-bold tracking-tight text-white block">Innflu Studio</span>
+          <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">Workspace</span>
         </div>
       </div>
 
       <!-- Live Engine Status Badge -->
-      <div class="px-5 py-4">
-        <div class="p-3 rounded-xl bg-surface-card border border-surface-border flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <span class="relative flex h-2.5 w-2.5">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <div>
-              <p class="text-[11px] font-bold text-slate-200">Motor Cloudflare</p>
-              <p class="text-[9px] text-emerald-400 font-mono">D1 Serverless • Online</p>
-            </div>
+      <div class="px-4 py-3">
+        <div class="px-3 py-2 rounded-lg bg-surface-card/60 border border-surface-border flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="text-[11px] font-medium text-slate-300">Cloudflare D1 Online</span>
           </div>
-          <span class="text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded font-mono">v1.2</span>
+          <span class="text-[10px] text-slate-400 font-mono font-medium">v1.3.1</span>
         </div>
       </div>
 
@@ -204,38 +196,38 @@
         <div class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Principal</div>
         
         <button onclick="navTo('view-overview')" id="nav-view-overview" class="nav-item active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
-          <i class="fa-solid fa-chart-line w-4 text-purple-400"></i>
+          <i class="fa-solid fa-chart-line w-4 text-slate-400"></i>
           <span>Visão Geral & Métricas</span>
         </button>
 
         <button onclick="navTo('view-leads')" id="nav-view-leads" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
           <div class="flex items-center gap-3">
-            <i class="fa-solid fa-users-viewfinder w-4 text-pink-400"></i>
+            <i class="fa-solid fa-users w-4 text-slate-400"></i>
             <span>Influenciadoras (CRM)</span>
           </div>
-          <span id="badgeSidebarLeads" class="bg-pink-500/10 text-pink-400 border border-pink-500/20 text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+          <span id="badgeSidebarLeads" class="bg-slate-800 text-slate-300 border border-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
         </button>
 
         <button onclick="navTo('view-mining-hub')" id="nav-view-mining-hub" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
-          <i class="fa-solid fa-magnifying-glass-location w-4 text-amber-400"></i>
+          <i class="fa-solid fa-compass w-4 text-slate-400"></i>
           <span>Central de Mineração</span>
         </button>
 
         <button onclick="navTo('view-campaigns')" id="nav-view-campaigns" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
-          <i class="fa-solid fa-bullseye w-4 text-sky-400"></i>
+          <i class="fa-solid fa-bullseye w-4 text-slate-400"></i>
           <span>Campanhas & Filtros</span>
         </button>
 
         <div class="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Captação & Disparos</div>
 
         <button onclick="navTo('view-templates')" id="nav-view-templates" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
-          <i class="fa-solid fa-comment-dots w-4 text-emerald-400"></i>
+          <i class="fa-solid fa-message w-4 text-slate-400"></i>
           <span>Templates & Spintax</span>
         </button>
 
         <button onclick="navTo('view-ai-qualifier')" id="nav-view-ai-qualifier" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
-          <i class="fa-solid fa-wand-magic-sparkles w-4 text-purple-400"></i>
-          <span>Classificador IA (Llama)</span>
+          <i class="fa-solid fa-filter w-4 text-slate-400"></i>
+          <span>Critérios & Qualificação</span>
         </button>
 
         <button onclick="navTo('view-logs')" id="nav-view-logs" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
@@ -244,7 +236,7 @@
         </button>
 
         <button onclick="navTo('view-blacklist')" id="nav-view-blacklist" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover">
-          <i class="fa-solid fa-ban w-4 text-rose-400"></i>
+          <i class="fa-solid fa-ban w-4 text-slate-400"></i>
           <span>Blacklist</span>
         </button>
       </nav>
@@ -253,35 +245,35 @@
     <!-- Bottom User & Settings -->
     <div class="p-4 border-t border-surface-border space-y-2.5">
       <!-- Botão Sair da Conta (Logout e redirecionamento para o site) -->
-      <button type="button" onclick="logoutAndGoHome()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-rose-400/90 hover:text-white hover:bg-rose-500/10 transition border border-transparent hover:border-rose-500/20 group cursor-pointer" title="Sair da sua conta e ir para a página inicial">
-        <span class="flex items-center gap-2.5 font-semibold">
-          <i class="fa-solid fa-right-from-bracket text-rose-400 text-[12px] group-hover:-translate-x-0.5 transition-transform"></i>
+      <button type="button" onclick="logoutAndGoHome()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition border border-transparent hover:border-rose-500/20 group cursor-pointer" title="Sair da sua conta e ir para a página inicial">
+        <span class="flex items-center gap-2.5 font-medium">
+          <i class="fa-solid fa-right-from-bracket text-slate-400 group-hover:text-rose-400 text-[12px] group-hover:-translate-x-0.5 transition-transform"></i>
           <span>Sair da Conta</span>
         </span>
         <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500 group-hover:text-rose-400"></i>
       </button>
 
       <button onclick="navToSettings('api')" id="nav-view-settings" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover transition cursor-pointer">
-        <i class="fa-solid fa-gear w-4 text-purple-400"></i>
+        <i class="fa-solid fa-gear w-4 text-slate-400"></i>
         <span>Configurações & API</span>
       </button>
 
       <!-- Card do Usuário Autenticado (Clicável para abrir Perfil) -->
-      <div id="sidebarUserCard" onclick="navToSettings('profile')" class="p-3 rounded-xl bg-surface-card/60 hover:bg-surface-card border border-surface-border hover:border-purple-500/40 flex items-center justify-between gap-2.5 cursor-pointer transition group" title="Clique para gerenciar seu perfil de usuário">
+      <div id="sidebarUserCard" onclick="navToSettings('profile')" class="p-2.5 rounded-xl bg-surface-card/60 hover:bg-surface-card border border-surface-border hover:border-slate-700 flex items-center justify-between gap-2.5 cursor-pointer transition group" title="Clique para gerenciar seu perfil de usuário">
         <div class="flex items-center gap-2.5 min-w-0">
-          <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center font-bold text-xs text-white shrink-0 overflow-hidden shadow-sm">
+          <div id="userAvatar" class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-semibold text-xs text-slate-200 shrink-0 overflow-hidden">
             AD
           </div>
           <div class="flex-1 min-w-0">
-            <p id="userNameDisplay" class="text-xs font-semibold text-white truncate group-hover:text-purple-300 transition">Admin Pro</p>
+            <p id="userNameDisplay" class="text-xs font-semibold text-white truncate group-hover:text-blue-400 transition">Admin Pro</p>
             <div class="flex items-center gap-1.5">
-              <span id="userPlanBadge" class="text-[9px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1 py-0.2 rounded font-mono">PRO</span>
+              <span id="userPlanBadge" class="text-[9px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1 py-0.2 rounded font-mono">PRO</span>
               <p id="userEmailDisplay" class="text-[10px] text-slate-400 truncate">admin@innflu.com.br</p>
             </div>
           </div>
         </div>
         <div class="flex items-center gap-1" onclick="event.stopPropagation()">
-          <button onclick="openApiModal()" title="Chave de API & Extensão" class="text-slate-400 hover:text-purple-400 transition p-1.5 rounded-lg hover:bg-surface-hover">
+          <button onclick="openApiModal()" title="Chave de API & Extensão" class="text-slate-400 hover:text-slate-200 transition p-1.5 rounded-lg hover:bg-surface-hover">
             <i class="fa-solid fa-key text-xs"></i>
           </button>
           <button onclick="handleAuthClick()" id="btnAuthToggle" title="Trocar conta ou Sair" class="text-slate-400 hover:text-rose-400 transition p-1.5 rounded-lg hover:bg-surface-hover">
@@ -302,111 +294,108 @@
       <div class="flex items-center gap-4 flex-1 max-w-xl">
         <div class="relative w-full">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
-          <input type="text" id="globalSearchInput" onkeyup="handleGlobalSearch(event)" placeholder="Buscar @influenciadora, nicho, WhatsApp ou tag..." class="w-full bg-surface-card/70 border border-surface-border rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition">
+          <input type="text" id="globalSearchInput" onkeyup="handleGlobalSearch(event)" placeholder="Buscar @influenciadora, nicho, WhatsApp ou tag..." class="w-full bg-surface-card border border-surface-border rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/60 transition">
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2.5">
         <!-- Badge Regra 7 Dias Ativa -->
-        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-          <i class="fa-solid fa-shield-check"></i>
-          <span>Regra 7 Dias Ativa (Anti-Repetição)</span>
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+          <i class="fa-solid fa-shield-check text-xs"></i>
+          <span>Regra 7 Dias Ativa</span>
         </div>
 
         <!-- Botão Sincronizar / Atualizar -->
-        <button onclick="refreshCurrentView()" title="Atualizar dados" class="p-2.5 rounded-xl bg-surface-card border border-surface-border text-slate-300 hover:text-white hover:bg-surface-hover transition text-xs">
+        <button onclick="refreshCurrentView()" title="Atualizar dados" class="p-2 rounded-lg bg-surface-card border border-surface-border text-slate-300 hover:text-white hover:bg-surface-hover transition text-xs">
           <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
         </button>
 
         <!-- Botão Exportar CSV Global -->
-        <button onclick="exportLeadsCSV()" class="px-3.5 py-2 rounded-xl bg-surface-card border border-surface-border hover:border-purple-500/40 text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
-          <i class="fa-solid fa-download text-purple-400"></i>
+        <button onclick="exportLeadsCSV()" class="px-3 py-2 rounded-lg bg-surface-card border border-surface-border hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-2 transition">
+          <i class="fa-solid fa-download text-slate-400"></i>
           <span class="hidden md:inline">Exportar CSV</span>
         </button>
 
         <!-- Botão Abrir Modal Extensão -->
-        <button onclick="openApiModal()" class="gradient-btn text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2">
-          <i class="fa-solid fa-puzzle-piece"></i>
+        <button onclick="openApiModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-2 shadow-sm transition">
+          <i class="fa-solid fa-puzzle-piece text-xs"></i>
           <span>Extensão Chrome</span>
         </button>
       </div>
     </header>
 
     <!-- ÁREA DE VIEWS (SPA DINÂMICO EXPANDIDO - FULL WIDTH) -->
-    <main class="flex-1 px-3 sm:px-6 py-6 space-y-6 w-full max-w-none">
+    <main class="flex-1 px-4 sm:px-6 py-6 space-y-6 w-full max-w-none">
 
       <!-- ====================================================
            VIEW 1: OVERVIEW & DASHBOARD ANALYTICS
       ==================================================== -->
-      <section id="view-overview" class="space-y-8">
+      <section id="view-overview" class="space-y-6">
         
         <!-- Welcome Hero -->
-        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div class="space-y-1.5 z-10">
+        <div class="glass-panel p-6 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+          <div class="space-y-1">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20">Pipeline Ativo</span>
-              <span class="text-xs text-slate-400 font-medium">• Nicho principal: Maternidade & Família</span>
+              <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Prospecção Ativa
+              </span>
             </div>
-            <h1 class="text-2xl font-black text-white tracking-tight">Centro de Comando de Influenciadoras</h1>
+            <h1 class="text-xl font-bold text-white tracking-tight">Painel de Prospecção</h1>
             <p class="text-xs text-slate-400 max-w-2xl leading-relaxed">
-              Monitore a mineração contínua por perfil semelhante, extração automática de contatos diretos (WhatsApp/Email) e disparos de abordagem com segurança anti-ban.
+              Monitore em tempo real a mineração de criadoras, extração de contatos comerciais (WhatsApp e E-mail) e envio de abordagens para infoprodutos digitais.
             </p>
           </div>
 
-          <div class="flex items-center gap-3 shrink-0 z-10">
-            <button onclick="navTo('view-mining-hub')" class="gradient-btn px-4 py-2.5 rounded-xl text-xs font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <div class="flex items-center gap-2.5 shrink-0">
+            <button onclick="navTo('view-mining-hub')" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-sm transition">
+              <i class="fa-solid fa-plus text-xs"></i>
               <span>Nova Mineração</span>
             </button>
-            <button onclick="navTo('view-leads')" class="bg-surface-subtle hover:bg-surface-hover border border-surface-border text-slate-200 px-4 py-2.5 rounded-xl text-xs font-semibold transition flex items-center gap-2">
-              <i class="fa-solid fa-address-book"></i>
+            <button onclick="navTo('view-leads')" class="bg-surface-card hover:bg-surface-hover border border-surface-border text-slate-300 hover:text-white px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2">
+              <i class="fa-solid fa-users text-xs text-slate-400"></i>
               <span>Ver CRM</span>
             </button>
           </div>
-
-          <!-- Ambient Light Blob -->
-          <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
-          <div class="absolute -left-10 -top-10 w-64 h-64 bg-pink-600/10 rounded-full blur-3xl pointer-events-none"></div>
         </div>
 
         <!-- Grid de 5 Cards Principais de Métricas -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           
           <!-- Card 1: DMs Hoje & Quota -->
-          <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-purple-500/40 transition">
+          <div class="glass-panel p-4 rounded-xl hover:border-slate-700 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">DMs Hoje</p>
-                <h3 id="statSentToday" class="text-3xl font-extrabold text-white mt-1.5 font-mono">0</h3>
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">DMs Hoje</p>
+                <h3 id="statSentToday" class="text-2xl font-bold text-white mt-1 font-mono tracking-tight">0</h3>
               </div>
-              <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
-                <i class="fa-solid fa-paper-plane text-sm"></i>
+              <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
               </div>
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border">
               <div class="flex justify-between text-[11px] text-slate-400 mb-1.5">
-                <span>Limite Seguro</span>
+                <span>Limite Diário</span>
                 <span class="font-mono text-slate-300"><span id="statSentPercent">0</span>% (<span id="statDailySentCount">0</span>/40)</span>
               </div>
               <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
-                <div id="statProgressBar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-700" style="width: 0%"></div>
+                <div id="statProgressBar" class="h-full bg-blue-500 rounded-full transition-all duration-700" style="width: 0%"></div>
               </div>
             </div>
           </div>
 
           <!-- Card 2: Total Mineradas -->
-          <div class="glass-panel p-5 rounded-2xl group hover:border-pink-500/40 transition">
+          <div class="glass-panel p-4 rounded-xl hover:border-slate-700 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Mineradas</p>
-                <h3 id="statTotalLeads" class="text-3xl font-extrabold text-white mt-1.5 font-mono">0</h3>
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Mineradas</p>
+                <h3 id="statTotalLeads" class="text-2xl font-bold text-white mt-1 font-mono tracking-tight">0</h3>
               </div>
-              <div class="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center">
-                <i class="fa-solid fa-users-viewfinder text-sm"></i>
+              <div class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center">
+                <i class="fa-solid fa-users text-xs"></i>
               </div>
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
-              <span class="text-emerald-400 flex items-center gap-1">
+              <span class="text-emerald-400 flex items-center gap-1 font-medium">
                 <i class="fa-solid fa-circle-check text-[10px]"></i> Qualificadas
               </span>
               <span id="statPendingCount" class="text-slate-400 font-mono">0 na fila</span>
@@ -414,96 +403,96 @@
           </div>
 
           <!-- Card 3: Total Abordagens Realizadas -->
-          <div class="glass-panel p-5 rounded-2xl group hover:border-amber-500/40 transition">
+          <div class="glass-panel p-4 rounded-xl hover:border-slate-700 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total DMs</p>
-                <h3 id="statTotalSent" class="text-3xl font-extrabold text-amber-300 mt-1.5 font-mono">0</h3>
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total DMs</p>
+                <h3 id="statTotalSent" class="text-2xl font-bold text-amber-300 mt-1 font-mono tracking-tight">0</h3>
               </div>
-              <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
-                <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+              <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                <i class="fa-solid fa-clock-rotate-left text-xs"></i>
               </div>
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
-              <span class="text-slate-400 flex items-center gap-1">
+              <span class="text-slate-400 flex items-center gap-1 font-medium">
                 <i class="fa-solid fa-shield-halved text-amber-400"></i> Anti-Ban Ativo
               </span>
-              <span class="text-purple-400 font-semibold font-mono">60-180s</span>
+              <span class="text-slate-300 font-medium font-mono">60-180s</span>
             </div>
           </div>
 
           <!-- Card 4: Respostas de Influenciadoras -->
-          <div class="glass-panel p-5 rounded-2xl group hover:border-cyan-500/40 transition">
+          <div class="glass-panel p-4 rounded-xl hover:border-slate-700 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Responderam</p>
-                <h3 id="statTotalReplied" class="text-3xl font-extrabold text-cyan-400 mt-1.5 font-mono">0</h3>
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Responderam</p>
+                <h3 id="statTotalReplied" class="text-2xl font-bold text-cyan-400 mt-1 font-mono tracking-tight">0</h3>
               </div>
-              <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
-                <i class="fa-solid fa-comments text-sm"></i>
+              <div class="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                <i class="fa-solid fa-comments text-xs"></i>
               </div>
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
               <span class="text-cyan-400 font-semibold flex items-center gap-1">
-                <i class="fa-solid fa-bolt text-[10px]"></i> Taxa de Resposta
+                <i class="fa-solid fa-arrow-trend-up text-[10px]"></i> Taxa Resposta
               </span>
               <span class="text-slate-200 font-mono font-bold"><span id="statReplyRate">0.0</span>%</span>
             </div>
           </div>
 
           <!-- Card 5: WhatsApps Capturados -->
-          <div class="glass-panel p-5 rounded-2xl group hover:border-emerald-500/40 transition">
+          <div class="glass-panel p-4 rounded-xl hover:border-slate-700 transition">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">WhatsApps</p>
-                <h3 id="statWithWhatsapp" class="text-3xl font-extrabold text-emerald-400 mt-1.5 font-mono">0</h3>
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">WhatsApps</p>
+                <h3 id="statWithWhatsapp" class="text-2xl font-bold text-emerald-400 mt-1 font-mono tracking-tight">0</h3>
               </div>
-              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <i class="fa-brands fa-whatsapp text-base"></i>
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i class="fa-brands fa-whatsapp text-sm"></i>
               </div>
             </div>
             <div class="mt-4 pt-3 border-t border-surface-border flex items-center justify-between text-[11px]">
               <span class="text-slate-400 flex items-center gap-1">
-                <i class="fa-solid fa-envelope text-sky-400"></i> <b id="statWithEmail" class="text-slate-200">0</b> emails
+                <i class="fa-solid fa-envelope text-blue-400"></i> <b id="statWithEmail" class="text-slate-200">0</b> emails
               </span>
-              <button onclick="copyAllWhatsApps()" class="text-emerald-400 hover:underline font-semibold">Copiar</button>
+              <button onclick="copyAllWhatsApps()" class="text-emerald-400 hover:text-emerald-300 font-semibold transition">Copiar</button>
             </div>
           </div>
 
         </div>
 
         <!-- Seção de Gráficos e Analytics SaaS -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <!-- Gráfico de Disparos & Tendência -->
-          <div class="glass-panel p-6 rounded-2xl lg:col-span-2 space-y-4">
+          <div class="glass-panel p-5 rounded-xl lg:col-span-2 space-y-4">
             <div class="flex justify-between items-center">
               <div>
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                  <i class="fa-solid fa-chart-area text-purple-400"></i>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <i class="fa-solid fa-chart-line text-blue-400"></i>
                   Ritmo de Abordagem Semanal (Anti-Ban)
                 </h3>
-                <p class="text-[11px] text-slate-400">Volume de DMs enviadas respeitando os limites da conta</p>
+                <p class="text-[11px] text-slate-400">Volume de envios diários respeitando os limites biológicos</p>
               </div>
-              <span class="text-[10px] bg-surface-card px-2.5 py-1 rounded-lg border border-surface-border text-slate-300 font-mono">Últimos 7 dias</span>
+              <span class="text-[10px] bg-surface-card px-2.5 py-1 rounded-md border border-surface-border text-slate-300 font-mono">Últimos 7 dias</span>
             </div>
-            <div class="h-64 relative">
+            <div class="h-60 relative">
               <canvas id="chartActivity"></canvas>
             </div>
           </div>
 
           <!-- Distribuição de Contatos (WhatsApp vs Email vs DM) -->
-          <div class="glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+          <div class="glass-panel p-5 rounded-xl space-y-4 flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-center mb-1">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                  <i class="fa-solid fa-pie-chart text-pink-400"></i>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <i class="fa-solid fa-chart-pie text-slate-400"></i>
                   Canais de Contato
                 </h3>
               </div>
-              <p class="text-[11px] text-slate-400">Oportunidades de contato direto extraídas</p>
+              <p class="text-[11px] text-slate-400">Contatos comerciais capturados</p>
             </div>
 
-            <div class="h-44 relative flex items-center justify-center">
+            <div class="h-40 relative flex items-center justify-center">
               <canvas id="chartChannels"></canvas>
             </div>
 
@@ -513,26 +502,27 @@
                 <span id="labelPercentWa" class="font-mono text-emerald-400 font-bold">0%</span>
               </div>
               <div class="flex justify-between items-center text-slate-300">
-                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> E-mail Comercial</span>
-                <span id="labelPercentEmail" class="font-mono text-sky-400 font-bold">0%</span>
+                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span> E-mail Comercial</span>
+                <span id="labelPercentEmail" class="font-mono text-blue-400 font-bold">0%</span>
               </div>
               <div class="flex justify-between items-center text-slate-300">
-                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Apenas DM Direta</span>
-                <span id="labelPercentDM" class="font-mono text-purple-400 font-bold">0%</span>
+                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span> Apenas DM Direta</span>
+                <span id="labelPercentDM" class="font-mono text-slate-400 font-bold">0%</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Tabela Rápida de Atividades Recentes -->
-        <div class="glass-panel p-6 rounded-2xl space-y-4">
+        <div class="glass-panel p-5 rounded-xl space-y-4">
           <div class="flex justify-between items-center">
             <div>
-              <h3 class="text-sm font-bold text-white">Últimas Influenciadoras Mineradas</h3>
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider">Últimas Influenciadoras Mineradas</h3>
               <p class="text-[11px] text-slate-400">Perfis identificados e prontos para abordagem</p>
             </div>
-            <button onclick="navTo('view-leads')" class="text-xs text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1">
-              Ver CRM Completo <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            <button onclick="navTo('view-leads')" class="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1.5 transition">
+              <span>Ver CRM Completo</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
             </button>
           </div>
 
@@ -573,7 +563,7 @@
 
           <div class="flex flex-wrap items-center gap-2">
             <!-- Filtro de Status -->
-            <select id="filterLeadStatus" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500 font-medium">
+            <select id="filterLeadStatus" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500 font-medium">
               <option value="all">Todos os Status</option>
               <option value="minerada">● Mineradas (Prontas)</option>
               <option value="partner">🤝 Fechou Parceria</option>
@@ -584,14 +574,14 @@
             </select>
 
             <!-- Filtro de Contato -->
-            <select id="filterLeadContact" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500">
+            <select id="filterLeadContact" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500">
               <option value="all">Todos os Contatos</option>
               <option value="wa">Apenas com WhatsApp</option>
               <option value="email">Apenas com E-mail</option>
             </select>
 
             <!-- Filtro de Nicho -->
-            <select id="filterLeadNiche" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500 font-medium">
+            <select id="filterLeadNiche" onchange="applyLeadsFilters()" class="bg-surface-card border border-surface-border text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500 font-medium">
               <option value="all">Todos os Nichos</option>
               <option value="maternidade">Maternidade & Família</option>
               <option value="moda">Moda & Look</option>
@@ -755,13 +745,13 @@
 
               <div>
                 <label id="lblHubTarget" class="block text-[11px] font-semibold text-slate-300 mb-1">Perfil de Referência</label>
-                <input type="text" id="hubTargetInput" value="@marialuizazamoner" placeholder="ex: @marialuizazamoner" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                <input type="text" id="hubTargetInput" value="@rafaela" placeholder="ex: @rafaela" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                 <p class="text-[10px] text-slate-400 mt-1">O robô entrará no perfil e extrairá toda a rede de influenciadoras semelhantes.</p>
               </div>
 
               <div>
                 <label class="block text-[11px] font-semibold text-slate-300 mb-1">Mínimo de Seguidores</label>
-                <select id="hubMinFollowers" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                <select id="hubMinFollowers" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
                   <option value="10000" selected>10.000+ (Micro-influenciadoras)</option>
                   <option value="25000">25.000+ seguidores</option>
                   <option value="50000">50.000+ seguidores</option>
@@ -784,12 +774,12 @@
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="p-4 rounded-xl bg-surface-card/60 border border-surface-border space-y-2">
-                <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-xs">
-                  <i class="fa-solid fa-sparkles"></i>
+                <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-xs">
+                  <i class="fa-solid fa-compass"></i>
                 </div>
                 <h4 class="text-xs font-bold text-white">Semelhantes por Grafo (Lookalike)</h4>
                 <p class="text-[11px] text-slate-400 leading-relaxed">
-                  Acessa perfis referência como <code class="text-purple-300 font-mono">@marialuizazamoner</code>, abre o carrossel de recomendadas do algoritmo do Instagram e minera a rede de influenciadoras correlacionadas.
+                  Acessa perfis referência como <code class="text-blue-300 font-mono">@rafaela</code>, abre o carrossel de recomendadas do algoritmo do Instagram e minera a rede de influenciadoras correlacionadas.
                 </p>
               </div>
 
@@ -804,12 +794,12 @@
               </div>
 
               <div class="p-4 rounded-xl bg-surface-card/60 border border-surface-border space-y-2">
-                <div class="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold text-xs">
+                <div class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-xs">
                   <i class="fa-solid fa-hashtag"></i>
                 </div>
                 <h4 class="text-xs font-bold text-white">Hashtags & Posts Virais</h4>
                 <p class="text-[11px] text-slate-400 leading-relaxed">
-                  Varre as publicações em alta de <code class="text-pink-300 font-mono">#maternidadereal</code>, identifica as criadoras de conteúdo com fotos autorais e filtra perfis falsos.
+                  Varre as publicações em alta de hashtags como <code class="text-slate-300 font-mono">#provador</code> ou <code class="text-slate-300 font-mono">#lookdodia</code>, identifica criadoras com fotos autorais e filtra marcas comerciais.
                 </p>
               </div>
 
@@ -930,7 +920,7 @@
             <form id="templateForm" onsubmit="saveAllTemplatesWeb(event)" class="space-y-3">
               <div>
                 <label class="block text-[11px] font-semibold text-slate-300 mb-1">Título / Identificador deste Modelo</label>
-                <input type="text" id="tmplTitle" oninput="handleTemplateInput()" required class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+                <input type="text" id="tmplTitle" oninput="handleTemplateInput()" required class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500 transition">
               </div>
 
               <div>
@@ -938,7 +928,7 @@
                   <label class="block text-[11px] font-semibold text-slate-300">Mensagem com Spintax</label>
                   <span id="editorCharCount" class="text-[10px] text-slate-500 font-mono">0 caracteres</span>
                 </div>
-                <textarea id="tmplContent" oninput="handleTemplateInput()" rows="12" style="min-height: 190px;" required class="w-full bg-surface-card border border-surface-border rounded-xl p-3.5 text-xs text-white font-mono focus:outline-none focus:border-purple-500 leading-relaxed transition"></textarea>
+                <textarea id="tmplContent" oninput="handleTemplateInput()" rows="12" style="min-height: 190px;" required class="w-full bg-surface-card border border-surface-border rounded-xl p-3.5 text-xs text-white font-mono focus:outline-none focus:border-blue-500 leading-relaxed transition"></textarea>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
@@ -970,7 +960,7 @@
               <!-- Seletor de Influenciadora para Teste -->
               <div class="flex items-center gap-2 p-2 rounded-xl bg-surface-card/60 border border-surface-border">
                 <span class="text-[11px] text-slate-400 shrink-0 font-medium pl-1">Testar com:</span>
-                <select id="simInfluencerSelect" onchange="changeSimInfluencer(this.value)" class="flex-1 bg-surface-base border border-surface-border text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-purple-500">
+                <select id="simInfluencerSelect" onchange="changeSimInfluencer(this.value)" class="flex-1 bg-surface-base border border-surface-border text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500">
                   <option value="0">👩 Marina Ferrari (@marinaferrarig • 4,8 mi)</option>
                   <option value="1">👩‍👧 Ana Clara Lopes (@anaclaralopes • 24,2 mil)</option>
                   <option value="2">👩‍🍼 Sarah Tribuzy (@stribuzy • 54,0 mil)</option>
@@ -1048,12 +1038,12 @@
       </section>
 
       <!-- ====================================================
-           VIEW 6: CLASSIFICADOR IA (LLAMA 3.1 WORKERS AI)
+           VIEW 6: CRITÉRIOS & QUALIFICAÇÃO DE PERFIS
       ==================================================== -->
       <section id="view-ai-qualifier" class="space-y-6 hidden">
         <div>
-          <h2 class="text-xl font-extrabold text-white">Classificador de Perfis com IA (Cloudflare Workers AI)</h2>
-          <p class="text-xs text-slate-400">Analisa biografia, gênero e vocabulário com modelo Llama 3.1 8B para filtrar apenas perfis qualificados.</p>
+          <h2 class="text-xl font-extrabold text-white">Critérios & Qualificação de Perfis</h2>
+          <p class="text-xs text-slate-400">Validação semântica e contextual de biografia, público e nicho para filtrar apenas influenciadoras reais.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1062,42 +1052,42 @@
             <form onsubmit="testAIQualifier(event)" class="space-y-3">
               <div>
                 <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nome Completo</label>
-                <input type="text" id="aiTestName" value="Maria Luiza Zamoner" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                <input type="text" id="aiTestName" value="Rafaela Mello" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
               </div>
 
               <div>
                 <label class="block text-[11px] font-semibold text-slate-300 mb-1">Biografia do Instagram</label>
-                <textarea id="aiTestBio" rows="4" class="w-full bg-surface-card border border-surface-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-purple-500">Mãe da Maitê 🌸 | Maternidade Real & Dicas
-Compartilhando minha rotina com vcs ✨
-Parcerias: assessoria@marialuiza.com.br
-📍 Curitiba - PR</textarea>
+                <textarea id="aiTestBio" rows="4" class="w-full bg-surface-card border border-surface-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500">Criadora de Conteúdo ✨ Moda, Viagens & Lifestyle
+Compartilhando minha rotina diária 🌸
+Contato comercial: contato@rafaela.com.br
+📍 São Paulo - SP</textarea>
               </div>
 
               <div>
                 <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nicho Alvo</label>
-                <input type="text" id="aiTestNiche" value="maternidade" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                <input type="text" id="aiTestNiche" value="moda" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
               </div>
 
               <button type="submit" class="w-full gradient-btn text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-                <i class="fa-solid fa-brain"></i> Analisar com IA
+                <i class="fa-solid fa-check-circle"></i> Testar Qualificação
               </button>
             </form>
           </div>
 
           <div class="glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
             <div>
-              <h3 class="text-sm font-bold text-white mb-2">Diagnóstico da Inteligência Artificial</h3>
+              <h3 class="text-sm font-bold text-white mb-2">Diagnóstico de Qualificação</h3>
               <p class="text-[11px] text-slate-400">Classificação semântica em tempo real</p>
             </div>
 
             <div id="aiResultCard" class="bg-surface-card/80 border border-surface-border rounded-2xl p-5 space-y-3">
               <div class="text-slate-400 text-xs text-center py-6">
-                Envie uma biografia para classificar.
+                Envie uma biografia para qualificar.
               </div>
             </div>
 
             <div class="text-[10px] text-slate-500 text-center font-mono">
-              Powered by Cloudflare Workers AI • Llama 3.1 8B Instruct
+              Motor de Qualificação Semântica • Cloudflare Workers Engine
             </div>
           </div>
         </div>
@@ -1225,12 +1215,12 @@ Parcerias: assessoria@marialuiza.com.br
             <!-- Card de Foto de Perfil & Avatar -->
             <div class="glass-panel p-6 rounded-2xl space-y-5 lg:col-span-1 flex flex-col items-center text-center">
               <div class="relative group">
-                <div id="settingsAvatarPreview" class="w-24 h-24 rounded-full bg-gradient-to-tr from-purple-600 via-pink-500 to-amber-400 p-[2.5px] shadow-xl shadow-purple-500/20 overflow-hidden flex items-center justify-center">
-                  <div id="settingsAvatarInner" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center font-black text-2xl text-white overflow-hidden">
+                <div id="settingsAvatarPreview" class="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 shadow-lg overflow-hidden flex items-center justify-center">
+                  <div id="settingsAvatarInner" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center font-bold text-2xl text-white overflow-hidden">
                     AD
                   </div>
                 </div>
-                <button type="button" onclick="document.getElementById('inputAvatarUpload').click()" class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center shadow-lg transition border-2 border-[#090d16]" title="Carregar foto de perfil">
+                <button type="button" onclick="document.getElementById('inputAvatarUpload').click()" class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow transition border-2 border-[#090d16]" title="Carregar foto de perfil">
                   <i class="fa-solid fa-camera text-xs"></i>
                 </button>
               </div>
@@ -1281,18 +1271,18 @@ Parcerias: assessoria@marialuiza.com.br
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nome Completo</label>
-                      <input type="text" id="inputProfileFullName" required placeholder="Seu Nome Completo" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                      <input type="text" id="inputProfileFullName" required placeholder="Seu Nome Completo" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                     </div>
 
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-300 mb-1">Empresa / Agência</label>
-                      <input type="text" id="inputProfileCompany" placeholder="Nome da Sua Empresa" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                      <input type="text" id="inputProfileCompany" placeholder="Nome da Sua Empresa" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                     </div>
                   </div>
 
                   <div>
                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">E-mail de Login & Notificações</label>
-                    <input type="email" id="inputProfileEmail" required placeholder="seu@email.com" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                    <input type="email" id="inputProfileEmail" required placeholder="seu@email.com" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                   </div>
 
                   <div class="flex justify-end pt-2">
@@ -1313,18 +1303,18 @@ Parcerias: assessoria@marialuiza.com.br
                 <form onsubmit="handleUpdatePassword(event)" class="space-y-4">
                   <div>
                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Senha Atual</label>
-                    <input type="password" id="inputProfileCurrentPassword" required placeholder="••••••••" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                    <input type="password" id="inputProfileCurrentPassword" required placeholder="••••••••" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                   </div>
 
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nova Senha (Mínimo 6 caracteres)</label>
-                      <input type="password" id="inputProfileNewPassword" required minlength="6" placeholder="Nova senha segura" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                      <input type="password" id="inputProfileNewPassword" required minlength="6" placeholder="Nova senha segura" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                     </div>
 
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-300 mb-1">Confirmar Nova Senha</label>
-                      <input type="password" id="inputProfileConfirmPassword" required minlength="6" placeholder="Repita a nova senha" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                      <input type="password" id="inputProfileConfirmPassword" required minlength="6" placeholder="Repita a nova senha" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                     </div>
                   </div>
 
@@ -1442,13 +1432,13 @@ Parcerias: assessoria@marialuiza.com.br
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-300 mb-1">Delay Mínimo entre Mensagens (segundos)</label>
-                  <input type="number" id="inputSettingMinDelay" value="60" min="20" max="600" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                  <input type="number" id="inputSettingMinDelay" value="60" min="20" max="600" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                   <span class="text-[10px] text-slate-500 mt-1 block">Recomendado: 60s ou mais para evitar detecção.</span>
                 </div>
 
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-300 mb-1">Delay Máximo entre Mensagens (segundos)</label>
-                  <input type="number" id="inputSettingMaxDelay" value="180" min="40" max="1200" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                  <input type="number" id="inputSettingMaxDelay" value="180" min="40" max="1200" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                   <span class="text-[10px] text-slate-500 mt-1 block">Garante variação estocástica e natural de tempo.</span>
                 </div>
               </div>
@@ -1456,7 +1446,7 @@ Parcerias: assessoria@marialuiza.com.br
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-300 mb-1">Limite Máximo Diário de DMs</label>
-                  <input type="number" id="inputSettingDailyLimit" value="40" min="5" max="200" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                  <input type="number" id="inputSettingDailyLimit" value="40" min="5" max="200" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
                   <span class="text-[10px] text-slate-500 mt-1 block">Padrão seguro para contas estabelecidas no Instagram.</span>
                 </div>
 
@@ -1498,14 +1488,14 @@ Parcerias: assessoria@marialuiza.com.br
   ======================================================== -->
   <!-- Modal Instalação Extensão & Conexão API -->
   <div id="modalApi" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
-    <div class="glass-panel max-w-2xl w-full p-6 sm:p-8 rounded-3xl space-y-6 relative my-8 border border-purple-500/30 shadow-2xl">
+    <div class="glass-panel max-w-2xl w-full p-6 sm:p-8 rounded-2xl space-y-6 relative my-8 border border-surface-border shadow-2xl">
       <div class="flex justify-between items-start">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
+          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/20">
             <i class="fa-solid fa-puzzle-piece text-base"></i>
           </div>
           <div>
-            <h3 class="text-base sm:text-lg font-black text-white">Guia de Instalação da Extensão Chrome</h3>
+            <h3 class="text-base sm:text-lg font-bold text-white">Guia de Instalação da Extensão Chrome</h3>
             <p class="text-xs text-slate-400">Siga o passo a passo para instalar e conectar ao seu Innflu Studio</p>
           </div>
         </div>
@@ -1668,14 +1658,14 @@ Parcerias: assessoria@marialuiza.com.br
 
   <!-- Modal Autenticação SaaS (Login, Cadastro & Demo) -->
   <div id="modalAuth" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
-    <div class="glass-panel max-w-md w-full p-6 sm:p-8 rounded-3xl space-y-6 relative border border-purple-500/30 shadow-2xl">
+    <div class="glass-panel max-w-md w-full p-6 sm:p-8 rounded-2xl space-y-6 relative border border-surface-border shadow-2xl">
       <div class="flex justify-between items-start">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center font-black text-white shadow-lg shadow-purple-500/20">
+          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm shadow-blue-500/20">
             <i class="fa-solid fa-bolt text-sm"></i>
           </div>
           <div>
-            <h3 class="text-base font-black text-white">Innflu Studio</h3>
+            <h3 class="text-base font-bold text-white">Innflu Studio</h3>
             <p class="text-xs text-slate-400">Acesse sua conta para gerenciar campanhas</p>
           </div>
         </div>
@@ -1684,10 +1674,10 @@ Parcerias: assessoria@marialuiza.com.br
 
       <!-- Tabs de Autenticação -->
       <div class="flex rounded-xl bg-surface-card p-1 border border-surface-border">
-        <button onclick="switchAuthTab('login')" id="tabBtnLogin" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition">
+        <button onclick="switchAuthTab('login')" id="tabBtnLogin" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-white bg-blue-600 transition">
           Entrar
         </button>
-        <button onclick="switchAuthTab('register')" id="tabBtnRegister" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">
+        <button onclick="switchAuthTab('register')" id="tabBtnRegister" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">
           Criar Conta
         </button>
       </div>
@@ -1696,11 +1686,11 @@ Parcerias: assessoria@marialuiza.com.br
       <form id="formLogin" onsubmit="handleLoginSubmit(event)" class="space-y-4">
         <div>
           <label class="block text-[11px] font-semibold text-slate-300 mb-1">E-mail</label>
-          <input type="email" id="loginEmail" required placeholder="seu@email.com" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500">
+          <input type="email" id="loginEmail" required placeholder="seu@email.com" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
         </div>
         <div>
           <label class="block text-[11px] font-semibold text-slate-300 mb-1">Senha</label>
-          <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500">
+          <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
         </div>
         <button type="submit" id="btnLoginSubmit" class="w-full py-3 rounded-xl gradient-btn text-white text-xs font-bold flex items-center justify-center gap-2">
           <span>Acessar Painel</span>
@@ -1712,19 +1702,19 @@ Parcerias: assessoria@marialuiza.com.br
       <form id="formRegister" onsubmit="handleRegisterSubmit(event)" class="space-y-3 hidden">
         <div>
           <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nome Completo</label>
-          <input type="text" id="regName" required placeholder="Seu Nome" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500">
+          <input type="text" id="regName" required placeholder="Seu Nome" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
         </div>
         <div>
           <label class="block text-[11px] font-semibold text-slate-300 mb-1">E-mail</label>
-          <input type="email" id="regEmail" required placeholder="seu@email.com" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500">
+          <input type="email" id="regEmail" required placeholder="seu@email.com" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
         </div>
         <div>
           <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nome da Empresa ou Agência</label>
-          <input type="text" id="regCompany" placeholder="Ex: Agência Glow" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500">
+          <input type="text" id="regCompany" placeholder="Ex: Agência Glow" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
         </div>
         <div>
           <label class="block text-[11px] font-semibold text-slate-300 mb-1">Senha (Mínimo 6 caracteres)</label>
-          <input type="password" id="regPassword" required minlength="6" placeholder="••••••••" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500">
+          <input type="password" id="regPassword" required minlength="6" placeholder="••••••••" class="w-full bg-surface-card border border-surface-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
         </div>
         <button type="submit" id="btnRegisterSubmit" class="w-full py-3 rounded-xl gradient-btn text-white text-xs font-bold flex items-center justify-center gap-2">
           <span>Criar Minha Conta SaaS</span>
@@ -3148,8 +3138,8 @@ Parcerias: assessoria@marialuiza.com.br
         if (chartActivityInstance) chartActivityInstance.destroy();
         
         const gradient = ctxAct.getContext('2d').createLinearGradient(0, 0, 0, 200);
-        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
-        gradient.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.16)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
 
         chartActivityInstance = new Chart(ctxAct, {
           type: 'line',
@@ -3158,13 +3148,13 @@ Parcerias: assessoria@marialuiza.com.br
             datasets: [{
               label: 'DMs Enviadas',
               data: [12, 19, 15, 24, 22, 18, (statsData?.sentToday || 5)],
-              borderColor: '#8b5cf6',
-              borderWidth: 2.5,
+              borderColor: '#3b82f6',
+              borderWidth: 2,
               backgroundColor: gradient,
               fill: true,
-              tension: 0.4,
-              pointBackgroundColor: '#ec4899',
-              pointRadius: 4
+              tension: 0.3,
+              pointBackgroundColor: '#3b82f6',
+              pointRadius: 3
             }]
           },
           options: {
@@ -3172,8 +3162,8 @@ Parcerias: assessoria@marialuiza.com.br
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-              x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
-              y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true }
+              x: { grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+              y: { grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true }
             }
           }
         });
@@ -3194,7 +3184,7 @@ Parcerias: assessoria@marialuiza.com.br
             labels: ['WhatsApp', 'E-mail', 'DM Direta'],
             datasets: [{
               data: [wa, em, dm],
-              backgroundColor: ['#10b981', '#0ea5e9', '#8b5cf6'],
+              backgroundColor: ['#10b981', '#3b82f6', '#475569'],
               borderWidth: 0
             }]
           },
@@ -3202,7 +3192,7 @@ Parcerias: assessoria@marialuiza.com.br
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            cutout: '75%'
+            cutout: '78%'
           }
         });
       }
@@ -3694,10 +3684,10 @@ Parcerias: assessoria@marialuiza.com.br
       if (formReg) formReg.classList.add('hidden');
 
       if (tab === 'login') {
-        if (tabLogin) tabLogin.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition';
+        if (tabLogin) tabLogin.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-white bg-blue-600 transition';
         if (formLogin) formLogin.classList.remove('hidden');
       } else {
-        if (tabReg) tabReg.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-white bg-purple-600 transition';
+        if (tabReg) tabReg.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-white bg-blue-600 transition';
         if (formReg) formReg.classList.remove('hidden');
       }
     }
