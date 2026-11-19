@@ -2640,7 +2640,7 @@ app.get("/updates.xml", (c) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="innflustudioprospector2026">
-    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.1" />
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.2" />
   </app>
 </gupdate>`;
   c.header("Content-Type", "application/xml; charset=utf-8");
@@ -2649,9 +2649,9 @@ app.get("/updates.xml", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.4.1",
+    version: "1.4.2",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "v1.4.1: Corre\xE7\xE3o cr\xEDtica: erros de execu\xE7\xE3o (logDiagnostics/bot n\xE3o definidos) que travavam a minera\xE7\xE3o antes do envio. Qualquer minera\xE7\xE3o agora entra no perfil e envia a mensagem de capta\xE7\xE3o.",
+    releaseNotes: "v1.4.2: Envio de capta\xE7\xE3o corrigido: a mensagem s\xF3 conta como enviada depois de aparecer na conversa; se o Story n\xE3o enviar, o DM \xE9 enviado automaticamente.",
     downloadUrl: "/innflu-extensao.zip",
     publishedAt: "2026-11-18T13:30:00Z",
     dynamicRules: {
