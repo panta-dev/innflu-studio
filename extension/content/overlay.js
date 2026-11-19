@@ -2501,8 +2501,9 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       const tagStatus = sendRes && sendRes.viaStory ? 'Story Respondido ⚡' : 'DM Enviada ✓';
       await logActivity({ username: cleanUser, status: tagStatus });
       await updateLocalLeadStatus(cleanUser, 'contatada');
-      showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: 'Story respondido com a mensagem de captação.' });
-      addDiagLog('success', `Captação enviada com sucesso para @${cleanUser} via Story!`);
+      const viaLabel = sendRes && sendRes.viaStory ? 'Story' : 'DM';
+      showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: sendRes && sendRes.viaStory ? 'Story respondido com a mensagem de captação.' : 'Mensagem enviada por DM (Story indisponível).' });
+      addDiagLog('success', `Captação enviada com sucesso para @${cleanUser} via ${viaLabel}!${sendRes && sendRes.storyError ? ' (Story falhou: ' + sendRes.storyError + ')' : ''}`);
 
       // Registra no Cloudflare D1
       try {
