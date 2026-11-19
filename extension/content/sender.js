@@ -561,6 +561,9 @@ window.InnfluSender = {
       for (const el of candidates) {
         if (el.closest('#innflu-hud-root')) continue;
         const rect = el.getBoundingClientRect();
+        // Ignora campos de busca / comentário que não são a resposta do Story
+        const hint = ((el.getAttribute('aria-label') || '') + ' ' + (el.getAttribute('placeholder') || '')).toLowerCase();
+        if (hint.includes('pesquis') || hint.includes('search') || hint.includes('comentá') || hint.includes('comment')) continue;
         // O input do story fica na metade inferior da tela
         if (rect.width > 40 && rect.height > 15 && rect.bottom > window.innerHeight * 0.3) {
           return el;
@@ -710,8 +713,14 @@ window.InnfluSender = {
     console.log(`[Innflu] Enviando resposta do Story para @${cleanUser}...`);
     await this.submitStoryReply(inputEl);
 
-    // Confirma envio
-    await this.sleep(1200);
+    // Confirma envio de verdade (antes assumia sucesso sem checar)
+    const confirm = await this.waitForStoryConfirmation(inputEl, 6000);
+    if (confirm.blocked) {
+      throw new Error(`Instagram bloqueou a ação: ${confirm.message}`);
+    }
+    if (!confirm.confirmed) {
+      throw new Error(confirm.message);
+    }
 
     console.log(`[Innflu] Resposta do Story enviada com sucesso! Fechando visualizador de Stories...`);
     this.closeStoryViewer();
@@ -732,20 +741,111 @@ window.InnfluSender = {
     const curPath = window.location.pathname.toLowerCase();
     const cleanUser = curPath.split('/').filter(Boolean)[0] || '';
 
-    // MANDATÓRIO: SEMPRE responder ao Story ativo da influenciadora!
-    console.log(`[Innflu] OBRIGATÓRIO: Respondendo ao Story de @${cleanUser}...`);
+    // 1ª tentativa: responder ao Story ativo da influenciadora
+    console.log(`[Innflu] Tentando responder ao Story de @${cleanUser}...`);
+    let storyErrMsg = '';
     try {
       const ok = await this.replyToActiveStory(messageText, cleanUser);
       if (ok) {
         return { success: true, viaStory: true };
       }
+      storyErrMsg = 'Stories não disponíveis para envio';
     } catch (storyErr) {
-      console.warn(`[Innflu] Falha ao enviar via Story: ${storyErr.message}`);
+      storyErrMsg = storyErr.message || 'erro desconhecido no Story';
+      console.warn(`[Innflu] Falha ao enviar via Story: ${storyErrMsg}`);
       this.closeStoryViewer();
-      // Não cai em Direct comum porque o Instagram bloqueia DMs para não-seguidores!
-      throw new Error(`Envio via Stories não concluído: ${storyErr.message}`);
+      await this.sleep(1200);
+      // Bloqueio do Instagram: nunca insistir por outro caminho
+      if (/bloque|blocked|checkpoint/i.test(storyErrMsg)) {
+        throw new Error(storyErrMsg);
+      }
     }
 
-    throw new Error('Stories não disponíveis para envio');
+    // 2ª tentativa (fallback): enviar DM pelo botão "Enviar mensagem" do perfil
+    console.log(`[Innflu] Story indisponível (${storyErrMsg}). Tentando DM direto para @${cleanUser}...`);
+    try {
+      await this.sendViaDirect(messageText, cleanUser);
+      return { success: true, viaStory: false, storyError: storyErrMsg };
+    } catch (dmErr) {
+      if (/bloque|blocked|checkpoint/i.test(dmErr.message || '')) {
+        throw dmErr;
+      }
+      throw new Error(`Story: ${storyErrMsg} | DM: ${dmErr.message}`);
+    }
+  },
+
+  /**
+   * Fallback: abre o chat do Direct pelo botão do perfil, digita e confirma o envio
+   */
+  async sendViaDirect(messageText, cleanUser) {
+    // Garante que estamos no perfil (fecha viewer de Stories se ainda estiver aberto)
+    if (this.isStoryViewerOpen()) {
+      this.closeStoryViewer();
+      await this.sleep(1200);
+    }
+
+    // Aguarda o botão de mensagem aparecer (até ~6s)
+    let msgBtn = null;
+    for (let i = 0; i < 20 && !msgBtn; i++) {
+      msgBtn = this.findMessageButton();
+      if (!msgBtn) await this.sleep(300);
+    }
+    if (!msgBtn) {
+      throw new Error('botão "Enviar mensagem" não disponível no perfil');
+    }
+
+    await this.openDirectChat(msgBtn);
+
+    const inputEl = await this.waitForMessageInput(15000);
+    if (!inputEl) {
+      throw new Error('campo de mensagem do Direct não abriu');
+    }
+
+    await this.typeMessageIntoReact(inputEl, messageText);
+    await this.submitMessage(inputEl);
+
+    const result = await this.waitForSendConfirmation(inputEl, messageText, 8000);
+    if (result.blocked) {
+      throw new Error(`Instagram bloqueou a ação: ${result.message}`);
+    }
+    if (!result.confirmed) {
+      throw new Error(result.message || 'envio no Direct não confirmado');
+    }
+
+    // Volta ao perfil para o fluxo continuar
+    await this.sleep(800);
+    if (window.location.pathname.toLowerCase().startsWith('/direct/')) {
+      window.history.back();
+      await this.sleep(1500);
+    }
+    return true;
+  },
+
+  /**
+   * Confirma que a resposta do Story foi realmente enviada
+   */
+  async waitForStoryConfirmation(inputEl, timeoutMs = 6000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const blockCheck = this.checkActionBlock();
+      if (blockCheck.blocked) {
+        return { confirmed: false, blocked: true, message: blockCheck.message };
+      }
+
+      // Campo removido do DOM ou esvaziado = mensagem despachada
+      if (!inputEl.isConnected) return { confirmed: true };
+      const remaining = ((inputEl.value !== undefined ? inputEl.value : inputEl.innerText) || '').trim();
+      if (remaining.length === 0) return { confirmed: true };
+
+      // Retry com Enter no meio do tempo
+      if (Date.now() - start > 3000 && Date.now() - start < 3500) {
+        inputEl.focus();
+        const enterProps = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13, bubbles: true, cancelable: true };
+        inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
+        inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
+      }
+      await this.sleep(400);
+    }
+    return { confirmed: false, message: 'resposta do Story não confirmada (texto permaneceu no campo)' };
   }
 };
