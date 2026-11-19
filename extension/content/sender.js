@@ -586,6 +586,24 @@ window.InnfluSender = {
     const isInput = inputEl.tagName === 'INPUT';
 
     if (isTextarea || isInput) {
+      // Resposta de Story é de linha única: junta as quebras de linha
+      text = (text || '').replace(/\s*\n+\s*/g, ' ').trim();
+
+      // 1) Método preferido: inserção "real" (dispara os eventos nativos que o React escuta)
+      let typedOk = false;
+      try {
+        inputEl.focus();
+        inputEl.select();
+        document.execCommand('insertText', false, text);
+        typedOk = (inputEl.value || '').trim().length > 0;
+      } catch (e) { typedOk = false; }
+
+      if (typedOk) {
+        await this.sleep(400);
+        return;
+      }
+
+      // 2) Fallback: setter nativo + eventos
       inputEl.value = '';
       const proto = isTextarea ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
       const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
@@ -722,11 +740,12 @@ window.InnfluSender = {
       throw new Error(confirm.message);
     }
 
-    console.log(`[Innflu] Resposta do Story enviada com sucesso! Fechando visualizador de Stories...`);
+    console.log(`[Innflu] Resposta do Story disparada. Fechando visualizador e conferindo na conversa...`);
     this.closeStoryViewer();
-    await this.sleep(1000);
+    await this.sleep(1200);
 
-    return true;
+    const check = await this.verifyStoryReplyInThread(messageText, cleanUser);
+    return { ok: true, verified: check.verified, threadInput: check.inputEl || null };
   },
 
   /**
@@ -744,12 +763,24 @@ window.InnfluSender = {
     // 1ª tentativa: responder ao Story ativo da influenciadora
     console.log(`[Innflu] Tentando responder ao Story de @${cleanUser}...`);
     let storyErrMsg = '';
+    let openInput = null;
     try {
-      const ok = await this.replyToActiveStory(messageText, cleanUser);
-      if (ok) {
-        return { success: true, viaStory: true };
+      const info = await this.replyToActiveStory(messageText, cleanUser);
+      if (info && info.ok) {
+        if (info.verified === true) {
+          await this.leaveThread();
+          return { success: true, viaStory: true, verified: true };
+        }
+        if (info.verified === null) {
+          // Não há como abrir a conversa para conferir (sem botão de mensagem)
+          return { success: true, viaStory: true, verified: false };
+        }
+        // verified === false: o Story "enviou" mas o texto NÃO apareceu na conversa
+        storyErrMsg = 'a resposta do Story não apareceu na conversa';
+        openInput = info.threadInput || null;
+      } else {
+        storyErrMsg = 'Stories não disponíveis para envio';
       }
-      storyErrMsg = 'Stories não disponíveis para envio';
     } catch (storyErr) {
       storyErrMsg = storyErr.message || 'erro desconhecido no Story';
       console.warn(`[Innflu] Falha ao enviar via Story: ${storyErrMsg}`);
@@ -761,11 +792,11 @@ window.InnfluSender = {
       }
     }
 
-    // 2ª tentativa (fallback): enviar DM pelo botão "Enviar mensagem" do perfil
-    console.log(`[Innflu] Story indisponível (${storyErrMsg}). Tentando DM direto para @${cleanUser}...`);
+    // 2ª tentativa (fallback): enviar DM pela conversa do Direct
+    console.log(`[Innflu] Story não confirmado (${storyErrMsg}). Enviando por DM direto para @${cleanUser}...`);
     try {
-      await this.sendViaDirect(messageText, cleanUser);
-      return { success: true, viaStory: false, storyError: storyErrMsg };
+      const res = await this.sendViaDirect(messageText, cleanUser, openInput);
+      return { success: true, viaStory: res === 'already', verified: true, storyError: storyErrMsg };
     } catch (dmErr) {
       if (/bloque|blocked|checkpoint/i.test(dmErr.message || '')) {
         throw dmErr;
@@ -777,34 +808,51 @@ window.InnfluSender = {
   /**
    * Fallback: abre o chat do Direct pelo botão do perfil, digita e confirma o envio
    */
-  async sendViaDirect(messageText, cleanUser) {
-    // Garante que estamos no perfil (fecha viewer de Stories se ainda estiver aberto)
-    if (this.isStoryViewerOpen()) {
-      this.closeStoryViewer();
-      await this.sleep(1200);
-    }
+  async sendViaDirect(messageText, cleanUser, existingInput = null) {
+    let inputEl = existingInput && existingInput.isConnected ? existingInput : null;
 
-    // Aguarda o botão de mensagem aparecer (até ~6s)
-    let msgBtn = null;
-    for (let i = 0; i < 20 && !msgBtn; i++) {
-      msgBtn = this.findMessageButton();
-      if (!msgBtn) await this.sleep(300);
-    }
-    if (!msgBtn) {
-      throw new Error('botão "Enviar mensagem" não disponível no perfil');
-    }
-
-    await this.openDirectChat(msgBtn);
-
-    const inputEl = await this.waitForMessageInput(15000);
     if (!inputEl) {
-      throw new Error('campo de mensagem do Direct não abriu');
+      // Garante que estamos no perfil (fecha viewer de Stories se ainda estiver aberto)
+      if (this.isStoryViewerOpen()) {
+        this.closeStoryViewer();
+        await this.sleep(1200);
+      }
+
+      if (window.location.pathname.toLowerCase().startsWith('/direct/')) {
+        inputEl = await this.waitForMessageInput(5000);
+      }
+
+      if (!inputEl) {
+        // Aguarda o botão de mensagem aparecer (até ~6s)
+        let msgBtn = null;
+        for (let i = 0; i < 20 && !msgBtn; i++) {
+          msgBtn = this.findMessageButton();
+          if (!msgBtn) await this.sleep(300);
+        }
+        if (!msgBtn) {
+          throw new Error('botão "Enviar mensagem" não disponível no perfil');
+        }
+
+        await this.openDirectChat(msgBtn);
+        inputEl = await this.waitForMessageInput(15000);
+        if (!inputEl) {
+          throw new Error('campo de mensagem do Direct não abriu');
+        }
+        await this.sleep(1500);
+      }
+    }
+
+    // Se a mensagem já está na conversa (ex.: o Story chegou a enviar), NÃO envia de novo
+    const before = this.countTextOnPage(messageText);
+    if (before > 0) {
+      await this.leaveThread();
+      return 'already';
     }
 
     await this.typeMessageIntoReact(inputEl, messageText);
     await this.submitMessage(inputEl);
 
-    const result = await this.waitForSendConfirmation(inputEl, messageText, 8000);
+    const result = await this.confirmSentInThread(inputEl, messageText, before, 10000);
     if (result.blocked) {
       throw new Error(`Instagram bloqueou a ação: ${result.message}`);
     }
@@ -812,13 +860,112 @@ window.InnfluSender = {
       throw new Error(result.message || 'envio no Direct não confirmado');
     }
 
-    // Volta ao perfil para o fluxo continuar
     await this.sleep(800);
+    await this.leaveThread();
+    return 'sent';
+  },
+
+  /**
+   * Normaliza texto para comparação (sem espaços, minúsculo, só o começo da mensagem)
+   */
+  normalizeNeedle(text) {
+    return (text || '').toLowerCase().replace(/\s+/g, '').slice(0, 28);
+  },
+
+  /**
+   * Conta quantas vezes o início da mensagem aparece como TEXTO VISÍVEL na página
+   * (ignora o HUD do Innflu, campos de digitação e scripts). É a prova real de que
+   * a mensagem apareceu na conversa.
+   */
+  countTextOnPage(text) {
+    const needle = this.normalizeNeedle(text);
+    if (!needle) return 0;
+    let acc = '';
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const p = node.parentElement;
+      if (!p) continue;
+      if (p.closest('#innflu-hud-root') || p.closest('textarea') || p.closest('[contenteditable="true"]') || p.closest('script,style,noscript')) continue;
+      const t = node.nodeValue;
+      if (t && t.trim()) acc += t;
+    }
+    acc = acc.toLowerCase().replace(/\s+/g, '');
+    let count = 0, idx = 0;
+    while ((idx = acc.indexOf(needle, idx)) !== -1) { count++; idx += needle.length; }
+    return count;
+  },
+
+  /**
+   * Confirma envio no Direct: só vale se o TEXTO aparecer na conversa
+   * (campo esvaziado sozinho NÃO é prova de envio)
+   */
+  async confirmSentInThread(inputEl, text, countBefore = 0, timeoutMs = 10000) {
+    const start = Date.now();
+    let retried = false;
+    while (Date.now() - start < timeoutMs) {
+      const blockCheck = this.checkActionBlock();
+      if (blockCheck.blocked) {
+        return { confirmed: false, blocked: true, message: blockCheck.message };
+      }
+      if (this.countTextOnPage(text) > countBefore) {
+        return { confirmed: true };
+      }
+      if (!retried && Date.now() - start > 5000 && inputEl && inputEl.isConnected && (inputEl.innerText || inputEl.value || '').trim()) {
+        retried = true;
+        inputEl.focus();
+        const enterProps = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13, bubbles: true, cancelable: true };
+        inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
+        inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
+      }
+      await this.sleep(500);
+    }
+    return { confirmed: false, message: 'a mensagem não apareceu na conversa do Direct (não foi enviada)' };
+  },
+
+  /**
+   * Sai da conversa do Direct e volta ao perfil
+   */
+  async leaveThread() {
     if (window.location.pathname.toLowerCase().startsWith('/direct/')) {
       window.history.back();
       await this.sleep(1500);
     }
-    return true;
+  },
+
+  /**
+   * Depois de responder ao Story, abre a conversa e CONFERE se a mensagem está lá.
+   * Retorna { verified: true | false | null, inputEl }  (null = não foi possível verificar)
+   */
+  async verifyStoryReplyInThread(messageText, cleanUser) {
+    // Garante que estamos de volta ao perfil
+    for (let i = 0; i < 10 && window.location.pathname.toLowerCase().startsWith('/stories/'); i++) {
+      if (i === 4) { window.history.back(); }
+      await this.sleep(400);
+    }
+    if (this.isStoryViewerOpen()) {
+      this.closeStoryViewer();
+      await this.sleep(1200);
+    }
+
+    let msgBtn = null;
+    for (let i = 0; i < 17 && !msgBtn; i++) {
+      msgBtn = this.findMessageButton();
+      if (!msgBtn) await this.sleep(300);
+    }
+    if (!msgBtn) return { verified: null };
+
+    await this.openDirectChat(msgBtn);
+    const inputEl = await this.waitForMessageInput(12000);
+    if (!inputEl) return { verified: null };
+
+    // Dá tempo da conversa carregar e procura o texto enviado
+    const start = Date.now();
+    while (Date.now() - start < 6500) {
+      if (this.countTextOnPage(messageText) > 0) return { verified: true, inputEl };
+      await this.sleep(500);
+    }
+    return { verified: false, inputEl };
   },
 
   /**
