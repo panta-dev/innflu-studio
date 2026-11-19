@@ -2535,9 +2535,9 @@ app.get("/api/health", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.3.8",
+    version: "1.3.9",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "v1.3.8: Envio da mensagem de capta\xE7\xE3o corrigido: resposta ao Story com confirma\xE7\xE3o real e fallback autom\xE1tico para DM direto.",
+    releaseNotes: "v1.3.9: Qualquer minera\xE7\xE3o (palavra-chave, hashtag, semelhantes e seguindo) agora entra no perfil e envia a mensagem de capta\xE7\xE3o automaticamente.",
     downloadUrl: "/innflu-extensao.zip",
     publishedAt: "2026-11-18T13:30:00Z",
     dynamicRules: {
