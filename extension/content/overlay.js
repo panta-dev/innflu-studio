@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.1</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.2</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +173,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.1</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.2</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -535,7 +535,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.1 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.2 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -1991,7 +1991,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.1';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.2';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2027,7 +2027,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.4.1`,
+      `- Versão do Script: v1.4.2`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2670,7 +2670,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       await updateLocalLeadStatus(cleanUser, 'contatada');
       const viaLabel = sendRes && sendRes.viaStory ? 'Story' : 'DM';
       showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: sendRes && sendRes.viaStory ? 'Story respondido com a mensagem de captação.' : 'Mensagem enviada por DM (Story indisponível).' });
-      addDiagLog('success', `Captação enviada com sucesso para @${cleanUser} via ${viaLabel}!${sendRes && sendRes.storyError ? ' (Story falhou: ' + sendRes.storyError + ')' : ''}`);
+      addDiagLog('success', `Captação enviada para @${cleanUser} via ${viaLabel}!${sendRes && sendRes.verified === false ? ' (⚠ não foi possível conferir na conversa)' : sendRes && sendRes.verified ? ' (conferida na conversa ✓)' : ''}${sendRes && sendRes.storyError ? ' (Story falhou: ' + sendRes.storyError + ')' : ''}`);
 
       // Registra no Cloudflare D1
       try {
