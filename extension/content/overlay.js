@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.2</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.3</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +173,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.2</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.3</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -535,7 +535,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.2 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.3 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -769,6 +769,81 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   let currentUserEmail = '';
   let currentUserPlan = '';
   let currentBearerToken = '';
+
+  // ===== Perfis rejeitados (memória permanente) e proteção anti-loop =====
+  let rejectedCache = new Set();
+  async function loadRejected() {
+    try {
+      const r = await chrome.storage.local.get('innfluRejected');
+      const obj = r.innfluRejected || {};
+      const limit = Date.now() - 30 * 24 * 3600 * 1000;
+      Object.keys(obj).forEach(k => { if (!obj[k] || obj[k].t < limit) delete obj[k]; });
+      rejectedCache = new Set(Object.keys(obj));
+    } catch (e) {}
+  }
+  async function addRejected(user, reason) {
+    const u = (user || '').toLowerCase().trim();
+    if (!u) return;
+    rejectedCache.add(u);
+    try {
+      const r = await chrome.storage.local.get('innfluRejected');
+      const obj = r.innfluRejected || {};
+      obj[u] = { t: Date.now(), r: reason || '' };
+      const keys = Object.keys(obj);
+      if (keys.length > 3000) {
+        keys.sort((a, b) => obj[a].t - obj[b].t).slice(0, keys.length - 3000).forEach(k => delete obj[k]);
+      }
+      await chrome.storage.local.set({ innfluRejected: obj });
+    } catch (e) {}
+  }
+  // Abre um perfil com proteção: se o mesmo perfil for aberto repetidas vezes (loop), descarta e segue
+  function openProfileSafe(user) {
+    const u = (user || '').toLowerCase().replace('@', '').trim();
+    if (!u) return false;
+    const refTarget = ((localBotCache && localBotCache.miningTarget) || '').replace(/^[@#]/, '').trim().toLowerCase();
+    if (u !== refTarget) {
+      const counts = { ...((localBotCache && localBotCache.openCounts) || {}) };
+      counts[u] = (counts[u] || 0) + 1;
+      saveBot({ openCounts: counts });
+      if (counts[u] > 4) {
+        addRejected(u, 'loop');
+        addDiagLog('warn', `Loop detectado em @${u} (aberto ${counts[u]}x). Descartando e seguindo para o próximo.`);
+        showToast({ type: 'warning', title: 'Loop evitado', message: `@${u} foi descartado após várias tentativas.` });
+        const queue = ((localBotCache && localBotCache.queue) || []).filter(x => x && x.toLowerCase() !== u);
+        saveBot({ queue, visited: Array.from(new Set([...(((localBotCache && localBotCache.visited) || [])), u])).slice(-1000) });
+        const nextInQueue = queue.find(x => !rejectedCache.has(x.toLowerCase()));
+        if (nextInQueue) return window.InnfluCrawler.openProfile(nextInQueue);
+        const navigated = window.InnfluCrawler.navigateToSource((localBotCache && localBotCache.miningSource) || 'hashtag', (localBotCache && localBotCache.miningTarget) || 'provador');
+        if (!navigated) scheduleNext(1000);
+        return navigated;
+      }
+    }
+    return window.InnfluCrawler.openProfile(u);
+  }
+
+  // Sem novas candidatas a partir do perfil atual: troca de perfil-base ou encerra (nunca fica em loop)
+  async function handleNoNewCandidates(currentUser) {
+    const { bot: live } = await getState();
+    const empty = (live.emptyExtractCount || 0) + 1;
+    const pivots = new Set((live.pivotsUsed || []).map(x => (x || '').toLowerCase()));
+    pivots.add((currentUser || '').toLowerCase());
+    const candidates = (live.visited || []).filter(x => x && !pivots.has(x.toLowerCase()) && !rejectedCache.has(x.toLowerCase()));
+    const nextPivot = candidates.length ? candidates[candidates.length - 1].toLowerCase() : null;
+
+    if (empty >= 2 && nextPivot) {
+      await saveBot({ miningTarget: nextPivot, queue: [], emptyExtractCount: 0, pivotsUsed: Array.from(pivots) });
+      addDiagLog('info', `Sem novas candidatas em @${currentUser}. Trocando perfil-base para @${nextPivot}.`);
+      showToast({ type: 'info', title: 'Trocando perfil-base', message: `Buscando novas influenciadoras a partir de @${nextPivot}...` });
+      openProfileSafe(nextPivot);
+      return;
+    }
+    if (empty >= 3 || (empty >= 2 && !nextPivot)) {
+      await stopAutomationGracefully('no_candidates', `Não há mais influenciadoras novas a partir de @${currentUser}. Troque o perfil de referência ou o nicho.`);
+      return;
+    }
+    await saveBot({ emptyExtractCount: empty, pivotsUsed: Array.from(pivots) });
+    scheduleNext(3000);
+  }
 
   async function getState() {
     return new Promise(resolve => {
@@ -1991,7 +2066,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.2';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.3';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2027,7 +2102,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.4.2`,
+      `- Versão do Script: v1.4.3`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2118,11 +2193,6 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const { bot, savedLeads } = await getState();
     const set = new Set();
 
-    // 1. Histórico da extensão (visited)
-    (bot.visited || []).forEach(u => {
-      if (u) set.add(u.toLowerCase());
-    });
-
     // 2. Cache local de leads
     (savedLeads || []).forEach(l => {
       if (l.username) set.add(l.username.toLowerCase());
@@ -2144,12 +2214,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     }
 
     knownCRMUsersCache = set;
-
-    // Persiste a lista completa em bot.visited para garantir que mesmo pausando/recarregando ela se lembre de todas!
-    const mergedVisited = Array.from(set).slice(-1000);
-    bot.visited = mergedVisited;
-    await saveBot({ visited: mergedVisited });
-    console.log(`[Innflu] ⚡ Memória do CRM carregada: ${set.size} influenciadoras registradas (serão descartadas na hora se reaparecerem).`);
+    console.log(`[Innflu] ⚡ Memória do CRM carregada: ${set.size} influenciadoras registradas (se reaparecerem, a conversa é conferida antes de decidir).`);
     return set;
   }
 
@@ -2241,6 +2306,10 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       miningTarget: targetClean,
       keyword: targetClean,
       queue: [],
+      visited: [],
+      openCounts: {},
+      pivotsUsed: [],
+      emptyExtractCount: 0,
       visitedPosts: [],
       nextActionAt: 0
     });
@@ -2312,6 +2381,10 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       minDelaySec: minDelayVal,
       maxDelaySec: maxDelayVal,
       queue: [],
+      visited: [],
+      openCounts: {},
+      pivotsUsed: [],
+      emptyExtractCount: 0,
       visitedPosts: [],
       nextActionAt: 0,
       searchStallCount: 0
@@ -2436,6 +2509,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     }
     const { bot, apiBaseUrl, activeTemplate } = await getState();
     if (!bot.isRunning) return;
+    // Perfis rejeitados (fora das métricas, já responderam, loop) nunca são reabertos
+    if (rejectedCache.size) bot.visited = Array.from(new Set([...(bot.visited || []), ...rejectedCache]));
 
     if (bot.isPaused) {
       hudCurrentAction.innerText = 'Operação pausada. Clique em "Retomar" para prosseguir.';
@@ -2515,24 +2590,28 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       } else {
         // Navega até o perfil da criadora
         hudCurrentAction.innerText = `[⚡ Automação] Abrindo @${nextUser}...`;
-        window.InnfluCrawler.openProfile(nextUser);
+        openProfileSafe(nextUser);
         return;
       }
     }
 
     // CENÁRIO C: Fila vazia -> Primeiro verifica se há criadoras salvas na barra de Leads pendentes de envio
     const allLeads = cachedLeads || [];
+    // Só puxa pendentes do MESMO nicho/alvo da rodada atual (mudar o nicho não reabre perfis de outro nicho)
+    const rawTargetNow = (bot.miningTarget || '').trim().replace(/^[@#]/, '').toLowerCase();
     const pendingFromBar = allLeads.filter(l => {
+      const ln = (l.niche || '').toLowerCase().replace(/^[@#]/, '').trim();
+      if (!rawTargetNow || ln !== rawTargetNow) return false;
       const u = (l.username || '').toLowerCase();
       const s = (l.status || '').toLowerCase();
-      const isPending = s === 'minerada' || s === 'pendente' || s === 'qualificada' || (!s.includes('contatad') && !s.includes('enviad') && !s.includes('skip'));
+      const isPending = s === 'minerada' || s === 'pendente' || s === 'qualificada' || (!s.includes('contatad') && !s.includes('enviad') && !s.includes('skip') && !s.includes('respond'));
       return u && isPending && !visitedSet.has(u);
     });
 
     if (pendingFromBar.length > 0) {
       const nextFromBar = pendingFromBar[0].username.toLowerCase();
       hudCurrentAction.innerText = `[⚡ Automação] Puxando da barra de leads: @${nextFromBar}...`;
-      window.InnfluCrawler.openProfile(nextFromBar);
+      openProfileSafe(nextFromBar);
       return;
     }
 
@@ -2561,9 +2640,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       await window.InnfluCrawler.sleep(300);
     }
 
-    const remainingQueue = (bot.queue || []).filter(u => u && u.toLowerCase() !== cleanUser);
-    const visitedSet = new Set(bot.visited || []);
+    // Estado mais recente (evita sobrescrever com cópia antiga)
+    const { bot: liveBot } = await getState();
+    const remainingQueue = ((liveBot && liveBot.queue) || bot.queue || []).filter(u => u && u.toLowerCase() !== cleanUser);
+    const visitedSet = new Set((liveBot && liveBot.visited) || bot.visited || []);
     visitedSet.add(cleanUser);
+    const wasKnown = knownCRMUsersCache.has(cleanUser);
     knownCRMUsersCache.add(cleanUser);
 
     if (!profile) {
@@ -2600,11 +2682,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada: ${rejectReason}`;
       addDiagLog('warn', `@${cleanUser} pulada: ${rejectReason}`);
       await logActivity({ username: cleanUser, status: `Pulada (${rejectReason})` });
+      await addRejected(cleanUser, rejectReason);
       await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
       if (remainingQueue.length > 0) {
         hudCurrentAction.innerText = `[⚡ Automação] Pulada (${rejectReason}). Abrindo @${remainingQueue[0]}...`;
         await window.InnfluCrawler.sleep(1200);
-        window.InnfluCrawler.openProfile(remainingQueue[0]);
+        openProfileSafe(remainingQueue[0]);
         return;
       } else {
         hudCurrentAction.innerText = `[⚡ Automação] Pulada (${rejectReason}). Retornando à busca...`;
@@ -2622,11 +2705,48 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       await logActivity({ username: cleanUser, status: 'Pulada (7d)' });
       await window.InnfluCrawler.sleep(1000);
       if (remainingQueue.length > 0) {
-        window.InnfluCrawler.openProfile(remainingQueue[0]);
+        openProfileSafe(remainingQueue[0]);
       } else {
         window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
       }
       return;
+    }
+
+    // Já está no banco? Confere a conversa: se ela respondeu, descarta; se não respondeu, envia nova mensagem
+    if (wasKnown) {
+      hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} já está no banco. Conferindo a conversa...`;
+      let thread = null;
+      try {
+        window.InnfluIsSendingDM = true;
+        thread = await window.InnfluSender.inspectThread(cleanUser);
+      } catch (e) {
+        thread = null;
+      } finally {
+        window.InnfluIsSendingDM = false;
+      }
+
+      if (thread && thread.opened && thread.hasIncoming) {
+        addDiagLog('info', `@${cleanUser} já respondeu à captação. Descartada.`);
+        hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} já respondeu. Descartando...`;
+        await logActivity({ username: cleanUser, status: 'Descartada (já respondeu 💬)' });
+        await addRejected(cleanUser, 'respondeu');
+        await updateLocalLeadStatus(cleanUser, 'respondeu');
+        try {
+          await innfluApiFetch('/api/leads', { method: 'POST', body: JSON.stringify({ username: cleanUser, status: 'respondeu' }) });
+        } catch (e) {}
+        await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
+        await window.InnfluCrawler.sleep(800);
+        if (remainingQueue.length > 0) {
+          openProfileSafe(remainingQueue[0]);
+        } else {
+          window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
+        }
+        return;
+      }
+
+      if (thread && thread.opened && thread.hasOutgoing) {
+        addDiagLog('info', `@${cleanUser} já recebeu mensagem e não respondeu. Enviando nova mensagem.`);
+      }
     }
 
     // Perfil 100% qualificado: Salva no D1 e no CRM local
@@ -2696,7 +2816,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       hudCurrentAction.innerText = `[Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
       startCountdown(nextAt, () => {
         if (remainingQueue.length > 0) {
-          window.InnfluCrawler.openProfile(remainingQueue[0]);
+          openProfileSafe(remainingQueue[0]);
         } else {
           window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
         }
@@ -2723,7 +2843,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       hudCurrentAction.innerText = `[Automação] Pulando @${cleanUser}...`;
       startCountdown(nextAt, () => {
         if (remainingQueue.length > 0) {
-          window.InnfluCrawler.openProfile(remainingQueue[0]);
+          openProfileSafe(remainingQueue[0]);
         } else {
           window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
         }
@@ -2831,7 +2951,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
               title: 'Sem Novas Sugestões',
               message: `Não foram encontradas mais contas semelhantes a @${currentProfileUser}.`
             });
-            scheduleNext(4000);
+            await handleNoNewCandidates(currentProfileUser);
             return;
           }
         }
@@ -2841,7 +2961,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         if (currentQueue.length > 0) {
           const nextTarget = currentQueue[0];
           hudCurrentAction.innerText = `Abrindo próxima semelhante: @${nextTarget}...`;
-          window.InnfluCrawler.openProfile(nextTarget);
+          openProfileSafe(nextTarget);
           return;
         }
 
@@ -2854,7 +2974,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
             hudCurrentAction.innerText = `[⚡ Automação] Ramificando busca: extraindo semelhantes a @${nextPivot}...`;
             showToast({ type: 'info', title: 'Ramificação Contínua', message: `Buscando novas semelhantes a partir de @${nextPivot}...` });
             await saveBot({ miningTarget: nextPivot, queue: [] });
-            window.InnfluCrawler.openProfile(nextPivot);
+            openProfileSafe(nextPivot);
             return;
           }
         }
@@ -2890,7 +3010,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
               title: 'Nenhum perfil extraído',
               message: `Não foi possível extrair a lista de quem @${currentProfileUser} segue. Verifique se a conta é aberta.`
             });
-            scheduleNext(4000);
+            await handleNoNewCandidates(currentProfileUser);
             return;
           }
         }
@@ -2899,7 +3019,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         if (currentQueue.length > 0) {
           const nextTarget = currentQueue[0];
           hudCurrentAction.innerText = `Abrindo influenciadora que ela segue: @${nextTarget}...`;
-          window.InnfluCrawler.openProfile(nextTarget);
+          openProfileSafe(nextTarget);
           return;
         }
 
@@ -2914,7 +3034,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       if (remainingQueue.length > 0) {
         const nextTarget = remainingQueue[0];
         hudCurrentAction.innerText = `Abrindo próxima criadora da fila: @${nextTarget}...`;
-        window.InnfluCrawler.openProfile(nextTarget);
+        openProfileSafe(nextTarget);
         return;
       }
 
@@ -2932,7 +3052,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     if (pendingQueue.length > 0) {
       const nextUser = pendingQueue[0];
       hudCurrentAction.innerText = `Abrindo influenciadora da fila: @${nextUser}...`;
-      window.InnfluCrawler.openProfile(nextUser);
+      openProfileSafe(nextUser);
       return;
     }
 
@@ -2942,7 +3062,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     if ((source === 'similar' || source === 'following' || source === 'followers') && targetClean) {
       if (currentProfileUser !== targetClean) {
         hudCurrentAction.innerText = `Navegando até o perfil de referência @${targetClean}...`;
-        window.InnfluCrawler.openProfile(targetClean);
+        openProfileSafe(targetClean);
         return;
       }
     }
@@ -2969,7 +3089,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         const updatedQueue = [cleanAuthor, ...currentQueue.filter(u => u.toLowerCase() !== cleanAuthor)];
         await saveBot({ queue: updatedQueue });
         await window.InnfluCrawler.sleep(1200);
-        window.InnfluCrawler.openProfile(author);
+        openProfileSafe(author);
         return;
       }
 
@@ -2991,7 +3111,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         await syncKnownCRMUsers(apiBaseUrl);
       }
 
-      const visitedUsers = new Set([...(bot.visited || []), ...Array.from(knownCRMUsersCache)]);
+      const visitedUsers = new Set([...(bot.visited || []), ...Array.from(rejectedCache)]);
       const visitedPosts = new Set((bot.visitedPosts || []).map(h => window.InnfluCrawler.normalizePostHref(h)));
 
       // ABERTURA PRECISA POST A POST (ZERO ADIVINHAÇÃO):
@@ -3116,7 +3236,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         await saveBot({ visited: Array.from(visitedUsersSet).slice(-1000) });
       } else {
         // VERIFICAÇÃO INSTANTÂNEA: Está no CRM ou já foi visitada?
-        const isAlreadyInCRM = visitedUsersSet.has(authorLower) || knownCRMUsersCache.has(authorLower);
+        const isAlreadyInCRM = visitedUsersSet.has(authorLower) || rejectedCache.has(authorLower);
 
         if (isAlreadyInCRM) {
           hudCurrentAction.innerText = `@${author} já está no CRM / visitada. Descartando na hora! ⚡`;
@@ -3141,7 +3261,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
             const updatedQueue = [authorLower, ...currentQueue.filter(u => u.toLowerCase() !== authorLower)];
             await saveBot({ queue: updatedQueue });
             await window.InnfluCrawler.sleep(400);
-            window.InnfluCrawler.openProfile(author);
+            openProfileSafe(author);
             return;
           }
         }
@@ -3309,7 +3429,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     if (pageType !== 'profile' || window.InnfluCrawler.getCurrentProfileUsername() !== target.username) {
       hudCurrentAction.innerText = `Navegando até @${target.username}...`;
-      window.InnfluCrawler.openProfile(target.username);
+      openProfileSafe(target.username);
       return;
     }
 
@@ -4031,6 +4151,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // INICIALIZAÇÃO
   // ==========================================
   getState().then(async ({ bot, apiBaseUrl, activeTemplate, savedLeads }) => {
+    await loadRejected();
     // 1. Checa e aplica autenticação obrigatória (bloqueia o robô até login ativo)
     const isAuth = await checkAndApplyAuth();
 
