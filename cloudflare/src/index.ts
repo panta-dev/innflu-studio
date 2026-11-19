@@ -675,7 +675,7 @@ app.get('/updates.xml', (c) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="innflustudioprospector2026">
-    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.2" />
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.3" />
   </app>
 </gupdate>`;
   c.header('Content-Type', 'application/xml; charset=utf-8');
@@ -685,9 +685,9 @@ app.get('/updates.xml', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.4.2',
+    version: '1.4.3',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.4.2: Envio de captação corrigido: a mensagem só conta como enviada depois de aparecer na conversa; se o Story não enviar, o DM é enviado automaticamente.',
+    releaseNotes: 'v1.4.3: Fim do loop em perfis fora das métricas (perfis rejeitados são lembrados e o agente troca de perfil-base), conferência da conversa para quem já está no banco (respondeu = descarta; não respondeu = nova mensagem).',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-18T13:30:00Z',
     dynamicRules: {
