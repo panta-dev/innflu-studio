@@ -25,9 +25,22 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.local.set({ ...DEFAULT_CONFIG, ...current, apiBaseUrl: effectiveBaseUrl });
   console.log('[Innflu] Service Worker instalado e configurado.');
 
-  // Cria alarme para verificar atualizações OTA a cada 60 minutos
-  chrome.alarms.create('innflu_ota_update_check', { periodInMinutes: 60 });
+  // Cria alarme para verificar atualizações OTA a cada 15 minutos
+  chrome.alarms.create('innflu_ota_update_check', { periodInMinutes: 15 });
   checkForRemoteUpdates();
+});
+
+// Checa atualizações OTA silenciosamente ao abrir ou navegar no Instagram
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url && tab.url.includes('instagram.com')) {
+    chrome.storage.local.get(['lastUpdateCheck'], (data) => {
+      const now = Date.now();
+      const last = data.lastUpdateCheck || 0;
+      if (now - last > 10 * 60 * 1000) { // a cada 10 min de navegação
+        checkForRemoteUpdates();
+      }
+    });
+  }
 });
 
 // Fila de execução em memória
@@ -311,6 +324,16 @@ async function checkForRemoteUpdates() {
     if (hasNewerVersion) {
       console.log(`[Innflu OTA] 🚀 Nova versão ${remoteData.version} disponível (atual: ${localVersion})`);
       notifyTabs({ type: 'OTA_UPDATE_AVAILABLE', ...updateInfo });
+
+      // Se o Chrome tiver suporte nativo a update_url (.crx), solicita atualização imediata
+      if (typeof chrome.runtime.requestUpdateCheck === 'function') {
+        chrome.runtime.requestUpdateCheck((status, details) => {
+          console.log('[Innflu OTA] chrome.runtime.requestUpdateCheck:', status, details);
+          if (status === 'update_available') {
+            chrome.runtime.reload();
+          }
+        });
+      }
     }
 
     return updateInfo;

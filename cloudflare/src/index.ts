@@ -671,6 +671,17 @@ app.get('/api/health', (c) => {
 // ==========================================
 // 1.1 SISTEMA DE ATUALIZAÇÃO AUTOMÁTICA OTA (OVER-THE-AIR)
 // ==========================================
+app.get('/updates.xml', (c) => {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
+  <app appid="innflustudioprospector2026">
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.1" />
+  </app>
+</gupdate>`;
+  c.header('Content-Type', 'application/xml; charset=utf-8');
+  return c.body(xml);
+});
+
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',

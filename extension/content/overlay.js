@@ -173,13 +173,12 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Versão (<span id="hudOtaVersion">1.2.0</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.1</span>)</span>
           </div>
-          <div class="innflu-ota-desc" id="hudOtaNotes">Atualização pronta com melhorias anti-ban.</div>
+          <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
         <div class="innflu-ota-actions">
-          <a href="#" id="btnDownloadOta" class="innflu-ota-btn download" target="_blank" download>⬇️ Baixar .zip</a>
-          <button id="btnReloadOta" class="innflu-ota-btn reload" title="Recarregar Extensão Instantaneamente">🔄 Atualizar</button>
+          <button id="btnReloadOta" class="innflu-ota-btn reload" style="background: linear-gradient(135deg, #a855f7, #ec4899); color:#fff; font-weight:700; border:none; padding: 4px 10px; cursor: pointer; border-radius: 6px;" title="Aplicar atualização instantaneamente">⚡ Atualizar Agora</button>
         </div>
       </div>
 
@@ -720,8 +719,13 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // Ações do Banner OTA
   if (btnReloadOta) {
     btnReloadOta.onclick = () => {
-      showToast({ type: 'info', title: 'Atualizando...', message: 'Recarregando extensão para aplicar nova versão.' });
+      btnReloadOta.innerText = '⚡ Atualizando...';
+      btnReloadOta.disabled = true;
+      showToast({ type: 'info', title: 'Atualizando...', message: 'Aplicando novas regras da nuvem e recarregando.' });
       chrome.runtime.sendMessage({ action: 'RELOAD_EXTENSION' });
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     };
   }
 
