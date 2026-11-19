@@ -2639,9 +2639,9 @@ app.get("/api/health", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.4.0",
+    version: "1.4.1",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "v1.4.0: Sistema completo de monetiza\xE7\xE3o e assinaturas SaaS (Planos Starter, Pro e Scale/Ag\xEAncia), webhook Hotmart integrado, controle server-side de DMs di\xE1rias e bloqueio de automa\xE7\xE3o para planos inativos.",
+    releaseNotes: "v1.4.1: Corre\xE7\xE3o cr\xEDtica: erros de execu\xE7\xE3o (logDiagnostics/bot n\xE3o definidos) que travavam a minera\xE7\xE3o antes do envio. Qualquer minera\xE7\xE3o agora entra no perfil e envia a mensagem de capta\xE7\xE3o.",
     downloadUrl: "/innflu-extensao.zip",
     publishedAt: "2026-11-18T13:30:00Z",
     dynamicRules: {
