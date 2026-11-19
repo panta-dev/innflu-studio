@@ -2535,9 +2535,9 @@ app.get("/api/health", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.3.7",
+    version: "1.3.8",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "v1.3.7: Identifica\xE7\xE3o precisa de influenciadoras no feed, relat\xF3rio de diagn\xF3stico 100% completo no \xEDcone \u{1F41B}, parada autom\xE1tica inteligente e janela totalmente redimension\xE1vel e minimiz\xE1vel.",
+    releaseNotes: "v1.3.8: Envio da mensagem de capta\xE7\xE3o corrigido: resposta ao Story com confirma\xE7\xE3o real e fallback autom\xE1tico para DM direto.",
     downloadUrl: "/innflu-extensao.zip",
     publishedAt: "2026-11-18T13:30:00Z",
     dynamicRules: {
