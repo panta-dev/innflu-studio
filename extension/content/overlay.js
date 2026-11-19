@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.3.7</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.3.9</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -536,7 +536,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.7 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.9 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -1141,8 +1141,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         hudStatusBadgeText.innerText = 'Automação Ativa...';
         hudLiveStatusText.innerText = 'Automação Contínua (Minerar + DM)';
       } else if (bot.activeMode === 'miner') {
-        hudStatusBadgeText.innerText = 'Minerando...';
-        hudLiveStatusText.innerText = 'Mineração Ativa';
+        hudStatusBadgeText.innerText = 'Minerando + Enviando...';
+        hudLiveStatusText.innerText = 'Mineração Ativa (Minerar + DM)';
       } else {
         hudStatusBadgeText.innerText = 'Captando...';
         hudLiveStatusText.innerText = 'Enviando DMs';
@@ -1975,7 +1975,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.3.7';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.3.9';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2011,7 +2011,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.3.7`,
+      `- Versão do Script: v1.3.9`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2234,7 +2234,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     showToast({
       type: 'success',
       title: 'Mineração Iniciada',
-      message: `Minerando via ${currentSource}: "${targetClean}"`
+      message: `Minerando via ${currentSource}: "${targetClean}" e enviando a mensagem de captação`
     });
     runLoop();
   };
@@ -2434,10 +2434,9 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const pageType = window.InnfluCrawler.detectCurrentPage();
     hudPageType.innerText = `Página: ${pageType} • Fila: ${(bot.queue || []).length} perfis`;
 
-    if (bot.activeMode === 'auto') {
+    // Mineração (qualquer fonte) e Automação usam o MESMO pipeline: minera -> filtra -> envia a captação.
+    if (bot.activeMode === 'auto' || bot.activeMode === 'miner') {
       await stepAutomation(bot, apiBaseUrl, activeTemplate, pageType);
-    } else if (bot.activeMode === 'miner') {
-      await stepMiner(bot, apiBaseUrl, pageType);
     } else if (bot.activeMode === 'sender') {
       await stepSender(bot, apiBaseUrl, activeTemplate, pageType);
     }
@@ -2464,6 +2463,23 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     const currentProfileUser = (pageType === 'profile' ? (window.InnfluCrawler.getCurrentProfileUsername() || '') : '').toLowerCase();
     const visitedSet = new Set(bot.visited || []);
+
+    // CENÁRIO 0: Perfil de REFERÊNCIA (fontes "semelhantes" / "seguindo"): não é alvo de captação,
+    // apenas serve para extrair a lista de candidatas. Marca como visitado e deixa o minerador extrair.
+    const refSource = bot.miningSource === 'similar' || bot.miningSource === 'following' || bot.miningSource === 'followers';
+    const refTarget = (bot.miningTarget || '').replace(/^[@#]/, '').trim().toLowerCase();
+    if (refSource && pageType === 'profile' && currentProfileUser && currentProfileUser === refTarget) {
+      if (!visitedSet.has(currentProfileUser)) {
+        visitedSet.add(currentProfileUser);
+        bot.visited = Array.from(visitedSet).slice(-1000);
+        await saveBot({ visited: bot.visited });
+      }
+      const hasPending = (bot.queue || []).some(u => u && !visitedSet.has(u.toLowerCase()));
+      if (!hasPending) {
+        await stepMiner(bot, apiBaseUrl, pageType);
+        return;
+      }
+    }
 
     // CENÁRIO A: Estamos diretamente no perfil de uma influenciadora inédita
     if (pageType === 'profile' && currentProfileUser && !visitedSet.has(currentProfileUser)) {
@@ -2582,6 +2598,21 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       }
     }
 
+    // Regra dos 7 dias / blacklist: nunca abordar quem já recebeu captação recentemente
+    const check7d = await check7DayRule(apiBaseUrl, cleanUser);
+    if (check7d && check7d.eligible === false) {
+      hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} já contatada recentemente. Pulando...`;
+      addDiagLog('info', `@${cleanUser} pulada: regra dos 7 dias / blacklist.`);
+      await logActivity({ username: cleanUser, status: 'Pulada (7d)' });
+      await window.InnfluCrawler.sleep(1000);
+      if (remainingQueue.length > 0) {
+        window.InnfluCrawler.openProfile(remainingQueue[0]);
+      } else {
+        window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
+      }
+      return;
+    }
+
     // Perfil 100% qualificado: Salva no D1 e no CRM local
     await saveLead(apiBaseUrl, profile, 'minerada', currentNiche);
     await cacheLocalLead(profile, 'minerada', currentNiche);
@@ -2598,7 +2629,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     try {
       window.InnfluIsSendingDM = true;
       const fallbackTpl = '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}';
-      const chosenTemplate = ((hudAutoTemplateContent ? hudAutoTemplateContent.value : '') || activeTemplate || (hudTemplateContent ? hudTemplateContent.value : '') || fallbackTpl).trim();
+      const tplMessageTab = hudTemplateContent ? hudTemplateContent.value : '';
+      const tplAutoTab = hudAutoTemplateContent ? hudAutoTemplateContent.value : '';
+      // Mineração usa a mensagem de referência da aba "Mensagem"; Automação usa a da própria aba
+      const chosenTemplate = ((bot.activeMode === 'miner'
+        ? (tplMessageTab || activeTemplate || tplAutoTab)
+        : (tplAutoTab || activeTemplate || tplMessageTab)) || fallbackTpl).trim();
       const msg = window.InnfluSpintax.interpolate(chosenTemplate, { 
         username: cleanUser, 
         nome: profile.fullName || cleanUser,
@@ -2616,8 +2652,9 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       const tagStatus = sendRes && sendRes.viaStory ? 'Story Respondido ⚡' : 'DM Enviada ✓';
       await logActivity({ username: cleanUser, status: tagStatus });
       await updateLocalLeadStatus(cleanUser, 'contatada');
-      showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: 'Story respondido com a mensagem de captação.' });
-      addDiagLog('success', `Captação enviada com sucesso para @${cleanUser} via Story!`);
+      const viaLabel = sendRes && sendRes.viaStory ? 'Story' : 'DM';
+      showToast({ type: 'success', title: `Captação Enviada! @${cleanUser}`, message: sendRes && sendRes.viaStory ? 'Story respondido com a mensagem de captação.' : 'Mensagem enviada por DM (Story indisponível).' });
+      addDiagLog('success', `Captação enviada com sucesso para @${cleanUser} via ${viaLabel}!${sendRes && sendRes.storyError ? ' (Story falhou: ' + sendRes.storyError + ')' : ''}`);
 
       // Registra no Cloudflare D1
       try {
@@ -2793,7 +2830,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         }
 
         // Fila esgotada
-        if (bot.activeMode === 'auto') {
+        if (bot.activeMode === 'auto' || bot.activeMode === 'miner') {
           // No modo de automação contínua, ramifica minerando semelhantes da última influenciadora visitada
           const visitedList = (bot.visited || []).filter(u => u && u.toLowerCase() !== targetClean);
           if (visitedList.length > 0) {
