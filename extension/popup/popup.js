@@ -23,8 +23,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const popDailyCount = document.getElementById('popDailyCount');
   const popTotalLeads = document.getElementById('popTotalLeads');
   const popWaCount = document.getElementById('popWaCount');
+  const popSubStatus = document.getElementById('popSubStatus');
 
   // Botões
+  const btnOpenSubscription = document.getElementById('btnOpenSubscription');
   const btnOpenDashboard = document.getElementById('btnOpenDashboard');
   const btnOpenInstagram = document.getElementById('btnOpenInstagram');
   const btnLogout = document.getElementById('btnLogout');
@@ -70,6 +72,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const initial = (user.full_name ? user.full_name.charAt(0) : user.email.charAt(0)).toUpperCase();
     popUserAvatar.innerText = initial;
+
+    if (popSubStatus) {
+      popSubStatus.style.display = 'block';
+      if (user.payment_status === 'active') {
+        popSubStatus.innerHTML = '<span style="color:#34d399;">● Assinatura Ativa</span>';
+      } else if (user.payment_status === 'trial') {
+        popSubStatus.innerHTML = `<span style="color:#fbbf24;">● Trial (${user.trial_days_remaining ?? 3} dias)</span>`;
+      } else {
+        popSubStatus.innerHTML = '<span style="color:#f87171;">● Acesso Bloqueado</span>';
+      }
+    }
 
     if (stats) {
       popDailyCount.innerText = stats.sentToday || 0;
@@ -195,6 +208,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Ações
+  if (btnOpenSubscription) {
+    btnOpenSubscription.addEventListener('click', async () => {
+      const apiBase = await getApiBase();
+      chrome.tabs.create({ url: `${apiBase}/dashboard/` });
+    });
+  }
+
   btnOpenDashboard.addEventListener('click', () => {
     chrome.tabs.create({ url: 'https://innflu-studio.pages.dev/dashboard/' });
   });

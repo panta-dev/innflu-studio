@@ -253,6 +253,11 @@
         <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500 group-hover:text-rose-400"></i>
       </button>
 
+      <button onclick="navTo('view-subscription')" id="nav-view-subscription" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover transition cursor-pointer">
+        <i class="fa-solid fa-credit-card w-4 text-purple-400"></i>
+        <span>Minha Assinatura</span>
+      </button>
+
       <button onclick="navToSettings('api')" id="nav-view-settings" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-surface-hover transition cursor-pointer">
         <i class="fa-solid fa-gear w-4 text-slate-400"></i>
         <span>Configurações & API</span>
@@ -1480,6 +1485,243 @@ Contato comercial: contato@rafaela.com.br
 
       </section>
 
+      <!-- ====================================================
+           VIEW 10: MINHA ASSINATURA & PLANOS SAAS
+      ==================================================== -->
+      <section id="view-subscription" class="space-y-6 hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold mb-1">
+              <i class="fa-solid fa-crown text-[10px]"></i>
+              <span>Gestão de Assinatura & Monetização</span>
+            </div>
+            <h2 class="text-2xl font-black text-white tracking-tight">Planos & Acesso à Plataforma</h2>
+            <p class="text-xs text-slate-400">Acompanhe seu ciclo de cobrança, limites diários de prospecção e atualize seu plano quando quiser.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="loadSubscriptionView(true)" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 hover:text-white transition">
+              <i class="fa-solid fa-arrows-rotate text-xs"></i>
+              <span>Atualizar Status</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card de Status do Plano Atual -->
+        <div class="glass-panel p-6 rounded-2xl border border-surface-border bg-gradient-to-r from-slate-900/90 via-purple-950/20 to-slate-900/90 shadow-xl backdrop-blur-xl">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-surface-border/60">
+            <div class="space-y-2">
+              <div class="flex items-center gap-3">
+                <span id="subCurrentPlanBadge" class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">PLANO TRIAL</span>
+                <span id="subPaymentStatusBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">● Ativo</span>
+              </div>
+              <h3 id="subPlanTitle" class="text-lg font-bold text-white">Plano de Teste Gratuito</h3>
+              <p id="subPlanDescription" class="text-xs text-slate-400">Você tem acesso liberado para testar o envio de DMs e a mineração de influenciadoras.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-4">
+              <div class="px-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-center min-w-[130px]">
+                <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">DMs Hoje</p>
+                <p id="subDmMeter" class="text-base font-extrabold text-white mt-0.5">0 / 10</p>
+              </div>
+              <div class="px-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-center min-w-[130px]">
+                <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Contas IG</p>
+                <p id="subAccountsMeter" class="text-base font-extrabold text-white mt-0.5">1 Conta</p>
+              </div>
+              <div class="px-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-center min-w-[140px]">
+                <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Validade</p>
+                <p id="subExpiresAt" class="text-base font-extrabold text-purple-300 mt-0.5">—</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Banner Informativo Dinâmico -->
+          <div id="subTrialAlert" class="mt-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center justify-between gap-3 text-xs hidden">
+            <div class="flex items-center gap-2.5">
+              <i class="fa-solid fa-triangle-exclamation text-amber-400 text-sm"></i>
+              <span>Você está no <b>período de teste</b>. Restam <b id="subTrialDaysLeft">3</b> dias. Assine o Plano Pro para garantir escala sem pausas.</span>
+            </div>
+            <button onclick="scrollToPlansGrid()" class="px-3 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-bold hover:bg-amber-300 transition shrink-0 text-xs">
+              Garantir Plano Pro
+            </button>
+          </div>
+
+          <div id="subBlockedAlert" class="mt-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center justify-between gap-3 text-xs hidden">
+            <div class="flex items-center gap-2.5">
+              <i class="fa-solid fa-lock text-rose-400 text-sm"></i>
+              <span>Seu acesso está <b>bloqueado ou expirado</b>. Escolha um plano abaixo para reativar sua extensão e o envio de mensagens imediatamente.</span>
+            </div>
+            <button onclick="scrollToPlansGrid()" class="px-3 py-1.5 rounded-lg bg-rose-500 text-white font-bold hover:bg-rose-400 transition shrink-0 text-xs">
+              Reativar Acesso
+            </button>
+          </div>
+        </div>
+
+        <!-- Grid de 3 Planos -->
+        <div id="plansGridContainer" class="pt-4">
+          <div class="text-center max-w-xl mx-auto mb-8">
+            <h3 class="text-xl font-black text-white">Escolha o plano ideal para o seu volume</h3>
+            <p class="text-xs text-slate-400 mt-1">Cancele quando quiser. Sem contratos de fidelidade. Acesso imediato à extensão e ao dashboard completo.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            <!-- 1. Starter -->
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col justify-between hover:border-slate-700 transition relative">
+              <div class="space-y-4">
+                <div>
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">INICIANTE</span>
+                  <h4 class="text-xl font-black text-white mt-1">Plano Starter</h4>
+                  <p class="text-xs text-slate-400 mt-1 leading-relaxed">Para quem está começando a prospectar criadoras de conteúdo.</p>
+                </div>
+
+                <div class="py-2">
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-white tracking-tight">R$ 97</span>
+                    <span class="text-xs text-slate-400">/mês</span>
+                  </div>
+                </div>
+
+                <ul class="space-y-3 pt-2 text-xs text-slate-300 border-t border-slate-800">
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-emerald-400 text-xs"></i>
+                    <span><b>1 Conta</b> do Instagram conectada</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-emerald-400 text-xs"></i>
+                    <span>Até <b>40 DMs automáticas</b> por dia</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-emerald-400 text-xs"></i>
+                    <span>Mineração por <b>Palavra-chave e Hashtag</b></span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-emerald-400 text-xs"></i>
+                    <span>Decodificador básico de WhatsApp</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-emerald-400 text-xs"></i>
+                    <span>Regra dos <b>7 Dias anti-repetição</b></span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="pt-6 mt-6 border-t border-slate-800">
+                <button id="btnSubscribeStarter" onclick="openHotmartCheckout('starter')" class="w-full py-3 px-4 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-slate-600 transition flex items-center justify-center gap-2">
+                  <span>Escolher Starter</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. Pro (Mais Vendido) -->
+            <div class="rounded-2xl border-2 border-purple-500/70 bg-gradient-to-b from-purple-950/30 via-slate-900/90 to-slate-900/90 p-6 flex flex-col justify-between shadow-2xl shadow-purple-950/40 relative transform lg:-translate-y-2">
+              <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-black uppercase tracking-wider shadow-lg">
+                MAIS VENDIDO ⭐
+              </div>
+
+              <div class="space-y-4">
+                <div>
+                  <span class="text-[10px] font-bold text-purple-400 uppercase tracking-widest">PROFISSIONAL</span>
+                  <h4 class="text-xl font-black text-white mt-1">Plano Pro</h4>
+                  <p class="text-xs text-slate-300 mt-1 leading-relaxed">Para marcas, e-commerces e infoprodutores que buscam escala rápida.</p>
+                </div>
+
+                <div class="py-2">
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-white tracking-tight">R$ 197</span>
+                    <span class="text-xs text-purple-300">/trimestre</span>
+                    <span class="text-[11px] text-slate-400 ml-1.5 font-medium">(R$ 65/mês)</span>
+                  </div>
+                </div>
+
+                <ul class="space-y-3 pt-2 text-xs text-slate-200 border-t border-purple-500/20">
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-purple-400 text-xs"></i>
+                    <span>Até <b>3 Contas</b> do Instagram</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-purple-400 text-xs"></i>
+                    <span>Até <b>100 DMs diárias</b> distribuídas</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-purple-400 text-xs"></i>
+                    <span>Mineração por <b>Perfis Semelhantes (Lookalike)</b></span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-purple-400 text-xs"></i>
+                    <span>Decodificador Completo WhatsApp (+55 DDD)</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-purple-400 text-xs"></i>
+                    <span>Filtro de Perfil com <b>Inteligência Artificial</b></span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-purple-400 text-xs"></i>
+                    <span><b>Exportação CSV</b> com 1 Clique</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-purple-400 text-xs"></i>
+                    <span>Suporte prioritário via WhatsApp</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="pt-6 mt-6 border-t border-purple-500/20">
+                <button id="btnSubscribePro" onclick="openHotmartCheckout('pro')" class="w-full py-3.5 px-4 rounded-xl font-black text-xs bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:opacity-95 text-white shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-bolt text-xs"></i>
+                  <span>Assinar Plano Pro</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 3. Scale / Agência -->
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col justify-between hover:border-slate-700 transition relative">
+              <div class="space-y-4">
+                <div>
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AGÊNCIA & EQUIPES</span>
+                  <h4 class="text-xl font-black text-white mt-1">Plano Scale / Agência</h4>
+                  <p class="text-xs text-slate-400 mt-1 leading-relaxed">Para agências que cuidam de múltiplos clientes simultaneamente.</p>
+                </div>
+
+                <div class="py-2">
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-white tracking-tight">R$ 397</span>
+                    <span class="text-xs text-slate-400">/vitalício ou anual</span>
+                  </div>
+                </div>
+
+                <ul class="space-y-3 pt-2 text-xs text-slate-300 border-t border-slate-800">
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-pink-400 text-xs"></i>
+                    <span>Até <b>10 Contas</b> do Instagram</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-pink-400 text-xs"></i>
+                    <span><b>DMs e Mineração Ilimitadas</b></span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-pink-400 text-xs"></i>
+                    <span><b>Todos os recursos Pro</b> liberados</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-pink-400 text-xs"></i>
+                    <span>Dashboard multi-campanhas</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-check text-pink-400 text-xs"></i>
+                    <span>Gerenciador VIP dedicado</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="pt-6 mt-6 border-t border-slate-800">
+                <button id="btnSubscribeScale" onclick="openHotmartCheckout('scale')" class="w-full py-3 px-4 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-slate-600 transition flex items-center justify-center gap-2">
+                  <span>Escolher Agência</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -1758,7 +2000,7 @@ Contato comercial: contato@rafaela.com.br
       const allViews = [
         'view-overview', 'view-leads', 'view-mining-hub', 
         'view-campaigns', 'view-templates', 'view-ai-qualifier', 
-        'view-logs', 'view-blacklist', 'view-settings'
+        'view-logs', 'view-blacklist', 'view-settings', 'view-subscription'
       ];
 
       allViews.forEach(id => {
@@ -1783,6 +2025,186 @@ Contato comercial: contato@rafaela.com.br
         syncTemplateEditorFields();
       } else if (viewId === 'view-settings') {
         syncSettingsFields();
+      } else if (viewId === 'view-subscription') {
+        loadSubscriptionView();
+      }
+    }
+
+    // ----------------------------------------------------
+    // GESTÃO DE MONETIZAÇÃO & ASSINATURA SAAS
+    // ----------------------------------------------------
+    let cachedCheckoutLinks = null;
+
+    async function fetchCheckoutLinks() {
+      if (cachedCheckoutLinks) return cachedCheckoutLinks;
+      try {
+        const res = await apiFetch('/api/plan/checkout');
+        if (res) cachedCheckoutLinks = res;
+      } catch (e) {
+        console.warn('Erro ao carregar links de checkout:', e);
+      }
+      return cachedCheckoutLinks || {
+        starter: 'https://pay.hotmart.com/STARTER_LINK',
+        pro: 'https://pay.hotmart.com/PRO_LINK',
+        scale: 'https://pay.hotmart.com/SCALE_LINK'
+      };
+    }
+
+    async function openHotmartCheckout(plan) {
+      const links = await fetchCheckoutLinks();
+      const targetUrl = links[plan] || links.pro;
+      if (targetUrl && !targetUrl.includes('_LINK')) {
+        window.open(targetUrl, '_blank');
+      } else {
+        alert('Configuração de checkout: Defina as variáveis de ambiente HOTMART_CHECKOUT_STARTER, HOTMART_CHECKOUT_PRO e HOTMART_CHECKOUT_SCALE no Cloudflare Pages para redirecionar ao checkout oficial da Hotmart.');
+      }
+    }
+
+    function scrollToPlansGrid() {
+      const el = document.getElementById('plansGridContainer');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function loadSubscriptionView(force = false) {
+      try {
+        const res = await apiFetch('/api/me');
+        if (!res) return;
+
+        const planNames = {
+          starter: 'Plano Starter',
+          pro: 'Plano Pro',
+          scale: 'Plano Scale / Agência',
+          trial: 'Plano de Teste Gratuito',
+          free: 'Sem Plano Ativo'
+        };
+
+        const planBadgeEl = document.getElementById('subCurrentPlanBadge');
+        const statusBadgeEl = document.getElementById('subPaymentStatusBadge');
+        const titleEl = document.getElementById('subPlanTitle');
+        const descEl = document.getElementById('subPlanDescription');
+        const dmMeterEl = document.getElementById('subDmMeter');
+        const accountsMeterEl = document.getElementById('subAccountsMeter');
+        const expiresAtEl = document.getElementById('subExpiresAt');
+        const trialAlertEl = document.getElementById('subTrialAlert');
+        const trialDaysLeftEl = document.getElementById('subTrialDaysLeft');
+        const blockedAlertEl = document.getElementById('subBlockedAlert');
+
+        const plan = (res.plan || 'trial').toLowerCase();
+        const paymentStatus = res.payment_status || 'trial';
+        const canUse = Boolean(res.can_use);
+
+        if (planBadgeEl) {
+          planBadgeEl.innerText = (res.plan || 'TRIAL').toUpperCase();
+          if (plan === 'pro') {
+            planBadgeEl.className = 'px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40';
+          } else if (plan === 'scale') {
+            planBadgeEl.className = 'px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-pink-500/20 text-pink-300 border border-pink-500/40';
+          } else if (plan === 'starter') {
+            planBadgeEl.className = 'px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/40';
+          } else {
+            planBadgeEl.className = 'px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40';
+          }
+        }
+
+        if (statusBadgeEl) {
+          if (paymentStatus === 'active') {
+            statusBadgeEl.innerHTML = '● Assinatura Ativa';
+            statusBadgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+          } else if (paymentStatus === 'trial') {
+            statusBadgeEl.innerHTML = '● Período Trial';
+            statusBadgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20';
+          } else {
+            statusBadgeEl.innerHTML = '● Bloqueado / Expirado';
+            statusBadgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20';
+          }
+        }
+
+        if (titleEl) titleEl.innerText = planNames[plan] || 'Plano Personalizado';
+        if (descEl) {
+          if (plan === 'pro') {
+            descEl.innerText = 'Até 100 DMs diárias distribuídas, mineração Lookalike, decodificador de WhatsApp e IA inclusos.';
+          } else if (plan === 'scale') {
+            descEl.innerText = 'DMs e mineração ilimitadas com suporte VIP e até 10 contas simultâneas.';
+          } else if (plan === 'starter') {
+            descEl.innerText = 'Até 40 DMs diárias automáticas e mineração essencial por Palavra-chave e Hashtags.';
+          } else {
+            descEl.innerText = 'Você tem acesso liberado para testar o envio de DMs e a mineração de influenciadoras.';
+          }
+        }
+
+        if (dmMeterEl) {
+          dmMeterEl.innerText = `${res.daily_dm_count || 0} / ${res.daily_dm_limit || 40}`;
+        }
+
+        if (accountsMeterEl) {
+          accountsMeterEl.innerText = `${res.instagram_accounts_limit || 1} Conta${(res.instagram_accounts_limit || 1) > 1 ? 's' : ''}`;
+        }
+
+        if (expiresAtEl) {
+          const expDate = res.plan_expires_at || res.trial_ends_at;
+          if (expDate) {
+            try {
+              const d = new Date(expDate);
+              expiresAtEl.innerText = d.toLocaleDateString('pt-BR');
+            } catch (e) {
+              expiresAtEl.innerText = expDate;
+            }
+          } else {
+            expiresAtEl.innerText = plan === 'scale' ? 'Vitalício' : 'Ativo';
+          }
+        }
+
+        // Banners
+        if (paymentStatus === 'trial' && trialAlertEl) {
+          trialAlertEl.classList.remove('hidden');
+          if (trialDaysLeftEl) trialDaysLeftEl.innerText = String(res.trial_days_remaining ?? 3);
+        } else if (trialAlertEl) {
+          trialAlertEl.classList.add('hidden');
+        }
+
+        if (!canUse && blockedAlertEl) {
+          blockedAlertEl.classList.remove('hidden');
+        } else if (blockedAlertEl) {
+          blockedAlertEl.classList.add('hidden');
+        }
+
+        // Ajustar botões dos planos para mostrar "Plano Atual"
+        const btnStarter = document.getElementById('btnSubscribeStarter');
+        const btnPro = document.getElementById('btnSubscribePro');
+        const btnScale = document.getElementById('btnSubscribeScale');
+
+        if (btnStarter) {
+          if (plan === 'starter' && paymentStatus === 'active') {
+            btnStarter.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i><span>Plano Atual</span>';
+            btnStarter.classList.add('opacity-75', 'cursor-default');
+          } else {
+            btnStarter.innerHTML = '<span>Escolher Starter</span>';
+            btnStarter.classList.remove('opacity-75', 'cursor-default');
+          }
+        }
+
+        if (btnPro) {
+          if (plan === 'pro' && paymentStatus === 'active') {
+            btnPro.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i><span>Plano Atual</span>';
+            btnPro.classList.add('opacity-75', 'cursor-default');
+          } else {
+            btnPro.innerHTML = '<i class="fa-solid fa-bolt text-xs"></i><span>Assinar Plano Pro</span>';
+            btnPro.classList.remove('opacity-75', 'cursor-default');
+          }
+        }
+
+        if (btnScale) {
+          if (plan === 'scale' && paymentStatus === 'active') {
+            btnScale.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i><span>Plano Atual</span>';
+            btnScale.classList.add('opacity-75', 'cursor-default');
+          } else {
+            btnScale.innerHTML = '<span>Escolher Agência</span>';
+            btnScale.classList.remove('opacity-75', 'cursor-default');
+          }
+        }
+
+      } catch (err) {
+        console.warn('Erro ao atualizar view de assinatura:', err);
       }
     }
 
@@ -3349,7 +3771,19 @@ Contato comercial: contato@rafaela.com.br
 
       if (nameEl) nameEl.innerText = u.full_name || 'Usuário Innflu';
       if (emailEl) emailEl.innerText = u.email || 'conta@innflu.com';
-      if (badgeEl) badgeEl.innerText = (u.plan || 'PRO').toUpperCase();
+      if (badgeEl) {
+        const p = (u.plan || 'PRO').toUpperCase();
+        badgeEl.innerText = p;
+        if (p === 'PRO') {
+          badgeEl.className = 'text-[9px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.5 rounded font-mono';
+        } else if (p === 'SCALE') {
+          badgeEl.className = 'text-[9px] font-bold uppercase tracking-wider bg-pink-500/10 text-pink-400 border border-pink-500/20 px-1.5 py-0.5 rounded font-mono';
+        } else if (p === 'STARTER') {
+          badgeEl.className = 'text-[9px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono';
+        } else {
+          badgeEl.className = 'text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-mono';
+        }
+      }
 
       if (avatarEl) {
         if (u.avatar_url) {

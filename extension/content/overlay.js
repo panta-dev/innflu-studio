@@ -90,6 +90,34 @@
         </div>
       </div>
 
+      <!-- Modal de Assinatura & Monetização Obrigatória (Trava se o usuário não pagou) -->
+      <div class="innflu-login-overlay" id="hudSubscriptionOverlay" style="display:none;z-index:99999;">
+        <div class="innflu-login-card" style="border: 1px solid rgba(168,85,247,0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(168,85,247,0.2);">
+          <div class="innflu-login-brand">
+            <div class="innflu-logo-badge" style="width:30px;height:30px;font-size:15px;background:linear-gradient(135deg,#a855f7,#ec4899);">👑</div>
+            <div class="innflu-login-title-group">
+              <span class="innflu-brand-text" style="font-size:14px;">Innflu Studio</span>
+              <span class="innflu-login-badge-sub" id="subOverlayBadge" style="background:rgba(239,68,68,0.2);color:#fca5a5;border-color:rgba(239,68,68,0.3);">Assinatura Necessária</span>
+            </div>
+          </div>
+          
+          <h4 id="subOverlayTitle" style="color:#ffffff;font-size:13px;font-weight:700;margin:6px 0 2px;">Acesso Bloqueado</h4>
+          <p class="innflu-login-desc" id="subOverlayDesc" style="margin-bottom:12px;">
+            Seu período de avaliação gratuita terminou ou sua assinatura não está ativa. Para continuar prospectando influenciadoras e enviando mensagens, assine um plano.
+          </p>
+
+          <a href="https://innflu-studio.pages.dev/dashboard/" target="_blank" class="innflu-cta-btn start" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:11.5px;width:100%;margin-top:2px;">
+            <span>⚡ Escolher Plano & Assinar</span>
+          </a>
+
+          <div class="innflu-login-footer" style="margin-top:10px;">
+            <button type="button" id="btnRefreshSubStatus" class="innflu-login-link" style="background:none;border:none;cursor:pointer;padding:0;">
+              Já assinei? Atualizar status ↻
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Modal de Diagnóstico & Logs em Tempo Real (Bug Report 🐛) -->
       <div class="innflu-diag-overlay" id="hudDiagnosticsModal" style="display:none;">
         <div class="innflu-diag-header">
@@ -530,6 +558,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   const hudAuthPlan = $('hudAuthPlan');
   const btnHudLogout = $('btnHudLogout');
 
+  const hudSubscriptionOverlay = $('hudSubscriptionOverlay');
+  const subOverlayBadge = $('subOverlayBadge');
+  const subOverlayTitle = $('subOverlayTitle');
+  const subOverlayDesc = $('subOverlayDesc');
+  const btnRefreshSubStatus = $('btnRefreshSubStatus');
+
   const hudLoginOverlay = $('hudLoginOverlay');
   const hudLoginForm = $('hudLoginForm');
   const inputHudLoginEmail = $('inputHudLoginEmail');
@@ -890,6 +924,34 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     }
   }
 
+  function showSubscriptionGate(show, user = null) {
+    if (hudSubscriptionOverlay) {
+      hudSubscriptionOverlay.style.display = show ? 'flex' : 'none';
+      if (show && user) {
+        if (subOverlayBadge) {
+          subOverlayBadge.innerText = user.payment_status === 'trial' ? 'Trial Expirado' : 'Assinatura Bloqueada';
+        }
+        if (subOverlayTitle) {
+          subOverlayTitle.innerText = user.payment_status === 'trial' ? 'Período Gratuito Encerrado' : 'Acesso Bloqueado';
+        }
+        if (subOverlayDesc) {
+          subOverlayDesc.innerText = 'Seu acesso às automações e disparos está pausado. Assine o Plano Starter, Pro ou Scale para continuar.';
+        }
+      }
+    }
+    if (show) {
+      if (localBotCache && localBotCache.isRunning) {
+        if (typeof stopAutomationGracefully === 'function') {
+          stopAutomationGracefully('subscription_required', 'Assinatura ativa obrigatória para automação.');
+        } else {
+          saveBot({ isRunning: false, activeMode: null, isPaused: false });
+          syncUI({ ...localBotCache, isRunning: false, activeMode: null, isPaused: false });
+        }
+      }
+      logDiagnostics('warn', 'Acesso bloqueado pelo Subscription Gate Obrigatório (Monetização).');
+    }
+  }
+
   function updateUserUI(user) {
     if (!user) return;
     if (hudAuthEmail) {
@@ -897,11 +959,37 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       hudAuthEmail.title = user.email;
     }
     if (hudAuthPlan) {
-      hudAuthPlan.innerText = (user.plan || 'PRO').toUpperCase();
+      const p = (user.plan || 'PRO').toUpperCase();
+      hudAuthPlan.innerText = p;
+      if (p === 'PRO') {
+        hudAuthPlan.style.background = 'rgba(168,85,247,0.2)';
+        hudAuthPlan.style.borderColor = 'rgba(168,85,247,0.4)';
+        hudAuthPlan.style.color = '#c084fc';
+      } else if (p === 'SCALE') {
+        hudAuthPlan.style.background = 'rgba(236,72,153,0.2)';
+        hudAuthPlan.style.borderColor = 'rgba(236,72,153,0.4)';
+        hudAuthPlan.style.color = '#f472b6';
+      } else if (p === 'STARTER') {
+        hudAuthPlan.style.background = 'rgba(59,130,246,0.2)';
+        hudAuthPlan.style.borderColor = 'rgba(59,130,246,0.4)';
+        hudAuthPlan.style.color = '#60a5fa';
+      } else {
+        hudAuthPlan.style.background = 'rgba(245,158,11,0.2)';
+        hudAuthPlan.style.borderColor = 'rgba(245,158,11,0.4)';
+        hudAuthPlan.style.color = '#fbbf24';
+      }
     }
     if (hudAuthAvatar) {
       const initial = (user.full_name ? user.full_name.charAt(0) : user.email.charAt(0)).toUpperCase();
       hudAuthAvatar.innerText = initial;
+    }
+
+    // Atualiza limite de DMs seguro com base no plano do usuário
+    if (user.daily_dm_limit && localBotCache) {
+      localBotCache.dailyLimit = user.daily_dm_limit;
+      if (hudSentTodayCount) {
+        hudSentTodayCount.innerText = `${localBotCache.sentCount || 0} / ${user.daily_dm_limit}`;
+      }
     }
   }
 
@@ -911,6 +999,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
     if (!authToken) {
       showLoginGate(true);
+      showSubscriptionGate(false);
       return false;
     }
 
@@ -928,6 +1017,15 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
           await chrome.storage.local.set({ authUser: data.user });
           showLoginGate(false);
           updateUserUI(data.user);
+
+          // Validação de Monetização / Assinatura
+          if (data.user.can_use === false) {
+            showSubscriptionGate(true, data.user);
+            return false;
+          } else {
+            showSubscriptionGate(false);
+          }
+
           flushPendingLeadsBuffer();
           syncKnownCRMUsers();
           return true;
@@ -937,12 +1035,17 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       if (authUser) {
         showLoginGate(false);
         updateUserUI(authUser);
+        if (authUser.can_use === false) {
+          showSubscriptionGate(true, authUser);
+          return false;
+        }
         return true;
       }
     }
 
     await chrome.storage.local.set({ authToken: null, authUser: null });
     showLoginGate(true, 'Sessão expirada. Faça login para continuar.');
+    showSubscriptionGate(false);
     return false;
   }
 
@@ -1349,6 +1452,18 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       await chrome.storage.local.set({ authToken: null, authUser: null, apiToken: null });
       showLoginGate(true, 'Você saiu da conta.');
       showToast({ type: 'info', title: 'Sessão Encerrada', message: 'Você foi desconectado com sucesso.' });
+    };
+  }
+
+  if (btnRefreshSubStatus) {
+    btnRefreshSubStatus.onclick = async () => {
+      btnRefreshSubStatus.innerText = 'Verificando assinatura...';
+      const ok = await checkAndApplyAuth();
+      if (ok) {
+        showToast({ type: 'success', title: 'Assinatura Ativa!', message: 'Seu acesso foi validado com sucesso.' });
+      } else {
+        btnRefreshSubStatus.innerText = 'Já assinei? Atualizar status ↻';
+      }
     };
   }
 
@@ -2510,6 +2625,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
           method: 'POST',
           body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
         });
+        await innfluApiFetch('/api/dm/increment', { method: 'POST' });
       } catch (e) {}
 
       // Se bateu a meta diária após este envio, para imediatamente
@@ -3205,6 +3321,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
           method: 'POST',
           body: JSON.stringify({ username: cleanUser, message_text: msg, status: 'success' })
         });
+        await innfluApiFetch('/api/dm/increment', { method: 'POST' });
       } catch (e) {}
 
       // Delay seguro anti-ban (respeitando configuração do usuário)

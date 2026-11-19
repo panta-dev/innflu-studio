@@ -16,7 +16,7 @@
           <span class="logo-sub">Studio Prospector</span>
         </div>
       </div>
-      <span class="version">v1.3.7</span>
+      <span class="version">v1.4.0</span>
     </div>
 
     <!-- VIEW 1: NÃO LOGADO (LOGIN OBRIGATÓRIO) -->
@@ -65,6 +65,7 @@
             <span class="plan-pill" id="popUserPlan">PRO</span>
           </div>
           <span class="user-email" id="popUserEmail">usuario@email.com</span>
+          <div id="popSubStatus" style="font-size:10px;margin-top:2px;font-weight:600;display:none;"></div>
           <div class="sync-status">
             <span class="sync-dot"></span>
             <span class="sync-label">Sincronizado ao Painel Web</span>
@@ -101,6 +102,11 @@
 
       <!-- Ações do Usuário -->
       <div class="actions-section">
+        <button id="btnOpenSubscription" class="btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%); margin-bottom: 8px;">
+          <span>👑 Minha Assinatura & Planos</span>
+          <span class="btn-arrow">↗</span>
+        </button>
+
         <button id="btnOpenDashboard" class="btn-primary btn-dashboard">
           <span>📊 Abrir Painel Web</span>
           <span class="btn-arrow">↗</span>

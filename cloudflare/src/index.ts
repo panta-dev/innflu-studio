@@ -8,6 +8,13 @@ type Bindings = {
   ASSETS?: Fetcher;
   ENVIRONMENT?: string;
   DEFAULT_DAILY_LIMIT?: string;
+  HOTMART_HOTTOK?: string;
+  HOTMART_PRODUCT_STARTER?: string;
+  HOTMART_PRODUCT_PRO?: string;
+  HOTMART_PRODUCT_SCALE?: string;
+  HOTMART_CHECKOUT_STARTER?: string;
+  HOTMART_CHECKOUT_PRO?: string;
+  HOTMART_CHECKOUT_SCALE?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -117,6 +124,20 @@ async function ensureSchema(db: D1Database) {
         `CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
+        )`,
+        `CREATE TABLE IF NOT EXISTS subscriptions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          plan TEXT NOT NULL,
+          payment_status TEXT DEFAULT 'pending',
+          hotmart_transaction TEXT,
+          hotmart_subscriber_code TEXT,
+          amount_paid REAL,
+          currency TEXT DEFAULT 'BRL',
+          plan_started_at TEXT,
+          plan_expires_at TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
         )`
       ];
 
@@ -161,6 +182,38 @@ async function ensureSchema(db: D1Database) {
         ('last_reset_date', DATE('now'))
       `).run().catch(() => {});
     }
+
+    // Garantir que tabela subscriptions existe mesmo se users já existia
+    await db.prepare(`CREATE TABLE IF NOT EXISTS subscriptions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      plan TEXT NOT NULL,
+      payment_status TEXT DEFAULT 'pending',
+      hotmart_transaction TEXT,
+      hotmart_subscriber_code TEXT,
+      amount_paid REAL,
+      currency TEXT DEFAULT 'BRL',
+      plan_started_at TEXT,
+      plan_expires_at TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`).run().catch(() => {});
+
+    // Garantir migração das novas colunas na tabela users em bancos existentes
+    const alterQueries = [
+      `ALTER TABLE users ADD COLUMN plan_expires_at TEXT DEFAULT NULL`,
+      `ALTER TABLE users ADD COLUMN payment_status TEXT DEFAULT 'trial'`,
+      `ALTER TABLE users ADD COLUMN hotmart_subscriber_code TEXT DEFAULT NULL`,
+      `ALTER TABLE users ADD COLUMN instagram_accounts_limit INTEGER DEFAULT 1`,
+      `ALTER TABLE users ADD COLUMN daily_dm_limit INTEGER DEFAULT 10`,
+      `ALTER TABLE users ADD COLUMN daily_dm_count INTEGER DEFAULT 0`,
+      `ALTER TABLE users ADD COLUMN daily_dm_reset_date TEXT DEFAULT NULL`,
+      `ALTER TABLE users ADD COLUMN trial_ends_at TEXT DEFAULT (datetime('now', '+3 days'))`
+    ];
+    for (const q of alterQueries) {
+      await db.prepare(q).run().catch(() => {});
+    }
+
     dbInitialized = true;
   } catch (err) {
     console.error('Auto-ensureSchema error:', err);
@@ -204,7 +257,7 @@ function generateToken(prefix: string = 'inf'): string {
 }
 
 // Helper de autenticação multi-tenant: identifica o usuário por sessão Bearer ou API Token
-async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email: string; full_name: string; company_name?: string; plan: string; api_token: string; avatar_url?: string } | null> {
+async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email: string; full_name: string; company_name?: string; plan: string; api_token: string; avatar_url?: string; payment_status?: string; plan_expires_at?: string; trial_ends_at?: string; daily_dm_limit?: number; daily_dm_count?: number; daily_dm_reset_date?: string; instagram_accounts_limit?: number } | null> {
   const authHeader = c.req.header('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim() || 
                 c.req.header('X-API-Key') || 
@@ -213,7 +266,9 @@ async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email:
 
   if (token) {
     const sessionUser = await db.prepare(`
-      SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token, u.avatar_url
+      SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token, u.avatar_url,
+             u.payment_status, u.plan_expires_at, u.trial_ends_at, u.daily_dm_limit,
+             u.daily_dm_count, u.daily_dm_reset_date, u.instagram_accounts_limit
       FROM sessions s
       JOIN users u ON s.user_id = u.id
       WHERE s.token = ? AND datetime(s.expires_at) > datetime('now')
@@ -221,7 +276,9 @@ async function getAuthUser(db: D1Database, c: any): Promise<{ id: string; email:
     if (sessionUser) return sessionUser;
 
     const apiUser = await db.prepare(`
-      SELECT id, email, full_name, company_name, plan, api_token, avatar_url
+      SELECT id, email, full_name, company_name, plan, api_token, avatar_url,
+             payment_status, plan_expires_at, trial_ends_at, daily_dm_limit,
+             daily_dm_count, daily_dm_reset_date, instagram_accounts_limit
       FROM users
       WHERE api_token = ?
     `).bind(token).first<any>();
@@ -272,8 +329,8 @@ app.post('/api/auth/register', async (c) => {
 
   try {
     await db.prepare(`
-      INSERT INTO users (id, email, password_hash, full_name, company_name, plan, api_token, avatar_url)
-      VALUES (?, ?, ?, ?, ?, 'pro', ?, NULL)
+      INSERT INTO users (id, email, password_hash, full_name, company_name, plan, api_token, avatar_url, payment_status, trial_ends_at, daily_dm_limit, instagram_accounts_limit)
+      VALUES (?, ?, ?, ?, ?, 'trial', ?, NULL, 'trial', datetime('now', '+3 days'), 10, 1)
     `).bind(userId, email, passwordHash, fullName, companyName, apiToken).run();
 
     await db.prepare(`
@@ -307,7 +364,7 @@ app.post('/api/auth/register', async (c) => {
         email,
         full_name: fullName,
         company_name: companyName,
-        plan: 'pro',
+        plan: 'trial',
         api_token: apiToken,
         avatar_url: null
       }
@@ -376,7 +433,9 @@ app.get('/api/auth/me', async (c) => {
 
   // Tenta encontrar por token de sessão
   let user = await db.prepare(`
-    SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token, u.avatar_url, u.created_at
+    SELECT u.id, u.email, u.full_name, u.company_name, u.plan, u.api_token, u.avatar_url, u.created_at,
+           u.payment_status, u.plan_expires_at, u.trial_ends_at, u.daily_dm_limit,
+           u.daily_dm_count, u.daily_dm_reset_date, u.instagram_accounts_limit
     FROM sessions s
     JOIN users u ON s.user_id = u.id
     WHERE s.token = ? AND datetime(s.expires_at) > datetime('now')
@@ -385,7 +444,9 @@ app.get('/api/auth/me', async (c) => {
   // Se não achou, tenta por API Token direto
   if (!user) {
     user = await db.prepare(`
-      SELECT id, email, full_name, company_name, plan, api_token, avatar_url, created_at
+      SELECT id, email, full_name, company_name, plan, api_token, avatar_url, created_at,
+             payment_status, plan_expires_at, trial_ends_at, daily_dm_limit,
+             daily_dm_count, daily_dm_reset_date, instagram_accounts_limit
       FROM users
       WHERE api_token = ?
     `).bind(token).first<any>();
@@ -394,6 +455,26 @@ app.get('/api/auth/me', async (c) => {
   if (!user) {
     return c.json({ authenticated: false, error: 'Sessão inválida ou expirada' }, 401);
   }
+
+  const now = new Date();
+  const paymentStatus = user.payment_status || 'trial';
+  const trialEndsAt = user.trial_ends_at || null;
+
+  let canUse = false;
+  if (paymentStatus === 'active') {
+    canUse = true;
+  } else if (paymentStatus === 'trial' && trialEndsAt) {
+    canUse = new Date(trialEndsAt) > now;
+  }
+
+  let trialDaysRemaining = 0;
+  if (trialEndsAt) {
+    const diff = new Date(trialEndsAt).getTime() - now.getTime();
+    trialDaysRemaining = Math.max(0, Math.ceil(diff / 86400000));
+  }
+
+  user.can_use = canUse;
+  user.trial_days_remaining = trialDaysRemaining;
 
   return c.json({
     authenticated: true,
@@ -409,6 +490,51 @@ app.post('/api/auth/logout', async (c) => {
     await db.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
   }
   return c.json({ success: true, message: 'Logout efetuado' });
+});
+
+// ==========================================
+// /api/me — Dados do usuário com monetização
+// ==========================================
+app.get('/api/me', async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json({ error: 'DB não configurado' }, 500);
+
+  const user = await getAuthUser(db, c);
+  if (!user) {
+    return c.json({ authenticated: false, error: 'Não autorizado' }, 401);
+  }
+
+  const now = new Date();
+  const paymentStatus = user.payment_status || 'trial';
+  const trialEndsAt = user.trial_ends_at || null;
+
+  let canUse = false;
+  if (paymentStatus === 'active') {
+    canUse = true;
+  } else if (paymentStatus === 'trial' && trialEndsAt) {
+    canUse = new Date(trialEndsAt) > now;
+  }
+
+  let trialDaysRemaining = 0;
+  if (trialEndsAt) {
+    const diff = new Date(trialEndsAt).getTime() - now.getTime();
+    trialDaysRemaining = Math.max(0, Math.ceil(diff / 86400000));
+  }
+
+  return c.json({
+    id: user.id,
+    email: user.email,
+    full_name: user.full_name,
+    plan: user.plan || 'trial',
+    payment_status: paymentStatus,
+    plan_expires_at: user.plan_expires_at || null,
+    trial_ends_at: trialEndsAt,
+    daily_dm_limit: user.daily_dm_limit ?? 10,
+    daily_dm_count: user.daily_dm_count ?? 0,
+    instagram_accounts_limit: user.instagram_accounts_limit ?? 1,
+    can_use: canUse,
+    trial_days_remaining: trialDaysRemaining
+  });
 });
 
 // ==========================================
@@ -537,7 +663,7 @@ app.get('/api/health', (c) => {
   return c.json({
     status: 'ok',
     service: 'Innflu Cloudflare API',
-    version: '1.2.0',
+    version: '1.4.0',
     timestamp: new Date().toISOString(),
   });
 });
@@ -548,9 +674,9 @@ app.get('/api/health', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.3.7',
+    version: '1.4.0',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.3.7: Identificação precisa de influenciadoras no feed, relatório de diagnóstico 100% completo no ícone 🐛, parada automática inteligente e janela totalmente redimensionável e minimizável.',
+    releaseNotes: 'v1.4.0: Sistema completo de monetização e assinaturas SaaS (Planos Starter, Pro e Scale/Agência), webhook Hotmart integrado, controle server-side de DMs diárias e bloqueio de automação para planos inativos.',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-18T13:30:00Z',
     dynamicRules: {
@@ -1295,6 +1421,103 @@ app.post('/api/settings', async (c) => {
     `).bind(key, String(val)).run();
   }
   return c.json({ success: true, settings: body });
+});
+
+// ==========================================
+// 13. MONETIZAÇÃO: WEBHOOKS HOTMART, DM COUNT, CHECKOUT
+// ==========================================
+app.post('/api/webhooks/hotmart', async (c) => {
+  // Validar token: Header 'X-Hotmart-Hottok' deve bater com env HOTMART_HOTTOK
+  const hottok = c.req.header('X-Hotmart-Hottok') || '';
+  if (c.env.HOTMART_HOTTOK && hottok !== c.env.HOTMART_HOTTOK) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const body = await c.req.json();
+  const event = body.event; // PURCHASE_COMPLETE, PURCHASE_CANCELED, PURCHASE_CHARGEBACK, SUBSCRIPTION_CANCELLATION, SUBSCRIPTION_REACTIVATED
+  const buyerEmail = body.data?.buyer?.email?.toLowerCase();
+  const transactionCode = body.data?.purchase?.transaction;
+  const subscriberCode = body.data?.subscription?.subscriber?.code;
+  const productId = body.data?.product?.id?.toString();
+
+  // Mapear productId para plano
+  const planLimits: Record<string, { daily_dm_limit: number; instagram_accounts_limit: number; expires_days: number }> = {
+    starter: { daily_dm_limit: 40, instagram_accounts_limit: 1, expires_days: 30 },
+    pro: { daily_dm_limit: 100, instagram_accounts_limit: 3, expires_days: 90 },
+    scale: { daily_dm_limit: 999999, instagram_accounts_limit: 10, expires_days: 36500 }
+  };
+
+  let plan = 'starter';
+  if (c.env.HOTMART_PRODUCT_PRO && productId === c.env.HOTMART_PRODUCT_PRO) plan = 'pro';
+  else if (c.env.HOTMART_PRODUCT_SCALE && productId === c.env.HOTMART_PRODUCT_SCALE) plan = 'scale';
+
+  const db = c.env.DB;
+
+  if (event === 'PURCHASE_COMPLETE' || event === 'SUBSCRIPTION_REACTIVATED') {
+    if (!buyerEmail) return c.json({ error: 'No buyer email' }, 400);
+
+    const limits = planLimits[plan];
+    const expiresAt = new Date(Date.now() + limits.expires_days * 86400000).toISOString();
+
+    // Verificar se usuário existe
+    let user = await db.prepare('SELECT id FROM users WHERE email = ?').bind(buyerEmail).first<any>();
+
+    if (!user) {
+      // Criar conta pré-ativada (sem senha — usuário vai definir no onboarding)
+      const userId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2,6);
+      const apiToken = 'inf_live_' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+      await db.prepare(`INSERT INTO users (id, email, password_hash, full_name, plan, api_token, payment_status, plan_expires_at, daily_dm_limit, instagram_accounts_limit, trial_ends_at)
+        VALUES (?, ?, '', ?, ?, ?, 'active', ?, ?, ?, NULL)
+      `).bind(userId, buyerEmail, buyerEmail.split('@')[0], plan, apiToken, expiresAt, limits.daily_dm_limit, limits.instagram_accounts_limit).run();
+      user = { id: userId };
+    } else {
+      await db.prepare(`UPDATE users SET plan=?, payment_status='active', plan_expires_at=?, daily_dm_limit=?, instagram_accounts_limit=?, hotmart_subscriber_code=?, trial_ends_at=NULL WHERE email=?`)
+        .bind(plan, expiresAt, limits.daily_dm_limit, limits.instagram_accounts_limit, subscriberCode || null, buyerEmail).run();
+    }
+
+    // Registrar na tabela subscriptions
+    await db.prepare(`INSERT INTO subscriptions (id, user_id, plan, payment_status, hotmart_transaction, hotmart_subscriber_code, amount_paid, plan_started_at, plan_expires_at)
+      VALUES (?, ?, ?, 'active', ?, ?, ?, datetime('now'), ?)
+    `).bind('sub_' + Date.now(), user.id, plan, transactionCode || null, subscriberCode || null, body.data?.purchase?.price?.value || null, expiresAt).run().catch(()=>{});
+
+  } else if (event === 'PURCHASE_CANCELED' || event === 'SUBSCRIPTION_CANCELLATION') {
+    if (buyerEmail) {
+      await db.prepare(`UPDATE users SET payment_status='canceled', plan='free' WHERE email=?`).bind(buyerEmail).run();
+    }
+  } else if (event === 'PURCHASE_CHARGEBACK') {
+    if (buyerEmail) {
+      await db.prepare(`UPDATE users SET payment_status='blocked', plan='free' WHERE email=?`).bind(buyerEmail).run();
+    }
+  }
+
+  return c.json({ received: true, event });
+});
+
+app.post('/api/dm/increment', async (c) => {
+  const db = c.env.DB;
+  const user = await getAuthUser(db, c);
+  if (!user) return c.json({ error: 'Não autorizado', authenticated: false }, 401);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Reset diário
+  if (user.daily_dm_reset_date !== today) {
+    await db.prepare('UPDATE users SET daily_dm_count=0, daily_dm_reset_date=? WHERE id=?').bind(today, user.id).run();
+    user.daily_dm_count = 0;
+  }
+
+  const newCount = (user.daily_dm_count || 0) + 1;
+  await db.prepare('UPDATE users SET daily_dm_count=? WHERE id=?').bind(newCount, user.id).run();
+
+  return c.json({ success: true, daily_dm_count: newCount, daily_dm_limit: user.daily_dm_limit });
+});
+
+app.get('/api/plan/checkout', async (c) => {
+  return c.json({
+    starter: c.env.HOTMART_CHECKOUT_STARTER || 'https://pay.hotmart.com/STARTER_LINK',
+    pro: c.env.HOTMART_CHECKOUT_PRO || 'https://pay.hotmart.com/PRO_LINK',
+    scale: c.env.HOTMART_CHECKOUT_SCALE || 'https://pay.hotmart.com/SCALE_LINK'
+  });
 });
 
 // Fallback para arquivos estáticos no Cloudflare Pages / Workers com ASSETS
