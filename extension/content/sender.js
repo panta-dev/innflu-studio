@@ -924,6 +924,61 @@ window.InnfluSender = {
   },
 
   /**
+   * Analisa as mensagens da conversa aberta: separa as que NÓS enviamos (lado direito)
+   * das que ELA enviou (lado esquerdo).
+   */
+  analyzeThreadMessages(inputEl) {
+    const inputRect = inputEl.getBoundingClientRect();
+    const centerX = inputRect.left + inputRect.width / 2;
+    let incoming = 0, outgoing = 0;
+    const rows = Array.from(document.querySelectorAll('div[role="row"]'));
+    for (const row of rows) {
+      if (row.closest('#innflu-hud-root') || row.contains(inputEl)) continue;
+      const texts = Array.from(row.querySelectorAll('div[dir="auto"], span[dir="auto"]')).filter(el => {
+        const t = (el.innerText || '').trim();
+        if (!t) return false;
+        // só o elemento mais interno (evita contar o mesmo balão várias vezes)
+        return !el.querySelector('div[dir="auto"], span[dir="auto"]');
+      });
+      for (const el of texts) {
+        const r = el.getBoundingClientRect();
+        if (r.width < 5 || r.height < 5) continue;
+        const cx = r.left + r.width / 2;
+        if (cx < centerX - 40) incoming++;
+        else if (cx > centerX + 40) outgoing++;
+      }
+    }
+    return { hasIncoming: incoming > 0, hasOutgoing: outgoing > 0, incoming, outgoing };
+  },
+
+  /**
+   * Abre a conversa com a influenciadora, lê quem escreveu o quê e volta ao perfil.
+   * Retorna { opened, hasIncoming, hasOutgoing }
+   */
+  async inspectThread(cleanUser) {
+    let msgBtn = null;
+    for (let i = 0; i < 17 && !msgBtn; i++) {
+      msgBtn = this.findMessageButton();
+      if (!msgBtn) await this.sleep(300);
+    }
+    if (!msgBtn) return { opened: false };
+
+    await this.openDirectChat(msgBtn);
+    const inputEl = await this.waitForMessageInput(12000);
+    if (!inputEl) {
+      await this.leaveThread();
+      return { opened: false };
+    }
+
+    // Dá tempo do histórico carregar
+    await this.sleep(2800);
+    const res = this.analyzeThreadMessages(inputEl);
+    console.log(`[Innflu] Conversa com @${cleanUser}: ela=${res.incoming} msgs, nós=${res.outgoing} msgs`);
+    await this.leaveThread();
+    return { opened: true, ...res };
+  },
+
+  /**
    * Sai da conversa do Direct e volta ao perfil
    */
   async leaveThread() {
