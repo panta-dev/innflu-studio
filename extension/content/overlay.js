@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.3.9</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.1</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -536,7 +536,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.3.9 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.1 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -761,6 +761,10 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   }
 
   let localBotCache = null;
+  // Dados de sessão usados no relatório de diagnóstico
+  let currentUserEmail = '';
+  let currentUserPlan = '';
+  let currentBearerToken = '';
 
   async function getState() {
     return new Promise(resolve => {
@@ -954,6 +958,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
   function updateUserUI(user) {
     if (!user) return;
+    currentUserEmail = user.email || '';
+    currentUserPlan = (user.plan || '').toString().toUpperCase();
     if (hudAuthEmail) {
       hudAuthEmail.innerText = user.full_name || user.email;
       hudAuthEmail.title = user.email;
@@ -995,6 +1001,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
   async function checkAndApplyAuth() {
     const { authToken, authUser, apiBaseUrl } = await getState();
+    currentBearerToken = authToken || '';
     const baseUrl = apiBaseUrl || 'https://innflu-studio.pages.dev';
 
     if (!authToken) {
@@ -1428,7 +1435,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
           showToast({ type: 'success', title: 'Conectado!', message: `Bem-vindo(a), ${data.user.full_name || data.user.email}!` });
           flushPendingLeadsBuffer();
           syncKnownCRMUsers();
-          loadSavedLeads();
+          loadLeadsFromApiAndRender();
         }, 400);
 
       } catch (err) {
@@ -1896,6 +1903,11 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     addDiagLog('error', `[Promise Rejection] ${reasonMsg}`);
   });
 
+  // Alias usado pelos módulos de login/assinatura/sincronização
+  function logDiagnostics(type, message, details = '') {
+    try { addDiagLog(type, message, details); } catch (e) { console.log('[Innflu]', type, message); }
+  }
+
   function addDiagLog(type, message, details = '') {
     const now = new Date();
     const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
@@ -1975,7 +1987,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.3.9';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.1';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2011,7 +2023,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.3.9`,
+      `- Versão do Script: v1.4.1`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -3120,7 +3132,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
             // ELEGÍVEL E INÉDITA! Adiciona na fila e abre o perfil para auditar e contatar!
             hudCurrentAction.innerText = `Criadora confirmada: @${author}! Abrindo perfil...`;
             addDiagLog('success', `Nova criadora elegível: @${author}! Abrindo perfil...`);
-            const currentQueue = bot.queue || [];
+            const { bot: latestBot } = await getState();
+            const currentQueue = (latestBot && latestBot.queue) || [];
             const updatedQueue = [authorLower, ...currentQueue.filter(u => u.toLowerCase() !== authorLower)];
             await saveBot({ queue: updatedQueue });
             await window.InnfluCrawler.sleep(400);
