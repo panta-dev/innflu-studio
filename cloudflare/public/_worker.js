@@ -2640,7 +2640,7 @@ app.get("/updates.xml", (c) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="innflustudioprospector2026">
-    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.3" />
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.4" />
   </app>
 </gupdate>`;
   c.header("Content-Type", "application/xml; charset=utf-8");
@@ -2649,9 +2649,9 @@ app.get("/updates.xml", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.4.3",
+    version: "1.4.4",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "v1.4.3: Fim do loop em perfis fora das m\xE9tricas (perfis rejeitados s\xE3o lembrados e o agente troca de perfil-base), confer\xEAncia da conversa para quem j\xE1 est\xE1 no banco (respondeu = descarta; n\xE3o respondeu = nova mensagem).",
+    releaseNotes: "v1.4.4: Corre\xE7\xE3o cr\xEDtica dos 2 erros: 1) Prospec\xE7\xE3o cont\xEDnua sem parar do nada no feed de busca (scroll vigoroso e sem interrup\xE7\xE3o). 2) Distin\xE7\xE3o estrita entre Stories de 24h e Destaques (highlights nunca mais s\xE3o abertos como stories).",
     downloadUrl: "/innflu-extensao.zip",
     publishedAt: "2026-11-18T13:30:00Z",
     dynamicRules: {

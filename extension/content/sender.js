@@ -409,50 +409,70 @@ window.InnfluSender = {
    */
   /**
    * Localiza o avatar / anel de Stories da influenciadora no perfil
+   * REGRA CRÍTICA: Ignora terminantemente DESTAQUES (highlights) que ficam abaixo da bio.
+   * Apenas seleciona o Avatar Principal do topo.
    */
-  findStoryAvatar() {
-    const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main');
+  findStoryAvatar(username = null) {
+    const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
+    const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main > div > header');
     if (!header) return null;
 
-    // 1. Link explícito com rota /stories/
-    const anchor = header.querySelector('a[href*="/stories/"]');
-    if (anchor) {
-      const rect = anchor.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) return anchor;
+    // 1. Link direto para Stories de 24h (Ex: /stories/username/ — e NUNCA /stories/highlights/...)
+    const validStoryLinks = Array.from(header.querySelectorAll('a[href*="/stories/"]')).filter(a => {
+      const h = (a.getAttribute('href') || '').toLowerCase();
+      if (h.includes('/highlights/')) return false; // Destaque excluído!
+      return cleanUser ? h.includes(cleanUser) : true;
+    });
+
+    for (const a of validStoryLinks) {
+      if (!a.closest('ul') && !a.closest('div[role="menu"]')) {
+        const rect = a.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) return a;
+      }
     }
 
-    // 2. Elemento clicável que contém o canvas do anel de stories
-    const canvas = header.querySelector('canvas');
-    if (canvas) {
-      const btn = canvas.closest('div[role="button"]') || canvas.closest('div[tabindex="0"]') || canvas.parentElement;
-      if (btn) {
+    // 2. Elemento clicável que contém o canvas do anel de stories (sobre o avatar grande)
+    const canvases = Array.from(header.querySelectorAll('canvas')).filter(cv => {
+      if (cv.closest('a[href*="/stories/highlights/"]')) return false;
+      const rect = cv.getBoundingClientRect();
+      return rect.width >= 55 && rect.height >= 55;
+    });
+
+    if (canvases.length > 0) {
+      const cv = canvases[0];
+      const btn = cv.closest('div[role="button"]') || cv.closest('div[tabindex="0"]') || cv.closest('a') || cv.parentElement;
+      if (btn && !btn.closest('a[href*="/stories/highlights/"]')) {
         const rect = btn.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) return btn;
       }
-      return canvas;
+      return cv;
     }
 
-    // 3. Div de botão com aria-label de stories
-    const storyBtn = header.querySelector([
+    // 3. Div de botão com aria-label de stories (excluindo destaques)
+    const storyButtons = Array.from(header.querySelectorAll([
       'div[role="button"][aria-label*="story" i]',
       'div[role="button"][aria-label*="stories" i]',
       'div[role="button"][aria-label*="história" i]',
       'div[role="button"][aria-label*="histórias" i]',
-      '[aria-label*="story" i]',
-      '[aria-label*="stories" i]'
-    ].join(','));
-    if (storyBtn) {
-      const rect = storyBtn.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) return storyBtn;
-    }
+      'button[aria-label*="story" i]',
+      'button[aria-label*="stories" i]'
+    ].join(','))).filter(b => {
+      const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+      if (aria.includes('destaque') || aria.includes('highlight')) return false;
+      if (b.closest('a[href*="/stories/highlights/"]')) return false;
+      const rect = b.getBoundingClientRect();
+      return rect.width >= 55 && rect.height >= 55;
+    });
 
-    // 4. Imagem do avatar no cabeçalho
+    if (storyButtons.length > 0) return storyButtons[0];
+
+    // 4. Imagem do avatar principal no cabeçalho
     const avatarImg = header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img');
-    if (avatarImg) {
+    if (avatarImg && !avatarImg.closest('a[href*="/stories/highlights/"]')) {
       const btn = avatarImg.closest('div[role="button"]') || avatarImg.closest('a') || avatarImg.parentElement;
-      if (btn) {
+      if (btn && !btn.closest('a[href*="/stories/highlights/"]')) {
         const rect = btn.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) return btn;
+        if (rect.width >= 55 && rect.height >= 55) return btn;
       }
     }
 
@@ -460,34 +480,41 @@ window.InnfluSender = {
   },
 
   /**
-   * Abre o Story garantindo que o visualizador de Stories seja carregado
-   * NUNCA faz window.location.assign para rota direta (evita loop de recarregamento caso não tenha stories)
+   * Abre o Story garantindo que o visualizador de Stories de 24h seja carregado
+   * REGRA CRÍTICA: NUNCA abre Destaques (Highlights).
    */
   async openStoryViewer(username) {
-    const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main');
     const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
+    const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main > div > header');
 
-    console.log(`[Innflu] Tentando abrir Stories de @${cleanUser}...`);
+    console.log(`[Innflu] Tentando abrir Stories de 24h de @${cleanUser}...`);
 
-    // 1. Procura link explícito para /stories/
-    const anchor = header ? (header.querySelector(`a[href*="/stories/${cleanUser}"]`) || header.querySelector('a[href*="/stories/"]')) : null;
-    if (anchor) {
-      this.simulateClick(anchor);
-      await this.sleep(1500);
-      if (this.isStoryViewerOpen()) return true;
+    // 1. Procura link explícito e limpo para /stories/username/ (sem highlights)
+    if (header) {
+      const validLinks = Array.from(header.querySelectorAll('a[href*="/stories/"]')).filter(a => {
+        const h = (a.getAttribute('href') || '').toLowerCase();
+        return !h.includes('/highlights/') && (cleanUser ? h.includes(cleanUser) : true);
+      });
+
+      if (validLinks.length > 0) {
+        this.simulateClick(validLinks[0]);
+        await this.sleep(1500);
+        if (this.isStoryViewerOpen()) return true;
+      }
     }
 
     // 2. Procura avatar / anel de stories e clica
-    const avatarBtn = this.findStoryAvatar();
+    const avatarBtn = this.findStoryAvatar(cleanUser);
     if (avatarBtn) {
       this.simulateClick(avatarBtn);
       await this.sleep(1500);
       if (this.isStoryViewerOpen()) return true;
     }
 
-    // 3. Se houver canvas no header, clica nele diretamente
-    const canvas = header ? header.querySelector('canvas') : null;
-    if (canvas) {
+    // 3. Se houver canvas no avatar do header, clica nele diretamente
+    const canvases = header ? Array.from(header.querySelectorAll('canvas')).filter(cv => !cv.closest('a[href*="/stories/highlights/"]')) : [];
+    if (canvases.length > 0) {
+      const canvas = canvases[0];
       this.simulateClick(canvas);
       if (canvas.parentElement) this.simulateClick(canvas.parentElement);
       await this.sleep(1500);
@@ -500,19 +527,41 @@ window.InnfluSender = {
       await this.sleep(300);
     }
 
+    // Se por acidente caiu em /stories/highlights/, fecha imediatamente!
+    if (window.location.pathname.toLowerCase().includes('/stories/highlights/')) {
+      console.warn('[Innflu] Destaque aberto por engano ao tentar abrir stories. Fechando imediatamente...');
+      this.closeStoryViewer();
+      return false;
+    }
+
     return this.isStoryViewerOpen();
   },
 
   /**
-   * Verifica se o visualizador de Stories está atualmente aberto na tela
+   * Verifica se o visualizador de Stories de 24h está atualmente aberto na tela
+   * REGRA: Retorna FALSE se for Destaque (Highlights).
    */
   isStoryViewerOpen() {
     const path = window.location.pathname.toLowerCase();
+    // Se a rota for de destaques, NÃO É story ativo de 24h!
+    if (path.includes('/stories/highlights/')) {
+      return false;
+    }
+
     if (path.includes('/stories/')) return true;
 
     // Detecta elementos exclusivos do visualizador de Stories do Instagram Web
     const storyProgress = document.querySelector('div[role="progressbar"], div[style*="animation"]');
     const storyDialog = document.querySelector('section._ac7v, div[role="dialog"] section, section[role="region"]');
+    const storyInput = document.querySelector('textarea[placeholder*="Responder" i], textarea[placeholder*="Reply" i], input[placeholder*="Responder" i]');
+    
+    // Se a tela tiver elementos de Destaques salvos, rejeita
+    if (document.querySelector('a[href*="/stories/highlights/"]') && !path.includes('/stories/')) {
+      return false;
+    }
+
+    return !!(storyProgress && (storyDialog || storyInput));
+  },
     const storyInput = document.querySelector('textarea[placeholder*="Responder" i], textarea[placeholder*="Reply" i], input[placeholder*="Responder" i]');
     return !!(storyProgress && (storyDialog || storyInput));
   },
@@ -714,6 +763,13 @@ window.InnfluSender = {
 
     console.log(`[Innflu] Abrindo Stories de @${cleanUser} para envio de mensagem...`);
     const opened = await this.openStoryViewer(cleanUser);
+
+    // Proteção estrita: se abriu destaque (highlight), fecha e recusa
+    if (window.location.pathname.toLowerCase().includes('/stories/highlights/')) {
+      this.closeStoryViewer();
+      throw new Error(`@${cleanUser} possui apenas Destaques salvos e nenhum Story ativo nas últimas 24h.`);
+    }
+
     if (!opened && !this.isStoryViewerOpen()) {
       throw new Error(`Não foi possível abrir os Stories de @${cleanUser} (sem stories ativos ou privados)`);
     }

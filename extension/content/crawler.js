@@ -579,11 +579,16 @@ window.InnfluCrawler = {
 
   /**
    * Normaliza links de posts/reels para evitar inconsistências com parâmetros ou barras
-   * Exemplo: /reel/C12345/?utm_source=... -> /reel/C12345/
+   * Extrai canonicamente o ID do post: /p/CODE/ ou /reel/CODE/
    */
   normalizePostHref(href) {
     if (!href) return '';
     try {
+      const match = href.match(/\/(p|reel|reels)\/([a-zA-Z0-9_-]+)/);
+      if (match) {
+        const type = match[1] === 'reels' ? 'reel' : match[1];
+        return `/${type}/${match[2]}/`;
+      }
       const clean = href.split('?')[0].split('#')[0].trim().replace(/\/+$/, '');
       return clean ? clean + '/' : '';
     } catch (e) {
@@ -602,7 +607,7 @@ window.InnfluCrawler = {
     const discovered = [];
     const discoveredPosts = [];
 
-    const postLinks = document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]');
+    const postLinks = document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"], a[href*="/reels/"]');
     for (const a of postLinks) {
       const rawHref = a.getAttribute('href');
       const href = this.normalizePostHref(rawHref);
@@ -634,15 +639,21 @@ window.InnfluCrawler = {
 
   /**
    * Encontra a PRÓXIMA publicação ainda não inspecionada na página
+   * Suporta URLs relativas, absolutas, reels e posts tradicionais
    * @param {string[]} visitedPosts Lista de hrefs já inspecionados
    * @returns {{ element: HTMLElement, href: string, rawHref: string } | null}
    */
   getNextUnvisitedPost(visitedPosts = []) {
     const visitedSet = new Set((visitedPosts || []).map(h => this.normalizePostHref(h)));
-    const postLinks = Array.from(document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]'));
+    const postLinks = Array.from(document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"], a[href*="/reels/"]'));
 
     for (const a of postLinks) {
       const rawHref = a.getAttribute('href');
+      if (!rawHref) continue;
+
+      // Validação: precisa ser um post ou reel de verdade (e não links auxiliares)
+      if (!rawHref.includes('/p/') && !rawHref.includes('/reel/') && !rawHref.includes('/reels/')) continue;
+
       const normHref = this.normalizePostHref(rawHref);
       if (normHref && !visitedSet.has(normHref)) {
         return { element: a, href: normHref, rawHref };
@@ -873,13 +884,42 @@ window.InnfluCrawler = {
   },
 
   /**
-   * Rola o feed para carregar mais conteúdo
+   * Rola o feed vigorosamente para forçar o carregamento de novas publicações
+   * Dispara eventos nativos para ativar o IntersectionObserver do Instagram Web
    */
-  async scrollDown() {
+  async scrollDown(multiplier = 1) {
+    const scrollAmount = Math.round((850 + Math.random() * 500) * multiplier);
+    
+    // 1. Rola a janela principal
     window.scrollBy({
-      top: 600 + Math.random() * 400,
+      top: scrollAmount,
       behavior: 'smooth'
     });
-    await this.sleep(this.randomDelay(1500, 2500));
+
+    // 2. Rola contêineres internos caso o Instagram utilize div com overflow
+    const scrollContainers = document.querySelectorAll('main, article, div[style*="overflow"]');
+    for (const sc of scrollContainers) {
+      if (sc.scrollHeight > sc.clientHeight && sc.clientHeight > 250) {
+        sc.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+      }
+    }
+
+    // 3. Dispara eventos de scroll e wheel para forçar o React a renderizar a próxima página
+    window.dispatchEvent(new Event('scroll', { bubbles: true }));
+    window.dispatchEvent(new Event('wheel', { bubbles: true }));
+    document.dispatchEvent(new Event('scroll', { bubbles: true }));
+
+    await this.sleep(this.randomDelay(1600, 2400));
+  },
+
+  /**
+   * Rola para cima e para baixo para destravar o lazy-loading se o feed estiver lento
+   */
+  async kickFeedScroll() {
+    window.scrollBy({ top: -350, behavior: 'smooth' });
+    await this.sleep(600);
+    window.scrollBy({ top: 900, behavior: 'smooth' });
+    window.dispatchEvent(new Event('scroll', { bubbles: true }));
+    await this.sleep(1200);
   }
 };

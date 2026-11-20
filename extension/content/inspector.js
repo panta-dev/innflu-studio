@@ -119,64 +119,104 @@ window.InnfluInspector = {
 
   /**
    * Detecta se o perfil possui Stories ativos nas últimas 24h com validação resiliente
+   * REGRA CRÍTICA: Ignora estritamente DESTAQUES (highlights) que ficam salvos abaixo da bio.
+   * Apenas avalia o Avatar Principal do topo do perfil.
    */
-  hasActiveStories() {
-    const header = document.querySelector('header') || document.querySelector('main');
+  hasActiveStories(username = null) {
+    const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
+
+    // 1. O avatar principal do perfil SEMPRE fica no header superior
+    const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main > div > header');
     if (!header) return false;
 
-    // 1. Aria-label explícito de stories ou link para rota /stories/
-    const storyAria = header.querySelector([
-      '[aria-label*="story" i]',
-      '[aria-label*="stories" i]',
-      '[aria-label*="história" i]',
-      '[aria-label*="histórias" i]',
-      'a[href*="/stories/"]',
-      'div[role="button"][aria-label*="story" i]'
-    ].join(','));
-    if (storyAria) return true;
+    // 2. Link explícito de Stories de 24h do perfil (Ex: /stories/username/)
+    // NUNCA aceita links de destaques (/stories/highlights/...)
+    const validStoryLinks = Array.from(header.querySelectorAll('a[href*="/stories/"]')).filter(a => {
+      const href = (a.getAttribute('href') || '').toLowerCase();
+      if (href.includes('/highlights/')) return false; // Destaque excluído!
+      return cleanUser ? href.includes(cleanUser) : true;
+    });
 
-    // 2. Canvas do anel de story (Instagram Web renderiza o anel gradiente via <canvas>)
-    const canvasRing = header.querySelector('canvas');
-    if (canvasRing) return true;
-
-    // 3. SVG com gradiente (arco colorido característico)
-    const svgs = header.querySelectorAll('svg');
-    for (const svg of svgs) {
-      if (svg.querySelector('linearGradient, radialGradient, conicGradient')) return true;
-      const aria = (svg.getAttribute('aria-label') || '').toLowerCase();
-      if (aria.includes('story') || aria.includes('stories') || aria.includes('história')) return true;
+    if (validStoryLinks.length > 0) {
+      for (const link of validStoryLinks) {
+        // Garante que não é um item de lista de destaques
+        if (!link.closest('ul') && !link.closest('div[role="menu"]')) {
+          return true;
+        }
+      }
     }
 
-    // 4. Detecção por gradiente CSS ou classes do avatar
-    const avatarImg = header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img');
-    if (avatarImg) {
-      let current = avatarImg.parentElement;
-      for (let i = 0; i < 6 && current; i++) {
-        const className = (current.className || '').toString().toLowerCase();
-        const style = (current.getAttribute('style') || '').toLowerCase();
-        const ariaLabel = (current.getAttribute('aria-label') || '').toLowerCase();
+    // 3. Procura o Avatar Principal (a imagem grande de perfil no cabeçalho)
+    const mainAvatarImg = header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img');
+    if (!mainAvatarImg) return false;
 
-        if (ariaLabel.includes('story') || ariaLabel.includes('stories') || ariaLabel.includes('história')) {
-          return true;
-        }
+    // Se a imagem estiver dentro de um destaque, ignora
+    if (mainAvatarImg.closest('a[href*="/stories/highlights/"]')) return false;
 
-        if (
-          className.includes('gradient') ||
-          className.includes('story') ||
-          className.includes('live') ||
-          style.includes('gradient') ||
-          style.includes('conic-gradient') ||
-          style.includes('linear-gradient')
-        ) {
-          return true;
-        }
+    // 4. Canvas do anel de story ativo de 24h (renderizado pelo Instagram sobre o avatar principal)
+    const canvases = Array.from(header.querySelectorAll('canvas')).filter(cv => {
+      if (cv.closest('a[href*="/stories/highlights/"]')) return false;
+      const rect = cv.getBoundingClientRect();
+      return rect.width >= 55 && rect.height >= 55;
+    });
+    if (canvases.length > 0) return true;
 
-        if (current.tagName === 'A' && (current.getAttribute('href') || '').includes('/stories/')) {
-          return true;
-        }
+    // 5. Botões de Story no Avatar Principal (sem ser destaque)
+    const storyButtons = Array.from(header.querySelectorAll([
+      'div[role="button"][aria-label*="story" i]',
+      'div[role="button"][aria-label*="stories" i]',
+      'div[role="button"][aria-label*="história" i]',
+      'div[role="button"][aria-label*="histórias" i]',
+      'button[aria-label*="story" i]',
+      'button[aria-label*="stories" i]'
+    ].join(','))).filter(b => {
+      const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+      if (aria.includes('destaque') || aria.includes('highlight')) return false;
+      if (b.closest('a[href*="/stories/highlights/"]')) return false;
+      const rect = b.getBoundingClientRect();
+      return rect.width >= 55 && rect.height >= 55;
+    });
+    if (storyButtons.length > 0) return true;
 
-        current = current.parentElement;
+    // 6. SVG com gradiente (arco colorido característico do anel ativo de 24h)
+    const svgs = header.querySelectorAll('svg');
+    for (const svg of svgs) {
+      if (svg.closest('a[href*="/stories/highlights/"]')) continue;
+      if (svg.querySelector('linearGradient, radialGradient, conicGradient')) {
+        const rect = svg.getBoundingClientRect();
+        if (rect.width >= 55 && rect.height >= 55) return true;
       }
+      const aria = (svg.getAttribute('aria-label') || '').toLowerCase();
+      if ((aria.includes('story') || aria.includes('stories') || aria.includes('história')) && !aria.includes('destaque') && !aria.includes('highlight')) {
+        return true;
+      }
+    }
+
+    // 7. Detecção por gradiente CSS diretamente nos pais do Avatar Principal
+    let current = mainAvatarImg.parentElement;
+    for (let i = 0; i < 5 && current && current !== header; i++) {
+      if (current.closest('a[href*="/stories/highlights/"]')) return false;
+      const ariaLabel = (current.getAttribute('aria-label') || '').toLowerCase();
+      if (ariaLabel.includes('destaque') || ariaLabel.includes('highlight')) return false;
+
+      if (ariaLabel.includes('story') || ariaLabel.includes('stories') || ariaLabel.includes('história')) {
+        return true;
+      }
+
+      const className = (current.className || '').toString().toLowerCase();
+      const style = (current.getAttribute('style') || '').toLowerCase();
+
+      if (
+        className.includes('gradient') ||
+        style.includes('conic-gradient') ||
+        style.includes('linear-gradient')
+      ) {
+        if (!style.includes('rgba(0, 0, 0, 0.15)') && !style.includes('#dbdbdb')) {
+          return true;
+        }
+      }
+
+      current = current.parentElement;
     }
 
     return false;
@@ -368,8 +408,8 @@ window.InnfluInspector = {
     // 3. Biografia
     const bio = this.getBioText();
 
-    // 4. Stories Ativos
-    const activeStories = this.hasActiveStories();
+    // 4. Stories Ativos (Exclusivo 24h, ignora destaques)
+    const activeStories = this.hasActiveStories(username);
 
     // 5. Conta Privada
     const isPrivate = this.isPrivateAccount();

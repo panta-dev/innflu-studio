@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.3</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.4</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +173,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.3</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.4</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -535,7 +535,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.3 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.4 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -2066,7 +2066,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.3';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.4';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2102,7 +2102,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.4.3`,
+      `- Versão do Script: v1.4.4`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -3122,26 +3122,42 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         const stallCount = (bot.searchStallCount || 0) + 1;
         await saveBot({ searchStallCount: stallCount });
 
-        // Se após várias rolagens não houver mais posts e a fila estiver vazia, para automaticamente
-        if (stallCount >= 4) {
-          if ((bot.queue || []).length === 0) {
-            hudCurrentAction.innerText = `Todas as publicações de "${target}" foram analisadas!`;
-            addDiagLog('info', `Feed de "${target}" esgotado após múltiplas rolagens.`);
-            await stopAutomationGracefully('feed_exhausted', `Mineração de "${target}" finalizada. Não há mais publicações disponíveis.`);
-            return;
-          }
+        // Se houver alguém na fila pendente, atende a fila imediatamente antes de rolar mais
+        const currentQueue = bot.queue || [];
+        if (currentQueue.length > 0) {
+          const nextTarget = currentQueue[0];
+          hudCurrentAction.innerText = `Processando próxima criadora da fila: @${nextTarget}...`;
+          addDiagLog('info', `Fila ativa (${currentQueue.length} alvos). Abrindo @${nextTarget}...`);
+          await window.InnfluCrawler.sleep(800);
+          window.InnfluCrawler.openProfile(nextTarget);
+          return;
         }
 
-        // Rola suavemente para carregar novas publicações no feed
-        hudCurrentAction.innerText = `Rolando feed para carregar novas publicações (${stallCount}/4)...`;
-        await window.InnfluCrawler.scrollDown();
-        await window.InnfluCrawler.sleep(2200);
+        // PROSPECÇÃO CONTÍNUA (NUNCA PARA DO NADA):
+        // Se ainda não encontrou post inédito na tela, rola vigorosamente para carregar novas publicações
+        if (stallCount <= 5) {
+          hudCurrentAction.innerText = `Rolando feed para carregar mais publicações de "${target}" (${stallCount})...`;
+          await window.InnfluCrawler.scrollDown(1.2);
+          await window.InnfluCrawler.sleep(1800);
+        } else if (stallCount <= 9) {
+          // Destrava virtualizer do Instagram fazendo rolagem dinâmica
+          hudCurrentAction.innerText = `Destravando feed para puxar novas criadoras (${stallCount})...`;
+          await window.InnfluCrawler.kickFeedScroll();
+          await window.InnfluCrawler.scrollDown(1.5);
+          await window.InnfluCrawler.sleep(2000);
+        } else {
+          // Se após 10 rolagens o Instagram não renderizou nós novos, recarrega suavemente a busca para trazer posts recentes
+          hudCurrentAction.innerText = `Atualizando busca para trazer novas publicações de "${target}"...`;
+          addDiagLog('info', `Feed de "${target}" atualizado para buscar novas publicações.`);
+          await saveBot({ searchStallCount: 0 });
+          await window.InnfluCrawler.sleep(1000);
+          window.location.reload();
+          return;
+        }
 
         const retryPost = window.InnfluCrawler.getNextUnvisitedPost(Array.from(visitedPosts));
         if (!retryPost) {
-          hudCurrentAction.innerText = 'Carregando mais conteúdo do feed...';
-          await window.InnfluCrawler.scrollDown();
-          scheduleNext(2500);
+          scheduleNext(2000);
           return;
         }
         await saveBot({ searchStallCount: 0 });
