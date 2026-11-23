@@ -755,7 +755,7 @@ window.InnfluSender = {
   /**
    * Abre o Story ativo da criadora e responde diretamente com a mensagem de captação
    */
-  async replyToActiveStory(messageText, username) {
+  async replyToActiveStory(messageText, username, baseline = 0) {
     const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
 
     console.log(`[Innflu] Abrindo Stories de @${cleanUser} para envio de mensagem...`);
@@ -797,14 +797,14 @@ window.InnfluSender = {
     this.closeStoryViewer();
     await this.sleep(1200);
 
-    const check = await this.verifyStoryReplyInThread(messageText, cleanUser);
+    const check = await this.verifyStoryReplyInThread(messageText, cleanUser, baseline);
     return { ok: true, verified: check.verified, threadInput: check.inputEl || null };
   },
 
   /**
    * Executa o fluxo completo de envio de DM para o perfil atual com confirmação estrita
    */
-  async sendDirectMessage(messageText) {
+  async sendDirectMessage(messageText, opts = {}) {
     const preCheck = this.checkActionBlock();
     if (preCheck.blocked) {
       throw new Error(`Instagram bloqueou a ação: ${preCheck.message}`);
@@ -813,20 +813,28 @@ window.InnfluSender = {
     const curPath = window.location.pathname.toLowerCase();
     const cleanUser = curPath.split('/').filter(Boolean)[0] || '';
 
+    // Quem já recebeu mensagem antes: mede quantas cópias iguais já existem na conversa.
+    // Só conta como enviada se aparecer UMA A MAIS (antes, mensagem antiga igual gerava falso "enviado").
+    let baseline = 0;
+    if (opts && opts.isRepeat) {
+      baseline = await this.measureBaseline(messageText);
+      console.log(`[Innflu] Conversa de @${cleanUser}: ${baseline} cópia(s) anterior(es) da mensagem.`);
+    }
+
     // 1ª tentativa: responder ao Story ativo da influenciadora
     console.log(`[Innflu] Tentando responder ao Story de @${cleanUser}...`);
     let storyErrMsg = '';
     let openInput = null;
     try {
-      const info = await this.replyToActiveStory(messageText, cleanUser);
+      const info = await this.replyToActiveStory(messageText, cleanUser, baseline);
       if (info && info.ok) {
         if (info.verified === true) {
           await this.leaveThread();
           return { success: true, viaStory: true, verified: true };
         }
         if (info.verified === null) {
-          // Não há como abrir a conversa para conferir (sem botão de mensagem)
-          return { success: true, viaStory: true, verified: false };
+          // Não foi possível abrir a conversa para conferir: NÃO conta como enviada
+          throw new Error('não foi possível confirmar o envio na conversa (mensagem não contada como enviada)');
         }
         // verified === false: o Story "enviou" mas o texto NÃO apareceu na conversa
         storyErrMsg = 'a resposta do Story não apareceu na conversa';
@@ -848,7 +856,7 @@ window.InnfluSender = {
     // 2ª tentativa (fallback): enviar DM pela conversa do Direct
     console.log(`[Innflu] Story não confirmado (${storyErrMsg}). Enviando por DM direto para @${cleanUser}...`);
     try {
-      const res = await this.sendViaDirect(messageText, cleanUser, openInput);
+      const res = await this.sendViaDirect(messageText, cleanUser, openInput, baseline);
       return { success: true, viaStory: res === 'already', verified: true, storyError: storyErrMsg };
     } catch (dmErr) {
       if (/bloque|blocked|checkpoint/i.test(dmErr.message || '')) {
@@ -861,7 +869,7 @@ window.InnfluSender = {
   /**
    * Fallback: abre o chat do Direct pelo botão do perfil, digita e confirma o envio
    */
-  async sendViaDirect(messageText, cleanUser, existingInput = null) {
+  async sendViaDirect(messageText, cleanUser, existingInput = null, baseline = 0) {
     let inputEl = existingInput && existingInput.isConnected ? existingInput : null;
 
     if (!inputEl) {
@@ -897,7 +905,7 @@ window.InnfluSender = {
 
     // Se a mensagem já está na conversa (ex.: o Story chegou a enviar), NÃO envia de novo
     const before = this.countTextOnPage(messageText);
-    if (before > 0) {
+    if (before > baseline) {
       await this.leaveThread();
       return 'already';
     }
@@ -977,6 +985,30 @@ window.InnfluSender = {
   },
 
   /**
+   * Abre a conversa, conta quantas cópias (início) da mensagem já existem e volta ao perfil.
+   */
+  async measureBaseline(messageText) {
+    try {
+      let msgBtn = null;
+      for (let i = 0; i < 17 && !msgBtn; i++) {
+        msgBtn = this.findMessageButton();
+        if (!msgBtn) await this.sleep(300);
+      }
+      if (!msgBtn) return 0;
+      await this.openDirectChat(msgBtn);
+      const inputEl = await this.waitForMessageInput(12000);
+      if (!inputEl) { await this.leaveThread(); return 0; }
+      await this.sleep(2500);
+      const n = this.countTextOnPage(messageText);
+      await this.leaveThread();
+      await this.sleep(800);
+      return n;
+    } catch (e) {
+      return 0;
+    }
+  },
+
+  /**
    * Analisa as mensagens da conversa aberta: separa as que NÓS enviamos (lado direito)
    * das que ELA enviou (lado esquerdo).
    */
@@ -1045,7 +1077,7 @@ window.InnfluSender = {
    * Depois de responder ao Story, abre a conversa e CONFERE se a mensagem está lá.
    * Retorna { verified: true | false | null, inputEl }  (null = não foi possível verificar)
    */
-  async verifyStoryReplyInThread(messageText, cleanUser) {
+  async verifyStoryReplyInThread(messageText, cleanUser, baseline = 0) {
     // Garante que estamos de volta ao perfil
     for (let i = 0; i < 10 && window.location.pathname.toLowerCase().startsWith('/stories/'); i++) {
       if (i === 4) { window.history.back(); }
@@ -1070,7 +1102,8 @@ window.InnfluSender = {
     // Dá tempo da conversa carregar e procura o texto enviado
     const start = Date.now();
     while (Date.now() - start < 6500) {
-      if (this.countTextOnPage(messageText) > 0) return { verified: true, inputEl };
+      // Só vale se apareceu uma cópia A MAIS do que havia antes (mensagens antigas iguais não contam)
+      if (this.countTextOnPage(messageText) > baseline) return { verified: true, inputEl };
       await this.sleep(500);
     }
     return { verified: false, inputEl };
