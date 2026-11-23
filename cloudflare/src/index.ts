@@ -675,7 +675,7 @@ app.get('/updates.xml', (c) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="innflustudioprospector2026">
-    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.5.2" />
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.5.3" />
   </app>
 </gupdate>`;
   c.header('Content-Type', 'application/xml; charset=utf-8');
@@ -685,9 +685,9 @@ app.get('/updates.xml', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.5.2',
+    version: '1.5.3',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.5.2: Corrige o alerta falso de Story nao respondido: mensagem aceita pelo Instagram agora conta como enviada.',
+    releaseNotes: 'v1.5.3: Detecta o aviso de erro do Instagram (Ocorreu um erro) ao responder o Story e nao conta como enviada; cai para o Direct ou pula.',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-18T13:30:00Z',
     dynamicRules: {
