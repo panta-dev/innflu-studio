@@ -793,12 +793,12 @@ window.InnfluSender = {
       throw new Error(confirm.message);
     }
 
-    console.log(`[Innflu] Resposta do Story disparada. Fechando visualizador e conferindo na conversa...`);
+    // O campo de resposta esvaziou e nenhum erro apareceu: a resposta do Story foi enviada.
+    // (Não saímos do perfil para conferir na conversa: isso só gerava falsos alertas.)
+    console.log(`[Innflu] Resposta do Story enviada. Fechando visualizador...`);
     this.closeStoryViewer();
-    await this.sleep(1200);
-
-    const check = await this.verifyStoryReplyInThread(messageText, cleanUser, baseline);
-    return { ok: true, verified: check.verified, threadInput: check.inputEl || null };
+    await this.sleep(1000);
+    return { ok: true, confirmed: true };
   },
 
   /**
@@ -813,13 +813,7 @@ window.InnfluSender = {
     const curPath = window.location.pathname.toLowerCase();
     const cleanUser = curPath.split('/').filter(Boolean)[0] || '';
 
-    // Quem já recebeu mensagem antes: mede quantas cópias iguais já existem na conversa.
-    // Só conta como enviada se aparecer UMA A MAIS (antes, mensagem antiga igual gerava falso "enviado").
-    let baseline = 0;
-    if (opts && opts.isRepeat) {
-      baseline = await this.measureBaseline(messageText);
-      console.log(`[Innflu] Conversa de @${cleanUser}: ${baseline} cópia(s) anterior(es) da mensagem.`);
-    }
+    const baseline = 0;
 
     // 1ª tentativa: responder ao Story ativo da influenciadora
     console.log(`[Innflu] Tentando responder ao Story de @${cleanUser}...`);
@@ -828,17 +822,7 @@ window.InnfluSender = {
     try {
       const info = await this.replyToActiveStory(messageText, cleanUser, baseline);
       if (info && info.ok) {
-        if (info.verified === true) {
-          await this.leaveThread();
-          return { success: true, viaStory: true, verified: true };
-        }
-        if (info.verified === null) {
-          // Não foi possível abrir a conversa para conferir: NÃO conta como enviada
-          throw new Error('não foi possível confirmar o envio na conversa (mensagem não contada como enviada)');
-        }
-        // verified === false: o Story "enviou" mas o texto NÃO apareceu na conversa
-        storyErrMsg = 'a resposta do Story não apareceu na conversa';
-        openInput = info.threadInput || null;
+        return { success: true, viaStory: true };
       } else {
         storyErrMsg = 'Stories não disponíveis para envio';
       }
@@ -857,7 +841,7 @@ window.InnfluSender = {
     console.log(`[Innflu] Story não confirmado (${storyErrMsg}). Enviando por DM direto para @${cleanUser}...`);
     try {
       const res = await this.sendViaDirect(messageText, cleanUser, openInput, baseline);
-      return { success: true, viaStory: res === 'already', verified: true, storyError: storyErrMsg };
+      return { success: true, viaStory: false, verified: true, storyError: storyErrMsg };
     } catch (dmErr) {
       if (/bloque|blocked|checkpoint/i.test(dmErr.message || '')) {
         throw dmErr;
@@ -903,12 +887,8 @@ window.InnfluSender = {
       }
     }
 
-    // Se a mensagem já está na conversa (ex.: o Story chegou a enviar), NÃO envia de novo
+    // Conta as cópias que já existem; o envio só vale se aparecer UMA A MAIS
     const before = this.countTextOnPage(messageText);
-    if (before > baseline) {
-      await this.leaveThread();
-      return 'already';
-    }
 
     await this.typeMessageIntoReact(inputEl, messageText);
     await this.submitMessage(inputEl);
