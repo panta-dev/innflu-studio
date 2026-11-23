@@ -775,14 +775,16 @@ window.InnfluSender = {
     const needle = this.normalizeNeedle(messageText);
     const user = (username || '').toLowerCase();
     const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
-    const headers = { 'x-ig-app-id': '936619743392459', 'x-csrftoken': csrf, 'x-requested-with': 'XMLHttpRequest' };
+    let claim = '0';
+    try { claim = sessionStorage.getItem('www-claim-v2') || '0'; } catch (e) { /* ignora */ }
+    const headers = { 'x-ig-app-id': '936619743392459', 'x-csrftoken': csrf, 'x-requested-with': 'XMLHttpRequest', 'x-asbd-id': '129477', 'x-ig-www-claim': claim, 'accept': '*/*' };
     let apiWorked = false;
     for (let attempt = 0; attempt < 4; attempt++) {
       if (attempt) await this.sleep(2500);
       for (const path of ['inbox/?limit=20', 'pending_inbox/?limit=20']) {
         try {
           const r = await fetch(`/api/v1/direct_v2/${path}`, { credentials: 'include', headers });
-          if (!r.ok) continue;
+          if (!r.ok) { console.warn(`[Innflu] API ${path} respondeu ${r.status}`); continue; }
           const j = await r.json();
           const threads = (j.inbox && j.inbox.threads) || [];
           apiWorked = true;
@@ -792,7 +794,9 @@ window.InnfluSender = {
             for (const it of (t.items || [])) {
               const txt = (it.text || (it.reel_share && it.reel_share.text) || (it.link && it.link.text) || '');
               const ts = Math.floor((parseInt(it.timestamp, 10) || 0) / 1000);
-              if (needle && txt.toLowerCase().replace(/\s+/g, '').includes(needle) && ts >= sinceMs) return true;
+              const textOk = needle && txt.toLowerCase().replace(/\s+/g, '').includes(needle);
+              const mineRecent = it.is_sent_by_viewer === true && ts >= sinceMs;
+              if ((textOk && ts >= sinceMs) || mineRecent) return true;
             }
           }
         } catch (e) { /* tenta o próximo */ }
@@ -834,7 +838,7 @@ window.InnfluSender = {
     if (!typedNow) {
       console.warn('[Innflu] Campo do Story parece vazio após digitar; seguindo mesmo assim e conferindo depois.');
     }
-    const sentAfterMs = Date.now() - 20000;
+    const sentAfterMs = Date.now() - 60000;
 
     console.log(`[Innflu] Enviando resposta do Story para @${cleanUser}...`);
     await this.submitStoryReply(inputEl);
@@ -868,8 +872,23 @@ window.InnfluSender = {
       await this.sleep(800);
       throw new Error(`Instagram recusou a resposta do Story: ${lateErr}`);
     }
-    if (api !== true) {
-      console.warn('[Innflu] Conferência via API não encontrou a mensagem; sem aviso de erro do Instagram, considerando enviada.');
+    if (api === false) {
+      // A API respondeu e NÃO há mensagem sua recente nessa conversa: não foi entregue.
+      this.closeStoryViewer();
+      await this.sleep(800);
+      throw new Error('o Instagram não entregou a resposta do Story (não aparece no seu Direct)');
+    }
+    if (api === null) {
+      // Não foi possível consultar a API: confere abrindo a conversa
+      console.log('[Innflu] API indisponível; conferindo na conversa...');
+      this.closeStoryViewer();
+      await this.sleep(1200);
+      const check = await this.verifyStoryReplyInThread(messageText, cleanUser, baseline);
+      if (check.verified !== true) {
+        throw new Error('não foi possível confirmar o envio do Story (não contado como enviado)');
+      }
+      await this.leaveThread();
+      return { ok: true, confirmed: true };
     }
     console.log(`[Innflu] Resposta do Story confirmada. Fechando visualizador...`);
     this.closeStoryViewer();
