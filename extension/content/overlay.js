@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.8</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.9</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +173,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.8</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.9</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -296,9 +296,9 @@
             <div class="innflu-delay-row" style="margin-top:3px;">
               <div class="innflu-delay-inputs">
                 <span class="innflu-form-label" style="margin:0;">Delay:</span>
-                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMinDelay" value="60" min="5" max="900" title="Mínimo em segundos" style="width:34px;padding:2px 4px;font-size:10px;" />
+                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMinDelay" value="30" min="5" max="900" title="Mínimo em segundos" style="width:34px;padding:2px 4px;font-size:10px;" />
                 <span>a</span>
-                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMaxDelay" value="120" min="10" max="1800" title="Máximo em segundos" style="width:34px;padding:2px 4px;font-size:10px;" />
+                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMaxDelay" value="60" min="10" max="1800" title="Máximo em segundos" style="width:34px;padding:2px 4px;font-size:10px;" />
                 <span>s</span>
               </div>
               <div class="innflu-template-actions">
@@ -543,7 +543,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.8 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.9 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -796,6 +796,16 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   let currentUserEmail = '';
   let currentUserPlan = '';
   let currentBearerToken = '';
+
+  // ===== Pausas anti-ban entre mensagens =====
+  // Entre mensagens: 30s a 60s. A cada 10 envios: 3 min. A cada 50: 10 min. A cada 100: 15 min.
+  function computeSendDelaySec(sentTotal) {
+    const n = parseInt(sentTotal, 10) || 0;
+    if (n > 0 && n % 100 === 0) return { sec: 15 * 60, label: `pausa longa de 15 min (${n} mensagens)` };
+    if (n > 0 && n % 50 === 0) return { sec: 10 * 60, label: `pausa de 10 min (${n} mensagens)` };
+    if (n > 0 && n % 10 === 0) return { sec: 3 * 60, label: `pausa de 3 min (${n} mensagens)` };
+    return { sec: 30 + Math.floor(Math.random() * 31), label: 'descanso anti-ban' };
+  }
 
   // ===== Limite diário de mensagens (configurável; 0 = ilimitado) =====
   function getDailyLimit(b) {
@@ -2116,7 +2126,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.8';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.9';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2152,7 +2162,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.4.8`,
+      `- Versão do Script: v1.4.9`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2865,12 +2875,11 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       }
 
       // ENTRA NO DESCANSO ANTI-BAN SOMENTE APÓS CONFIRMAÇÃO DO ENVIO
-      const minS = Math.max(5, parseInt(bot.minDelaySec, 10) || 60);
-      const maxS = Math.max(minS, parseInt(bot.maxDelaySec, 10) || 120);
-      const delaySec = Math.floor(Math.random() * (maxS - minS + 1)) + minS;
+      const delayInfo = computeSendDelaySec(newSent);
+      const delaySec = delayInfo.sec;
       const nextAt = Date.now() + delaySec * 1000;
       await saveBot({ nextActionAt: nextAt });
-      hudCurrentAction.innerText = `[Automação] Descanso anti-ban (${delaySec}s) antes da próxima...`;
+      hudCurrentAction.innerText = `[Automação] ${delayInfo.label} (${delaySec >= 120 ? Math.round(delaySec / 60) + ' min' : delaySec + 's'}) antes da próxima...`;
       startCountdown(nextAt, () => {
         if (remainingQueue.length > 0) {
           openProfileSafe(remainingQueue[0]);
@@ -3575,12 +3584,11 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       } catch (e) {}
 
       // Delay seguro anti-ban (respeitando configuração do usuário)
-      const minS = Math.max(5, parseInt(bot.minDelaySec, 10) || 60);
-      const maxS = Math.max(minS, parseInt(bot.maxDelaySec, 10) || 120);
-      const delaySec = Math.floor(Math.random() * (maxS - minS + 1)) + minS;
+      const delayInfo = computeSendDelaySec(newSent);
+      const delaySec = delayInfo.sec;
       const nextAt = Date.now() + delaySec * 1000;
       await saveBot({ nextActionAt: nextAt });
-      hudCurrentAction.innerText = `Pausa anti-ban (${delaySec}s)...`;
+      hudCurrentAction.innerText = `${delayInfo.label} (${delaySec >= 120 ? Math.round(delaySec / 60) + ' min' : delaySec + 's'})...`;
       startCountdown(nextAt, runLoop, delaySec * 1000);
     } catch (err) {
       window.InnfluIsSendingDM = false;
