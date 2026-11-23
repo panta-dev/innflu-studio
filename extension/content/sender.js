@@ -817,7 +817,7 @@ window.InnfluSender = {
 
     const typedNow = ((inputEl.value !== undefined ? inputEl.value : inputEl.innerText) || '').trim();
     if (!typedNow) {
-      throw new Error('o texto não foi digitado no campo de resposta do Story');
+      console.warn('[Innflu] Campo do Story parece vazio após digitar; seguindo mesmo assim e conferindo depois.');
     }
     const sentAfterMs = Date.now() - 20000;
 
@@ -836,14 +836,9 @@ window.InnfluSender = {
     // Campo esvaziado NÃO prova envio. Confere pela API do Instagram (sem sair do perfil).
     const api = await this.verifySentViaApi(messageText, cleanUser, sentAfterMs);
     console.log(`[Innflu] Conferência via API: ${api}`);
-    if (api === false) {
-      this.closeStoryViewer();
-      await this.sleep(1000);
-      throw new Error('o Instagram não registrou a resposta do Story no Direct');
-    }
-    if (api === null) {
-      // API indisponível: confere abrindo a conversa (método antigo)
-      console.log('[Innflu] API indisponível; conferindo na conversa...');
+    if (api !== true) {
+      // API não achou (ou indisponível): confere abrindo a conversa antes de decidir
+      console.log('[Innflu] API não confirmou; conferindo na conversa...');
       this.closeStoryViewer();
       await this.sleep(1200);
       const check = await this.verifyStoryReplyInThread(messageText, cleanUser, baseline);
