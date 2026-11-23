@@ -562,9 +562,6 @@ window.InnfluSender = {
 
     return !!(storyProgress && (storyDialog || storyInput));
   },
-    const storyInput = document.querySelector('textarea[placeholder*="Responder" i], textarea[placeholder*="Reply" i], input[placeholder*="Responder" i]');
-    return !!(storyProgress && (storyDialog || storyInput));
-  },
 
   /**
    * Aguarda o campo de resposta de Story aparecer e o ativa
