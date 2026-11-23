@@ -753,6 +753,21 @@ window.InnfluSender = {
   },
 
   /**
+   * Procura avisos de erro do Instagram (ex.: "Ocorreu um erro. Tente novamente.") fora do HUD.
+   */
+  findSendErrorToast() {
+    const re = /ocorreu um erro|tente novamente|algo deu errado|n[ãa]o foi poss[ií]vel enviar|something went wrong|an error occurred|couldn.t send|failed to send|try again/i;
+    const nodes = document.querySelectorAll('div, span');
+    for (const el of nodes) {
+      if (el.closest('#innflu-hud-root')) continue;
+      if (el.children.length > 2) continue;
+      const t = (el.innerText || '').trim();
+      if (t && t.length < 90 && re.test(t)) return t;
+    }
+    return '';
+  },
+
+  /**
    * Confere via API interna do Instagram se a mensagem chegou ao Direct (inbox e solicitações).
    * Retorna true (achou), false (API ok mas não achou) ou null (API indisponível).
    */
@@ -833,17 +848,36 @@ window.InnfluSender = {
       throw new Error(confirm.message);
     }
 
+    // Aviso de erro do Instagram logo após enviar = não enviou
+    for (let i = 0; i < 6; i++) {
+      const errToast = this.findSendErrorToast();
+      if (errToast) {
+        this.closeStoryViewer();
+        await this.sleep(800);
+        throw new Error(`Instagram recusou a resposta do Story: ${errToast}`);
+      }
+      await this.sleep(500);
+    }
+
     // Campo esvaziado NÃO prova envio. Confere pela API do Instagram (sem sair do perfil).
     const api = await this.verifySentViaApi(messageText, cleanUser, sentAfterMs);
     console.log(`[Innflu] Conferência via API: ${api}`);
+    const lateErr = this.findSendErrorToast();
+    if (lateErr) {
+      this.closeStoryViewer();
+      await this.sleep(800);
+      throw new Error(`Instagram recusou a resposta do Story: ${lateErr}`);
+    }
     if (api !== true) {
-      // A conferência é só informativa: o Instagram aceitou o envio (campo esvaziou, sem bloqueio).
-      // Não repetimos nem marcamos falha, para não duplicar mensagens nem gerar alertas falsos.
-      console.warn('[Innflu] Conferência via API não encontrou a mensagem, mas o envio foi aceito. Considerando enviada.');
+      console.warn('[Innflu] Conferência via API não encontrou a mensagem; sem aviso de erro do Instagram, considerando enviada.');
     }
     console.log(`[Innflu] Resposta do Story confirmada. Fechando visualizador...`);
     this.closeStoryViewer();
-    await this.sleep(1000);
+    for (let i = 0; i < 5; i++) {
+      await this.sleep(600);
+      const closeErr = this.findSendErrorToast();
+      if (closeErr) throw new Error(`Instagram recusou a resposta do Story: ${closeErr}`);
+    }
     return { ok: true, confirmed: true };
   },
 
