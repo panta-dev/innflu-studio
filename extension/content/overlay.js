@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.7</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.8</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +173,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.7</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.8</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -543,7 +543,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.7 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.8 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -2116,7 +2116,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.7';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.8';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2152,7 +2152,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.4.7`,
+      `- Versão do Script: v1.4.8`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2835,7 +2835,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       });
 
       hudCurrentAction.innerText = `[Automação] Digitando mensagem nos stories de @${cleanUser}...`;
-      const sendRes = await window.InnfluSender.sendDirectMessage(msg);
+      const sendRes = await window.InnfluSender.sendDirectMessage(msg, { isRepeat: isRepeatContact });
       window.InnfluIsSendingDM = false;
 
       // SÓ ENTRA AQUI SE FOI 100% CONFIRMADO O ENVIO DA MENSAGEM NO STORY
@@ -3540,7 +3540,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
       const msg = window.InnfluSpintax.interpolate(chosenTemplate, { username, nome: influencerName, fullName: influencerName });
       hudCurrentAction.innerText = `Digitando mensagem para @${username}...`;
-      const sendRes = await window.InnfluSender.sendDirectMessage(msg);
+      const sendRes = await window.InnfluSender.sendDirectMessage(msg, { isRepeat: knownCRMUsersCache.has((username || '').toLowerCase()) || (cachedLeads || []).some(l => (l.username || '').toLowerCase() === (username || '').toLowerCase() && (l.status || '').toLowerCase().includes('contatad')) });
       window.InnfluIsSendingDM = false;
 
       const cleanUser = username.toLowerCase();
@@ -4246,7 +4246,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       const msg = window.InnfluSpintax.interpolate(activeTemplate, { username, nome: influencerName });
 
       hudCurrentAction.innerText = `Digitando DM para @${username}...`;
-      await window.InnfluSender.sendDirectMessage(msg);
+      await window.InnfluSender.sendDirectMessage(msg, { isRepeat: true });
 
       sendResponse({ success: true, username, messageText: msg });
     } catch (err) {
