@@ -753,6 +753,40 @@ window.InnfluSender = {
   },
 
   /**
+   * Confere via API interna do Instagram se a mensagem chegou ao Direct (inbox e solicitações).
+   * Retorna true (achou), false (API ok mas não achou) ou null (API indisponível).
+   */
+  async verifySentViaApi(messageText, username, sinceMs) {
+    const needle = this.normalizeNeedle(messageText);
+    const user = (username || '').toLowerCase();
+    const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+    const headers = { 'x-ig-app-id': '936619743392459', 'x-csrftoken': csrf, 'x-requested-with': 'XMLHttpRequest' };
+    let apiWorked = false;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt) await this.sleep(2500);
+      for (const path of ['inbox/?limit=20', 'pending_inbox/?limit=20']) {
+        try {
+          const r = await fetch(`/api/v1/direct_v2/${path}`, { credentials: 'include', headers });
+          if (!r.ok) continue;
+          const j = await r.json();
+          const threads = (j.inbox && j.inbox.threads) || [];
+          apiWorked = true;
+          for (const t of threads) {
+            const users = (t.users || []).map(u => (u.username || '').toLowerCase());
+            if (user && !users.includes(user)) continue;
+            for (const it of (t.items || [])) {
+              const txt = (it.text || (it.reel_share && it.reel_share.text) || (it.link && it.link.text) || '');
+              const ts = Math.floor((parseInt(it.timestamp, 10) || 0) / 1000);
+              if (needle && txt.toLowerCase().replace(/\s+/g, '').includes(needle) && ts >= sinceMs) return true;
+            }
+          }
+        } catch (e) { /* tenta o próximo */ }
+      }
+    }
+    return apiWorked ? false : null;
+  },
+
+  /**
    * Abre o Story ativo da criadora e responde diretamente com a mensagem de captação
    */
   async replyToActiveStory(messageText, username, baseline = 0) {
@@ -781,6 +815,12 @@ window.InnfluSender = {
     console.log(`[Innflu] Digitando mensagem de captação no Story de @${cleanUser}...`);
     await this.typeMessageIntoStoryInput(inputEl, messageText);
 
+    const typedNow = ((inputEl.value !== undefined ? inputEl.value : inputEl.innerText) || '').trim();
+    if (!typedNow) {
+      throw new Error('o texto não foi digitado no campo de resposta do Story');
+    }
+    const sentAfterMs = Date.now() - 20000;
+
     console.log(`[Innflu] Enviando resposta do Story para @${cleanUser}...`);
     await this.submitStoryReply(inputEl);
 
@@ -793,9 +833,27 @@ window.InnfluSender = {
       throw new Error(confirm.message);
     }
 
-    // O campo de resposta esvaziou e nenhum erro apareceu: a resposta do Story foi enviada.
-    // (Não saímos do perfil para conferir na conversa: isso só gerava falsos alertas.)
-    console.log(`[Innflu] Resposta do Story enviada. Fechando visualizador...`);
+    // Campo esvaziado NÃO prova envio. Confere pela API do Instagram (sem sair do perfil).
+    const api = await this.verifySentViaApi(messageText, cleanUser, sentAfterMs);
+    console.log(`[Innflu] Conferência via API: ${api}`);
+    if (api === false) {
+      this.closeStoryViewer();
+      await this.sleep(1000);
+      throw new Error('o Instagram não registrou a resposta do Story no Direct');
+    }
+    if (api === null) {
+      // API indisponível: confere abrindo a conversa (método antigo)
+      console.log('[Innflu] API indisponível; conferindo na conversa...');
+      this.closeStoryViewer();
+      await this.sleep(1200);
+      const check = await this.verifyStoryReplyInThread(messageText, cleanUser, baseline);
+      if (check.verified !== true) {
+        throw new Error('não foi possível confirmar o envio do Story (não contado como enviado)');
+      }
+      await this.leaveThread();
+      return { ok: true, confirmed: true };
+    }
+    console.log(`[Innflu] Resposta do Story confirmada. Fechando visualizador...`);
     this.closeStoryViewer();
     await this.sleep(1000);
     return { ok: true, confirmed: true };
