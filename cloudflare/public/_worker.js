@@ -2640,7 +2640,7 @@ app.get("/updates.xml", (c) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="innflustudioprospector2026">
-    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.7" />
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.8" />
   </app>
 </gupdate>`;
   c.header("Content-Type", "application/xml; charset=utf-8");
@@ -2649,9 +2649,9 @@ app.get("/updates.xml", (c) => {
 app.get("/api/extension/version", (c) => {
   return c.json({
     status: "ok",
-    version: "1.4.7",
+    version: "1.4.8",
     minSupportedVersion: "1.0.0",
-    releaseNotes: "v1.4.7: Fim do loop nas mesmas influenciadoras (perfis pulados agora s\xE3o lembrados), reenvio s\xF3 ap\xF3s 24h do \xFAltimo envio (se ela n\xE3o respondeu), sem duplicar no CRM.",
+    releaseNotes: "v1.4.8: Corrige o falso envio (s\xF3 conta se aparecer uma c\xF3pia nova da mensagem na conversa) e pula para a pr\xF3xima influenciadora quando n\xE3o confirma o envio.",
     downloadUrl: "/innflu-extensao.zip",
     publishedAt: "2026-11-18T13:30:00Z",
     dynamicRules: {
