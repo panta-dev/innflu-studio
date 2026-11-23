@@ -675,7 +675,7 @@ app.get('/updates.xml', (c) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="innflustudioprospector2026">
-    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.4" />
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.6" />
   </app>
 </gupdate>`;
   c.header('Content-Type', 'application/xml; charset=utf-8');
@@ -685,9 +685,9 @@ app.get('/updates.xml', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.4.4',
+    version: '1.4.6',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.4.4: Correção crítica dos 2 erros: 1) Prospecção contínua sem parar do nada no feed de busca (scroll vigoroso e sem interrupção). 2) Distinção estrita entre Stories de 24h e Destaques (highlights nunca mais são abertos como stories).',
+    releaseNotes: 'v1.4.6: Corrige o envio (módulo sender quebrado na 1.4.4), pula para a próxima influenciadora quando o envio falha (fim do loop) e limite diário configurável/ilimitado com aviso.',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-18T13:30:00Z',
     dynamicRules: {
