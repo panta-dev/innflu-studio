@@ -675,7 +675,7 @@ app.get('/updates.xml', (c) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="innflustudioprospector2026">
-    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.8" />
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.4.9" />
   </app>
 </gupdate>`;
   c.header('Content-Type', 'application/xml; charset=utf-8');
@@ -685,9 +685,9 @@ app.get('/updates.xml', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.4.8',
+    version: '1.4.9',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.4.8: Corrige o falso envio (só conta se aparecer uma cópia nova da mensagem na conversa) e pula para a próxima influenciadora quando não confirma o envio.',
+    releaseNotes: 'v1.4.9: Resposta do Story sem sair do perfil (fim dos alertas falsos de verificação) e novas pausas anti-ban: 30-60s entre mensagens, 3 min a cada 10, 10 min a cada 50 e 15 min a cada 100.',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-18T13:30:00Z',
     dynamicRules: {
