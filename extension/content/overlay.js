@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.4</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.6</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +173,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.4</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.6</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -285,6 +285,14 @@
 
           <div class="innflu-template-section" id="boxMsgSection">
             <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="4" style="min-height:95px;height:auto;font-size:11px;line-height:1.45;padding:8px;resize:vertical;overflow-y:visible;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
+            <div class="innflu-delay-row" style="margin-top:3px;align-items:center;">
+              <div class="innflu-delay-inputs" style="flex-wrap:wrap;">
+                <span class="innflu-form-label" style="margin:0;">Limite diário:</span>
+                <input type="number" class="innflu-input innflu-input-mini" id="inputDailyLimit" value="40" min="1" max="100000" title="Máximo de mensagens por dia" style="width:50px;padding:2px 4px;font-size:10px;" />
+                <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:#8b949e;cursor:pointer;"><input type="checkbox" id="chkUnlimited" /> Ilimitado</label>
+              </div>
+            </div>
+            <div id="unlimitedWarn" style="display:none;margin-top:3px;font-size:10px;line-height:1.35;color:#fbbf24;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:4px;padding:4px 6px;">⚠️ Modo ilimitado: enviar muitas mensagens por dia pode fazer o Instagram bloquear ou derrubar sua conta. Use por sua conta e risco.</div>
             <div class="innflu-delay-row" style="margin-top:3px;">
               <div class="innflu-delay-inputs">
                 <span class="innflu-form-label" style="margin:0;">Delay:</span>
@@ -535,7 +543,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.4 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.6 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -611,6 +619,25 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   const hudAutoTemplateContent = $('hudAutoTemplateContent');
   const btnAutoTestSpintax = $('btnAutoTestSpintax');
   const btnAutoSaveTemplate = $('btnAutoSaveTemplate');
+  const inputDailyLimit = $('inputDailyLimit');
+  const chkUnlimited = $('chkUnlimited');
+  const unlimitedWarn = $('unlimitedWarn');
+  if (chkUnlimited) {
+    chkUnlimited.addEventListener('change', async () => {
+      if (chkUnlimited.checked) {
+        const ok = window.confirm('⚠️ ATENÇÃO: no modo ILIMITADO o agente não para de enviar mensagens por dia.\n\nEnviar mensagens em excesso pode fazer o Instagram bloquear ou DERRUBAR sua conta.\n\nDeseja realmente ativar o modo ilimitado?');
+        if (!ok) { chkUnlimited.checked = false; return; }
+      }
+      await saveBot({ dailyLimit: readLimitFromUI() });
+      applyLimitUI(localBotCache);
+    });
+  }
+  if (inputDailyLimit) {
+    inputDailyLimit.addEventListener('change', async () => {
+      await saveBot({ dailyLimit: readLimitFromUI() });
+      applyLimitUI(localBotCache);
+    });
+  }
   const inputAutoMinDelay = $('inputAutoMinDelay');
   const inputAutoMaxDelay = $('inputAutoMaxDelay');
   const btnToggleAuto = $('btnToggleAuto');
@@ -769,6 +796,34 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   let currentUserEmail = '';
   let currentUserPlan = '';
   let currentBearerToken = '';
+
+  // ===== Limite diário de mensagens (configurável; 0 = ilimitado) =====
+  function getDailyLimit(b) {
+    const v = b && b.dailyLimit;
+    if (v === 0 || v === Infinity) return Infinity;
+    const n = parseInt(v, 10);
+    return n > 0 ? n : 40;
+  }
+  function limitLabel(b) {
+    const l = getDailyLimit(b);
+    return l === Infinity ? '∞' : String(l);
+  }
+  function applyLimitUI(b) {
+    const l = getDailyLimit(b);
+    if (chkUnlimited) chkUnlimited.checked = (l === Infinity);
+    if (inputDailyLimit) {
+      inputDailyLimit.disabled = (l === Infinity);
+      if (l !== Infinity) inputDailyLimit.value = String(l);
+    }
+    if (unlimitedWarn) unlimitedWarn.style.display = (l === Infinity) ? 'block' : 'none';
+    if (hudSentTodayCount) hudSentTodayCount.innerText = `${(b && b.sentCount) || 0} / ${limitLabel(b)}`;
+  }
+
+  function readLimitFromUI() {
+    if (chkUnlimited && chkUnlimited.checked) return 0;
+    const n = parseInt(inputDailyLimit ? inputDailyLimit.value : 40, 10);
+    return n > 0 ? n : 40;
+  }
 
   // ===== Perfis rejeitados (memória permanente) e proteção anti-loop =====
   let rejectedCache = new Set();
@@ -1070,12 +1125,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     }
 
     // Atualiza limite de DMs seguro com base no plano do usuário
-    if (user.daily_dm_limit && localBotCache) {
-      localBotCache.dailyLimit = user.daily_dm_limit;
-      if (hudSentTodayCount) {
-        hudSentTodayCount.innerText = `${localBotCache.sentCount || 0} / ${user.daily_dm_limit}`;
-      }
-    }
+    // (o limite diário agora é definido pelo próprio usuário no painel)
   }
 
   async function checkAndApplyAuth() {
@@ -1159,7 +1209,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // ==========================================
   function syncUI(bot) {
     hudMinedCount.innerText = bot.minedCount || 0;
-    hudSentTodayCount.innerText = `${bot.sentCount || 0} / 40`;
+    applyLimitUI(bot);
     hudQueueCount.innerText = (bot.queue || []).length;
     renderFeed(bot.activityFeed);
 
@@ -2066,7 +2116,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.4';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.6';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2102,7 +2152,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.4.4`,
+      `- Versão do Script: v1.4.6`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2123,7 +2173,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `- miningSource: ${localBotCache?.miningSource || 'N/A'}`,
       `- miningTarget: "${localBotCache?.miningTarget || 'N/A'}"`,
       `- currentAction: "${hudCurrentAction ? hudCurrentAction.innerText : 'N/A'}"`,
-      `- Disparos Hoje: ${localBotCache?.sentCount || 0} / ${localBotCache?.dailyLimit || 40}`,
+      `- Disparos Hoje: ${localBotCache?.sentCount || 0} / ${limitLabel(localBotCache)}`,
       `- Mineradas Salvas: ${localBotCache?.minedCount || 0}`,
       `- searchStallCount: ${localBotCache?.searchStallCount || 0}`,
       `- Intervalo Anti-Ban Configurado: ${localBotCache?.minDelaySec || 60}s a ${localBotCache?.maxDelaySec || 120}s`,
@@ -2380,6 +2430,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       targetGender: targetGenderVal,
       minDelaySec: minDelayVal,
       maxDelaySec: maxDelayVal,
+      dailyLimit: readLimitFromUI(),
       queue: [],
       visited: [],
       openCounts: {},
@@ -2537,7 +2588,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   // PIPELINE DE AUTOMAÇÃO CONTÍNUA (MINERA -> DM -> CONTINUA)
   // ==========================================
   async function stepAutomation(bot, apiBaseUrl, activeTemplate, pageType) {
-    if ((bot.sentCount || 0) >= (bot.dailyLimit || 40)) {
+    if ((bot.sentCount || 0) >= getDailyLimit(bot)) {
       await stopAutomationGracefully('daily_limit', 'Meta diária de abordagens alcançada por hoje!');
       return;
     }
@@ -2784,7 +2835,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       // SÓ ENTRA AQUI SE FOI 100% CONFIRMADO O ENVIO DA MENSAGEM NO STORY
       const newSent = (bot.sentCount || 0) + 1;
       await saveBot({ sentCount: newSent });
-      hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
+      hudSentTodayCount.innerText = `${newSent} / ${limitLabel(bot)}`;
       const tagStatus = sendRes && sendRes.viaStory ? 'Story Respondido ⚡' : 'DM Enviada ✓';
       await logActivity({ username: cleanUser, status: tagStatus });
       await updateLocalLeadStatus(cleanUser, 'contatada');
@@ -2802,7 +2853,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       } catch (e) {}
 
       // Se bateu a meta diária após este envio, para imediatamente
-      if (newSent >= (bot.dailyLimit || 40)) {
+      if (newSent >= getDailyLimit(bot)) {
         await stopAutomationGracefully('daily_limit', 'Meta diária de envios alcançada com sucesso!');
         return;
       }
@@ -2837,9 +2888,12 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       await logActivity({ username: cleanUser, status: `Não Enviada (${err.message.substring(0, 24)})` });
       showToast({ type: 'warning', title: `Story Não Respondido (@${cleanUser})`, message: err.message });
       
+      // Descarta de vez esta influenciadora na rodada (sem isso, o agente reabria o mesmo perfil em loop)
+      addDiagLog('warn', `Falha ao enviar para @${cleanUser}: ${err.message}. Seguindo para a próxima influenciadora.`);
+      await updateLocalLeadStatus(cleanUser, 'falha_envio');
       const retryDelay = 4;
       const nextAt = Date.now() + retryDelay * 1000;
-      await saveBot({ nextActionAt: nextAt });
+      await saveBot({ nextActionAt: nextAt, queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
       hudCurrentAction.innerText = `[Automação] Pulando @${cleanUser}...`;
       startCountdown(nextAt, () => {
         if (remainingQueue.length > 0) {
@@ -3495,7 +3549,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         queue: remainingQueue
       });
 
-      hudSentTodayCount.innerText = `${newSent} / ${bot.dailyLimit || 40}`;
+      hudSentTodayCount.innerText = `${newSent} / ${limitLabel(bot)}`;
       hudQueueCount.innerText = remainingQueue.length;
       const tagStatus = sendRes && sendRes.viaStory ? 'Story Respondido ⚡' : 'DM Enviada ✉️';
       await logActivity({ username: cleanUser, status: tagStatus });
@@ -3527,6 +3581,16 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       console.warn('[Innflu] Falha ao enviar DM na Captação:', err.message);
       await logActivity({ username, status: `Não Enviada (${err.message.substring(0, 24)})` });
       showToast({ type: 'warning', title: 'Falha no Envio', message: err.message });
+      // Marca como tentada para não reabrir a mesma influenciadora em loop; segue para a próxima
+      try {
+        const { bot: cur } = await getState();
+        const uLow = (username || '').toLowerCase();
+        await updateLocalLeadStatus(uLow, 'falha_envio');
+        await saveBot({
+          visited: Array.from(new Set([...(cur.visited || []), uLow])).slice(-1000),
+          queue: (cur.queue || []).filter(x => x && x.toLowerCase() !== uLow)
+        });
+      } catch (e2) {}
       const nextAt = Date.now() + 6000;
       await saveBot({ nextActionAt: nextAt });
       startCountdown(nextAt, runLoop, 6000);
@@ -4117,8 +4181,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
   }
 
   function handleBackgroundUpdate(data) {
-    if (data.dailyCount !== undefined && data.dailyLimit !== undefined) {
-      hudSentTodayCount.innerText = `${data.dailyCount} / ${data.dailyLimit}`;
+    if (data.dailyCount !== undefined) {
+      hudSentTodayCount.innerText = `${data.dailyCount} / ${limitLabel(localBotCache)}`;
     }
     if (data.status) {
       hudCurrentAction.innerText = data.status;
