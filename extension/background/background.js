@@ -108,7 +108,7 @@ async function handleStartCycle(sendResponse) {
   }
 
   // 2. Trava de segurança diária
-  if (config.dailyCount >= (config.dailyLimit || 40)) {
+  if (config.dailyCount >= (config.dailyLimit === 0 ? Infinity : (config.dailyLimit || 40))) {
     sendResponse({ error: `Meta diária de segurança atingida (${config.dailyCount}/${config.dailyLimit} DMs). Evite novos envios hoje para proteger sua conta!` });
     return;
   }
@@ -129,7 +129,7 @@ async function processNextStep() {
   const config = await chrome.storage.local.get(null);
 
   // Verifica novamente limite diário
-  if (config.dailyCount >= (config.dailyLimit || 40)) {
+  if (config.dailyCount >= (config.dailyLimit === 0 ? Infinity : (config.dailyLimit || 40))) {
     isCycleActive = false;
     notifyTabs({
       status: 'Meta diária atingida! Automação concluída com segurança.',
