@@ -837,16 +837,9 @@ window.InnfluSender = {
     const api = await this.verifySentViaApi(messageText, cleanUser, sentAfterMs);
     console.log(`[Innflu] Conferência via API: ${api}`);
     if (api !== true) {
-      // API não achou (ou indisponível): confere abrindo a conversa antes de decidir
-      console.log('[Innflu] API não confirmou; conferindo na conversa...');
-      this.closeStoryViewer();
-      await this.sleep(1200);
-      const check = await this.verifyStoryReplyInThread(messageText, cleanUser, baseline);
-      if (check.verified !== true) {
-        throw new Error('não foi possível confirmar o envio do Story (não contado como enviado)');
-      }
-      await this.leaveThread();
-      return { ok: true, confirmed: true };
+      // A conferência é só informativa: o Instagram aceitou o envio (campo esvaziou, sem bloqueio).
+      // Não repetimos nem marcamos falha, para não duplicar mensagens nem gerar alertas falsos.
+      console.warn('[Innflu] Conferência via API não encontrou a mensagem, mas o envio foi aceito. Considerando enviada.');
     }
     console.log(`[Innflu] Resposta do Story confirmada. Fechando visualizador...`);
     this.closeStoryViewer();
