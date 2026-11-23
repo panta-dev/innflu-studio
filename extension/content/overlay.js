@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.6</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.4.7</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +173,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.6</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.4.7</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -543,7 +543,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.6 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.4.7 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -2116,7 +2116,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.6';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.4.7';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2152,7 +2152,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.4.6`,
+      `- Versão do Script: v1.4.7`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2748,12 +2748,16 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       }
     }
 
-    // Regra dos 7 dias / blacklist: nunca abordar quem já recebeu captação recentemente
+    // Regra de reenvio: quem já recebeu mensagem só recebe de novo após 24h (blacklist nunca)
     const check7d = await check7DayRule(apiBaseUrl, cleanUser);
+    const isRepeatContact = wasKnown || !!(check7d && check7d.previouslyContacted);
     if (check7d && check7d.eligible === false) {
-      hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} já contatada recentemente. Pulando...`;
-      addDiagLog('info', `@${cleanUser} pulada: regra dos 7 dias / blacklist.`);
-      await logActivity({ username: cleanUser, status: 'Pulada (7d)' });
+      const why = check7d.reason === 'blacklisted' ? 'blacklist' : `enviada há ${Math.floor(check7d.hoursAgo || 0)}h (<24h)`;
+      hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada (${why}). Próxima...`;
+      addDiagLog('info', `@${cleanUser} pulada: ${why}.`);
+      await logActivity({ username: cleanUser, status: check7d.reason === 'blacklisted' ? 'Pulada (blacklist)' : 'Pulada (<24h)' });
+      // Persiste: sem isso o mesmo perfil voltava para a fila e o agente ficava em loop
+      await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
       await window.InnfluCrawler.sleep(1000);
       if (remainingQueue.length > 0) {
         openProfileSafe(remainingQueue[0]);
@@ -2764,8 +2768,8 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     }
 
     // Já está no banco? Confere a conversa: se ela respondeu, descarta; se não respondeu, envia nova mensagem
-    if (wasKnown) {
-      hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} já está no banco. Conferindo a conversa...`;
+    if (isRepeatContact) {
+      hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} já foi contatada. Conferindo a conversa...`;
       let thread = null;
       try {
         window.InnfluIsSendingDM = true;
@@ -2796,15 +2800,17 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
       }
 
       if (thread && thread.opened && thread.hasOutgoing) {
-        addDiagLog('info', `@${cleanUser} já recebeu mensagem e não respondeu. Enviando nova mensagem.`);
+        addDiagLog('info', `@${cleanUser} já recebeu mensagem há mais de 24h e não respondeu. Enviando nova mensagem.`);
       }
     }
 
-    // Perfil 100% qualificado: Salva no D1 e no CRM local
-    await saveLead(apiBaseUrl, profile, 'minerada', currentNiche);
-    await cacheLocalLead(profile, 'minerada', currentNiche);
+    // Perfil 100% qualificado: Salva no D1 e no CRM local (só se for NOVO; quem já está no CRM não é duplicado)
+    if (!isRepeatContact) {
+      await saveLead(apiBaseUrl, profile, 'minerada', currentNiche);
+      await cacheLocalLead(profile, 'minerada', currentNiche);
+    }
 
-    const newMined = (bot.minedCount || 0) + 1;
+    const newMined = (bot.minedCount || 0) + (isRepeatContact ? 0 : 1);
     await saveBot({
       minedCount: newMined,
       queue: remainingQueue,
@@ -4064,7 +4070,32 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
         method: 'POST',
         body: JSON.stringify({ username })
       });
-      return await res.json();
+      const data = await res.json();
+      // Blacklist nunca é reenviada
+      if (data && data.reason === 'blacklisted') return data;
+
+      // REGRA DE REENVIO: quem já recebeu mensagem só recebe de novo depois de 24h
+      let lastTs = null;
+      if (data && data.sent_at) {
+        const raw = String(data.sent_at);
+        const t = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : raw.replace(' ', 'T') + 'Z').getTime();
+        if (!isNaN(t)) lastTs = t;
+      }
+      if (!lastTs) {
+        const lead = (cachedLeads || []).find(l => (l.username || '').toLowerCase() === username);
+        if (lead && lead.last_contacted_at) {
+          const t = new Date(lead.last_contacted_at).getTime();
+          if (!isNaN(t)) lastTs = t;
+        }
+      }
+      if (lastTs) {
+        const hoursAgo = (Date.now() - lastTs) / 3600000;
+        if (hoursAgo < 24) {
+          return { ...data, eligible: false, reason: 'contacted_recently', hoursAgo, previouslyContacted: true };
+        }
+        return { ...data, eligible: true, reason: 'resend_eligible', hoursAgo, previouslyContacted: true };
+      }
+      return data;
     } catch (e) { return { eligible: true }; }
   }
 
