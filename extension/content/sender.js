@@ -204,23 +204,27 @@ window.InnfluSender = {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       const candidates = Array.from(document.querySelectorAll(
-        'div[contenteditable="true"], textarea, div[role="textbox"][contenteditable="true"]'
+        'div[contenteditable="true"][data-lexical-editor="true"], div[role="textbox"][contenteditable="true"], div[contenteditable="true"], textarea'
       ));
 
       for (const el of candidates) {
         if (el.closest('#innflu-hud-root')) continue;
         const rect = el.getBoundingClientRect();
-        if (rect.width > 50 && rect.height > 15) {
+        if (rect.width > 60 && rect.height > 15 && rect.bottom > window.innerHeight * 0.4) {
           const aria = (el.getAttribute('aria-label') || '').toLowerCase();
           const placeholder = (el.getAttribute('placeholder') || '').toLowerCase();
           const role = (el.getAttribute('role') || '').toLowerCase();
 
+          // Nunca selecionar barra de pesquisa / busca
+          if (aria.includes('pesquis') || aria.includes('search') || placeholder.includes('pesquis') || placeholder.includes('search')) {
+            continue;
+          }
+
           if (
-            window.location.pathname.toLowerCase().includes('/direct/') ||
             aria.includes('mensag') || aria.includes('messag') || aria.includes('convite') || aria.includes('invite') ||
             placeholder.includes('mensag') || placeholder.includes('messag') ||
-            role === 'textbox' ||
-            el.getAttribute('data-lexical-editor') === 'true'
+            el.getAttribute('data-lexical-editor') === 'true' ||
+            role === 'textbox'
           ) {
             return el;
           }
@@ -278,8 +282,8 @@ window.InnfluSender = {
     inputEl.focus();
     await this.sleep(100);
 
-    // 2. Tenta inserção via execCommand('insertText') com beforeinput para o Lexical registrar no EditorState
-    let inserted = false;
+    // 2. Prioriza ClipboardEvent('paste') nativo (o Lexical processa e atualiza EditorState + botão Enviar)
+    let textNow = '';
     try {
       const sel = window.getSelection();
       const range = document.createRange();
@@ -288,31 +292,29 @@ window.InnfluSender = {
       sel.removeAllRanges();
       sel.addRange(range);
 
-      inserted = document.execCommand('insertText', false, text);
-    } catch (e) {
-      inserted = false;
-    }
+      const dt = new DataTransfer();
+      dt.setData('text/plain', text);
+      const pasteEv = new ClipboardEvent('paste', {
+        clipboardData: dt,
+        bubbles: true,
+        cancelable: true
+      });
+      inputEl.dispatchEvent(pasteEv);
+      await this.sleep(250);
+      textNow = (inputEl.innerText || '').trim();
+    } catch (e) {}
 
-    let textNow = (inputEl.innerText || '').trim();
-
-    // 3. Se execCommand falhou ou deixou vazio, usa ClipboardEvent('paste') nativo (suportado pelo Lexical)
-    if (!inserted || textNow.length === 0) {
+    // 3. Fallback: execCommand('insertText') se paste não preencheu
+    if (textNow.length === 0) {
       try {
         inputEl.focus();
-        const dt = new DataTransfer();
-        dt.setData('text/plain', text);
-        const pasteEv = new ClipboardEvent('paste', {
-          clipboardData: dt,
-          bubbles: true,
-          cancelable: true
-        });
-        inputEl.dispatchEvent(pasteEv);
+        document.execCommand('insertText', false, text);
         await this.sleep(200);
         textNow = (inputEl.innerText || '').trim();
       } catch (e) {}
     }
 
-    // 4. Último recurso: beforeinput + InputEvent direto no editor
+    // 4. Último recurso: beforeinput
     if (textNow.length === 0) {
       try {
         inputEl.focus();
@@ -322,7 +324,7 @@ window.InnfluSender = {
           bubbles: true,
           cancelable: true
         }));
-        await this.sleep(150);
+        await this.sleep(200);
         textNow = (inputEl.innerText || '').trim();
       } catch (e) {}
     }
@@ -333,6 +335,11 @@ window.InnfluSender = {
 
     inputEl.dispatchEvent(new Event('input', { bubbles: true }));
     await this.sleep(this.randomDelay(300, 500));
+
+    // Fecha eventual popup de menção (@) aberto pelo Lexical sem apagar o texto
+    inputEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+    await this.sleep(150);
+
     console.log(`[Innflu] Mensagem única inserida no Lexical (${textNow.length} caracteres).`);
   },
 
@@ -342,38 +349,48 @@ window.InnfluSender = {
   async submitMessage(inputEl) {
     await this.sleep(this.randomDelay(350, 650));
 
-    // 1. Procura o botão Enviar / Send / Enviar convite (por texto, aria-label ou ícone SVG de aviãozinho)
-    const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]'));
-    let sendBtn = allButtons.find(b => {
-      if (b.closest('#innflu-hud-root') || b === inputEl || b.contains(inputEl)) return false;
-      const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
-      const rect = b.getBoundingClientRect();
-      const isVisible = rect.width > 0 && rect.height > 0;
-      const isSendText = t === 'enviar' || t === 'send' || t === 'enviar mensagem' || t === 'enviar convite' || t === 'send invite';
-      const hasSendSvg = !!b.querySelector('svg[aria-label*="Enviar" i], svg[aria-label*="Send" i]');
-      return (isSendText || hasSendSvg) && isVisible;
-    });
+    const findSendBtn = () => {
+      const container = inputEl
+        ? (inputEl.closest('form') || inputEl.closest('div[role="region"]') || inputEl.parentElement?.parentElement?.parentElement?.parentElement || document)
+        : document;
 
-    if (!sendBtn && inputEl) {
-      const container = inputEl.closest('form') || inputEl.closest('div[role="region"]') || inputEl.parentElement?.parentElement?.parentElement?.parentElement;
-      if (container) {
-        const buttonsInside = Array.from(container.querySelectorAll('button, div[role="button"]')).filter(b => {
+      const localButtons = Array.from(container.querySelectorAll('button, div[role="button"]'));
+      let btn = localButtons.find(b => {
+        if (b.closest('#innflu-hud-root') || b === inputEl || b.contains(inputEl)) return false;
+        const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
+        const rect = b.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0 || rect.bottom < window.innerHeight * 0.4) return false;
+        const isSendText = t === 'enviar' || t === 'send' || t === 'enviar mensagem' || t === 'enviar convite' || t === 'send invite';
+        const hasSendSvg = !!b.querySelector('svg[aria-label*="Enviar" i], svg[aria-label*="Send" i]');
+        return isSendText || hasSendSvg;
+      });
+
+      if (!btn) {
+        const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]'));
+        btn = allButtons.find(b => {
           if (b.closest('#innflu-hud-root') || b === inputEl || b.contains(inputEl)) return false;
+          const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
           const rect = b.getBoundingClientRect();
-          const aria = (b.getAttribute('aria-label') || '').toLowerCase();
-          if (aria.includes('emoji') || aria.includes('áudio') || aria.includes('audio') || aria.includes('curtir') || aria.includes('like') || aria.includes('anexar') || aria.includes('attach') || aria.includes('foto') || aria.includes('photo')) return false;
-          return rect.width > 0 && rect.height > 0;
+          if (rect.width <= 0 || rect.height <= 0 || rect.bottom < window.innerHeight * 0.4) return false;
+          const isSendText = t === 'enviar' || t === 'send' || t === 'enviar mensagem' || t === 'enviar convite' || t === 'send invite';
+          const hasSendSvg = !!b.querySelector('svg[aria-label*="Enviar" i], svg[aria-label*="Send" i]');
+          return isSendText || hasSendSvg;
         });
-        if (buttonsInside.length > 0) {
-          sendBtn = buttonsInside[buttonsInside.length - 1];
-        }
       }
+      return btn;
+    };
+
+    // Aguarda até 1.5s pelo botão Enviar renderizar após o texto ser inserido
+    let sendBtn = null;
+    for (let i = 0; i < 6 && !sendBtn; i++) {
+      sendBtn = findSendBtn();
+      if (!sendBtn) await this.sleep(250);
     }
 
     if (sendBtn) {
       console.log('[Innflu] Clicando no botão de envio:', sendBtn.innerText || sendBtn.getAttribute('aria-label') || 'Botão/SVG');
       this.simulateClick(sendBtn);
-      await this.sleep(600);
+      await this.sleep(700);
     }
 
     // 2. Se o campo ainda tem texto, dispara tecla Enter como garantia
@@ -1094,15 +1111,17 @@ window.InnfluSender = {
       if (blockCheck.blocked) {
         return { confirmed: false, blocked: true, message: blockCheck.message };
       }
-      if (this.countTextOnPage(text) > countBefore) {
+      const errToast = this.findSendErrorToast();
+      if (errToast) {
+        return { confirmed: false, message: `Instagram recusou a DM: ${errToast}` };
+      }
+      const editorEmpty = !inputEl || !inputEl.isConnected || (inputEl.innerText || inputEl.value || '').trim().length === 0;
+      if (editorEmpty && this.countTextOnPage(text) > countBefore) {
         return { confirmed: true };
       }
-      if (!retried && Date.now() - start > 5000 && inputEl && inputEl.isConnected && (inputEl.innerText || inputEl.value || '').trim()) {
+      if (!retried && Date.now() - start > 4500 && inputEl && inputEl.isConnected && (inputEl.innerText || inputEl.value || '').trim()) {
         retried = true;
-        inputEl.focus();
-        const enterProps = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, charCode: 13, bubbles: true, cancelable: true };
-        inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
-        inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
+        await this.submitMessage(inputEl);
       }
       await this.sleep(500);
     }

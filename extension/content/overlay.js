@@ -130,7 +130,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.7</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.8</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -175,7 +175,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.7</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.8</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -591,7 +591,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.7 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.8 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -886,7 +886,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
 
   // ===== 3 Templates de Mensagem Rotativos (Intercalação 1 -> 2 -> 3 -> 1...) =====
   const DEFAULT_TEMPLATES = [
-    '{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil (@{username}) e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}',
+    '{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil ({username}) e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}',
     '{Olá|Oie|Oi} {nome}! {Amei seu conteúdo|Adorei seus stories|Seu perfil é incrível}! Aqui é da equipe da @fechoumidia. Temos uma oportunidade de parceria que tem tudo a ver com você. {Você tem interesse em saber mais?|Posso te enviar os detalhes por aqui?}',
     '{Oie|Oi} {nome}, {tudo certinho?|tudo bem com você?} Vimos suas postagens recentes e selecionamos seu perfil para uma campanha exclusiva da @fechoumidia. {Gostaria de fechar uma parceria conosco?|Topa bater um papo rápido sobre?} ✨'
   ];
@@ -2212,7 +2212,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.7';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.8';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2248,7 +2248,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.5.7`,
+      `- Versão do Script: v1.5.8`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,

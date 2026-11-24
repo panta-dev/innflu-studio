@@ -112,6 +112,7 @@ window.InnfluSpintax = {
 
     // 2. CRUCIAL: Substitui variáveis ANTES do Spintax
     // Dessa forma {nome} não é consumido pelo regex de spintax como se fosse uma opção única
+    template = template.replace(/@\{(username|user)\}/gi, '{$1}');
     template = template.replace(/\{nome\}/gi, nomeVal);
     template = template.replace(/\{username\}/gi, cleanUser);
     template = template.replace(/\{user\}/gi, cleanUser);
@@ -120,7 +121,8 @@ window.InnfluSpintax = {
     // 3. Resolve todas as variações de Spintax
     let output = this.resolve(template);
 
-    // 4. Limpeza de espaçamentos extras e pontuação órfã
+    // 4. Limpeza de espaçamentos extras, @@ duplicados e pontuação órfã
+    output = output.replace(/@{2,}([a-z0-9_.-]+)/gi, '@$1');
     output = output.replace(/\s+([.,!?:;])/g, '$1');
     output = output.replace(/[ \t]{2,}/g, ' ').trim();
 
