@@ -237,8 +237,8 @@
                   <option value="1000">1.000+ seg.</option>
                   <option value="2000">2.000+ seg.</option>
                   <option value="3000">3.000+ seg.</option>
-                  <option value="5000">5.000+ seg.</option>
-                  <option value="10000" selected>10.000+ seg.</option>
+                  <option value="5000" selected>5.000+ seg.</option>
+                  <option value="10000">10.000+ seg.</option>
                   <option value="20000">20.000+ seg.</option>
                   <option value="50000">50.000+ seg.</option>
                   <option value="100000">100.000+ seg.</option>
@@ -284,7 +284,7 @@
           </div>
 
           <div class="innflu-template-section" id="boxMsgSection">
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="4" style="min-height:95px;height:auto;font-size:11px;line-height:1.45;padding:8px;resize:vertical;overflow-y:visible;">{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}</textarea>
+            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="4" style="min-height:95px;height:auto;font-size:11px;line-height:1.45;padding:8px;resize:vertical;overflow-y:visible;">{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}</textarea>
             <div class="innflu-delay-row" style="margin-top:3px;align-items:center;">
               <div class="innflu-delay-inputs" style="flex-wrap:wrap;">
                 <span class="innflu-form-label" style="margin:0;">Limite diário:</span>
@@ -471,9 +471,7 @@
 
 {Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!
 
-Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de publicidade nos stories de um infoproduto digital.
-
-{Podemos conversar a respeito?|Topa saber mais detalhes?|Você tem disponibilidade?}</textarea>
+Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. Topa conversar?</textarea>
             
             <div class="innflu-template-actions">
               <button class="innflu-btn-sub" id="btnTestSpintax">🎲 Testar Variação</button>
@@ -1766,7 +1764,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
 
   function updateAutoFiltersSummary() {
     if (!txtAutoFiltersSummary) return;
-    const minF = $('selAutoMinFollowers')?.value || '10000';
+    const minF = $('selAutoMinFollowers')?.value || '5000';
     const minStr = minF === '0' ? 'Sem mín.' : `${parseInt(minF, 10) >= 1000 ? parseInt(minF, 10) / 1000 + 'k+' : minF} seg`;
     const stVal = $('selAutoStories')?.value === 'true' ? 'Apenas c/ Stories' : 'Todos perfis';
     const genVal = $('selAutoGender')?.value === 'female' ? 'Feminino' : 'Geral';
@@ -2831,7 +2829,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     // Disparo de Mensagem no Story com Spintax
     try {
       window.InnfluIsSendingDM = true;
-      const fallbackTpl = '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?} {Adorei seu perfil|Achei seu conteúdo incrível}! Gostaria de te convidar para uma publicidade nos stories de um infoproduto digital. {Podemos conversar a respeito?|Topa saber mais detalhes?}';
+      const fallbackTpl = '{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}';
       const tplMessageTab = hudTemplateContent ? hudTemplateContent.value : '';
       const tplAutoTab = hudAutoTemplateContent ? hudAutoTemplateContent.value : '';
       // Mineração usa a mensagem de referência da aba "Mensagem"; Automação usa a da própria aba
@@ -4277,8 +4275,7 @@ Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de pu
     const DEFAULT_UNIVERSAL_TEMPLATE = 
       '{Olá|Oi|Oie} {nome}! {Tudo bem com você?|Como você está?|Tudo certinho?}\n\n' +
       '{Adorei seu perfil|Achei seu conteúdo incrível|Vi seu perfil e amei seu trabalho}!\n\n' +
-      'Gostaria de saber se você faz publicidade nos stories. Temos uma proposta de publicidade nos stories de um infoproduto digital.\n\n' +
-      '{Podemos conversar a respeito?|Topa saber mais detalhes?|Você tem disponibilidade?}';
+      'Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. Topa conversar?';
 
     if (!activeTemplate || 
         activeTemplate.toLowerCase().includes('maternidade') || 

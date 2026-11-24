@@ -455,7 +455,7 @@ window.InnfluInspector = {
    * Avalia se o perfil atende aos critérios da campanha
    */
   evaluateCandidate(profileData, campaignCriteria = {}) {
-    const minFollowers = campaignCriteria.minFollowers !== undefined ? campaignCriteria.minFollowers : 10000;
+    const minFollowers = campaignCriteria.minFollowers !== undefined ? campaignCriteria.minFollowers : 5000;
     const maxFollowers = campaignCriteria.maxFollowers !== undefined ? campaignCriteria.maxFollowers : 10000000;
     const requireStories = campaignCriteria.requireActiveStories !== false;
     const targetGender = campaignCriteria.targetGender || 'female';
@@ -474,6 +474,36 @@ window.InnfluInspector = {
     }
     if (profileData.followersCount > maxFollowers) {
       reasons.push(`Acima do máximo de seguidores (${profileData.followersCount.toLocaleString('pt-BR')} > ${maxFollowers.toLocaleString('pt-BR')})`);
+    }
+
+    // Checagem rigorosa de Infoprodutos (Tolerância Zero - Especificação Fechou Mídia)
+    const infoproductDomains = [
+      'hotmart.com', 'pay.hotmart.com', 'kiwify.com', 'kiwify.app',
+      'kirvano.com', 'cakto.com.br', 'eduzz.com', 'monetizze.com.br', 'braip.com'
+    ];
+    const infoproductKeywords = [
+      'ebook', 'e-book', 'apostila', 'curso', 'mentoria',
+      'comunidade vip', 'vagas abertas', 'meu método', 'compre aqui', 'plataforma de alunos'
+    ];
+
+    const links = Array.isArray(profileData.links) ? [...profileData.links] : [];
+    if (profileData.externalUrl) links.push(profileData.externalUrl);
+    for (const link of links) {
+      const lowerLink = (link || '').toLowerCase();
+      for (const d of infoproductDomains) {
+        if (lowerLink.includes(d)) {
+          reasons.push(`Infoproduto detectado no link (${d})`);
+          break;
+        }
+      }
+    }
+
+    const bioAndHighlights = `${profileData.bio || ''} ${profileData.highlightsText || ''}`.toLowerCase();
+    for (const kw of infoproductKeywords) {
+      if (bioAndHighlights.includes(kw)) {
+        reasons.push(`Termo de infoproduto detectado ("${kw}")`);
+        break;
+      }
     }
 
     // Checagem de stories
