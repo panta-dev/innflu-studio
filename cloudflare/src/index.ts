@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+﻿import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { analyzeProfileWithAI } from './ai';
 
@@ -675,7 +675,7 @@ app.get('/updates.xml', (c) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="innflustudioprospector2026">
-    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.5.6" />
+    <updatecheck codebase="https://innflu-studio.pages.dev/innflu-extensao.crx" version="1.5.7" />
   </app>
 </gupdate>`;
   c.header('Content-Type', 'application/xml; charset=utf-8');
@@ -685,9 +685,9 @@ app.get('/updates.xml', (c) => {
 app.get('/api/extension/version', (c) => {
   return c.json({
     status: 'ok',
-    version: '1.5.6',
+    version: '1.5.7',
     minSupportedVersion: '1.0.0',
-    releaseNotes: 'v1.5.6: Correcao do botao Iniciar Automacao, watchdog anti-parada, protecao Stories vs Destaques, aba Mensagens separada e HUD redimensionavel livremente.',
+    releaseNotes: 'v1.5.7: Correcao do botao Iniciar Automacao, watchdog anti-parada, protecao Stories vs Destaques, aba Mensagens separada e HUD redimensionavel livremente.',
     downloadUrl: '/innflu-extensao.zip',
     publishedAt: '2026-11-18T13:30:00Z',
     dynamicRules: {

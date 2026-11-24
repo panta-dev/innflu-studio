@@ -266,81 +266,102 @@ window.InnfluSender = {
 
   /**
    * Digita a mensagem no editor do Instagram com suporte nativo ao Lexical
-   * Garante ESTRITAMENTE que a mensagem seja inserida UMA ÚNICA VEZ!
+   * Garante ESTRITAMENTE que a mensagem seja inserida UMA ÚNICA VEZ e reconhecida pelo EditorState!
    */
   async typeMessageIntoReact(inputEl, text) {
     if (!inputEl) return;
     inputEl.focus();
-    await this.sleep(this.randomDelay(200, 300));
+    await this.sleep(this.randomDelay(200, 350));
 
     // 1. Limpa completamente qualquer texto anterior para NUNCA duplicar rascunhos
     await this.clearInput(inputEl);
+    inputEl.focus();
+    await this.sleep(100);
 
-    // 2. Tenta inserção via document.execCommand('insertText') com seleção limpa
+    // 2. Tenta inserção via execCommand('insertText') com beforeinput para o Lexical registrar no EditorState
     let inserted = false;
     try {
-      inputEl.focus();
-      document.execCommand('selectAll', false, null);
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(inputEl);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
       inserted = document.execCommand('insertText', false, text);
     } catch (e) {
       inserted = false;
     }
 
-    // Checa se o texto foi realmente inserido
-    const textAfterExec = (inputEl.innerText || '').trim();
-    if (textAfterExec.length > 0) {
-      inserted = true;
-    }
+    let textNow = (inputEl.innerText || '').trim();
 
-    // 3. Fallback estruturado para Lexical SE E SOMENTE SE o campo ainda estiver vazio
-    if (!inserted || textAfterExec.length === 0) {
-      console.log('[Innflu] Usando fallback estruturado para Lexical...');
+    // 3. Se execCommand falhou ou deixou vazio, usa ClipboardEvent('paste') nativo (suportado pelo Lexical)
+    if (!inserted || textNow.length === 0) {
       try {
-        const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-        inputEl.innerHTML = `<p class="xat24cr xdj266r xdpxx8g" dir="ltr"><span data-lexical-text="true">${safeText}</span></p>`;
-        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-      } catch (e) {
-        inputEl.innerText = text;
-      }
-    } else {
-      inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-      inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+        inputEl.focus();
+        const dt = new DataTransfer();
+        dt.setData('text/plain', text);
+        const pasteEv = new ClipboardEvent('paste', {
+          clipboardData: dt,
+          bubbles: true,
+          cancelable: true
+        });
+        inputEl.dispatchEvent(pasteEv);
+        await this.sleep(200);
+        textNow = (inputEl.innerText || '').trim();
+      } catch (e) {}
     }
 
+    // 4. Último recurso: beforeinput + InputEvent direto no editor
+    if (textNow.length === 0) {
+      try {
+        inputEl.focus();
+        inputEl.dispatchEvent(new InputEvent('beforeinput', {
+          inputType: 'insertText',
+          data: text,
+          bubbles: true,
+          cancelable: true
+        }));
+        await this.sleep(150);
+        textNow = (inputEl.innerText || '').trim();
+      } catch (e) {}
+    }
+
+    if (textNow.length === 0) {
+      throw new Error('Falha ao inserir texto no editor do Direct (Lexical não aceitou entrada).');
+    }
+
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
     await this.sleep(this.randomDelay(300, 500));
-
-    // 4. Verificação estrita anti-duplicação
-    const currentText = (inputEl.innerText || '').trim();
-    if (!currentText) {
-      throw new Error('Falha ao inserir texto no campo de mensagem');
-    }
-    console.log(`[Innflu] Mensagem única inserida com sucesso (${currentText.length} caracteres).`);
+    console.log(`[Innflu] Mensagem única inserida no Lexical (${textNow.length} caracteres).`);
   },
 
   /**
-   * Clica no botão "Enviar" ou "Enviar convite" e despacha tecla Enter
+   * Clica no botão "Enviar" / ícone SVG de envio ou "Enviar convite" e despacha tecla Enter
    */
   async submitMessage(inputEl) {
-    await this.sleep(this.randomDelay(300, 600));
+    await this.sleep(this.randomDelay(350, 650));
 
-    // 1. Procura o botão Enviar / Send / Enviar convite
+    // 1. Procura o botão Enviar / Send / Enviar convite (por texto, aria-label ou ícone SVG de aviãozinho)
     const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]'));
     let sendBtn = allButtons.find(b => {
-      if (b.closest('#innflu-hud-root')) return false;
+      if (b.closest('#innflu-hud-root') || b === inputEl || b.contains(inputEl)) return false;
       const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
       const rect = b.getBoundingClientRect();
       const isVisible = rect.width > 0 && rect.height > 0;
       const isSendText = t === 'enviar' || t === 'send' || t === 'enviar mensagem' || t === 'enviar convite' || t === 'send invite';
-      return isSendText && isVisible;
+      const hasSendSvg = !!b.querySelector('svg[aria-label*="Enviar" i], svg[aria-label*="Send" i]');
+      return (isSendText || hasSendSvg) && isVisible;
     });
 
     if (!sendBtn && inputEl) {
-      const container = inputEl.closest('form') || inputEl.closest('div[role="region"]') || inputEl.parentElement?.parentElement?.parentElement;
+      const container = inputEl.closest('form') || inputEl.closest('div[role="region"]') || inputEl.parentElement?.parentElement?.parentElement?.parentElement;
       if (container) {
         const buttonsInside = Array.from(container.querySelectorAll('button, div[role="button"]')).filter(b => {
           if (b.closest('#innflu-hud-root') || b === inputEl || b.contains(inputEl)) return false;
           const rect = b.getBoundingClientRect();
+          const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+          if (aria.includes('emoji') || aria.includes('áudio') || aria.includes('audio') || aria.includes('curtir') || aria.includes('like') || aria.includes('anexar') || aria.includes('attach') || aria.includes('foto') || aria.includes('photo')) return false;
           return rect.width > 0 && rect.height > 0;
         });
         if (buttonsInside.length > 0) {
@@ -350,27 +371,29 @@ window.InnfluSender = {
     }
 
     if (sendBtn) {
-      console.log('[Innflu] Clicando no botão de envio:', sendBtn.innerText || sendBtn.getAttribute('aria-label') || 'Botão');
+      console.log('[Innflu] Clicando no botão de envio:', sendBtn.innerText || sendBtn.getAttribute('aria-label') || 'Botão/SVG');
       this.simulateClick(sendBtn);
-      await this.sleep(500);
+      await this.sleep(600);
     }
 
-    // 2. Dispara tecla Enter como garantia com sequência completa de eventos
-    inputEl.focus();
-    const enterProps = {
-      key: 'Enter',
-      code: 'Enter',
-      keyCode: 13,
-      which: 13,
-      charCode: 13,
-      bubbles: true,
-      cancelable: true,
-      view: window
-    };
-    inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
-    inputEl.dispatchEvent(new KeyboardEvent('keypress', enterProps));
-    inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
-    await this.sleep(700);
+    // 2. Se o campo ainda tem texto, dispara tecla Enter como garantia
+    if (inputEl && inputEl.isConnected && (inputEl.innerText || inputEl.value || '').trim().length > 0) {
+      inputEl.focus();
+      const enterProps = {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        which: 13,
+        charCode: 13,
+        bubbles: true,
+        cancelable: true,
+        view: window
+      };
+      inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
+      inputEl.dispatchEvent(new KeyboardEvent('keypress', enterProps));
+      inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
+      await this.sleep(700);
+    }
   },
 
   /**
@@ -672,35 +695,27 @@ window.InnfluSender = {
       // Resposta de Story é de linha única: junta as quebras de linha
       text = (text || '').replace(/\s*\n+\s*/g, ' ').trim();
 
-      // Limpa rigorosamente antes de digitar
-      inputEl.value = '';
-      inputEl.focus();
-
-      let typedOk = false;
-      try {
-        inputEl.select();
-        document.execCommand('insertText', false, text);
-        typedOk = (inputEl.value || '').trim().length > 0;
-      } catch (e) { typedOk = false; }
-
-      if (typedOk) {
-        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-        await this.sleep(400);
-        return;
-      }
-
-      // 2) Fallback: setter nativo + eventos (somente se execCommand falhar)
-      inputEl.value = '';
+      // Setter nativo + reset do _valueTracker do React 18 para o estado interno reconhecer 100%
       const proto = isTextarea ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
       const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+
+      if (setter) {
+        setter.call(inputEl, '');
+      } else {
+        inputEl.value = '';
+      }
+      if (inputEl._valueTracker) {
+        inputEl._valueTracker.setValue('');
+      }
+
+      inputEl.focus();
       if (setter) {
         setter.call(inputEl, text);
       } else {
         inputEl.value = text;
       }
 
-      inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+      inputEl.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
       inputEl.dispatchEvent(new Event('change', { bubbles: true }));
     } else {
       await this.typeMessageIntoReact(inputEl, text);
@@ -824,11 +839,10 @@ window.InnfluSender = {
             const users = (t.users || []).map(u => (u.username || '').toLowerCase());
             if (user && !users.includes(user)) continue;
             for (const it of (t.items || [])) {
-              const txt = (it.text || (it.reel_share && it.reel_share.text) || (it.link && it.link.text) || '');
+              const txt = (it.text || (it.reel_share && it.reel_share.text) || (it.story_share && it.story_share.text) || (it.link && it.link.text) || '');
               const ts = Math.floor((parseInt(it.timestamp, 10) || 0) / 1000);
               const textOk = needle && txt.toLowerCase().replace(/\s+/g, '').includes(needle);
-              const mineRecent = it.is_sent_by_viewer === true && ts >= sinceMs;
-              if ((textOk && ts >= sinceMs) || mineRecent) return true;
+              if (textOk && it.is_sent_by_viewer === true && ts >= sinceMs) return true;
             }
           }
         } catch (e) { /* tenta o próximo */ }
@@ -1231,8 +1245,14 @@ window.InnfluSender = {
         return { confirmed: false, blocked: true, message: blockCheck.message };
       }
 
-      // Campo removido do DOM ou esvaziado = mensagem despachada
-      if (!inputEl.isConnected) return { confirmed: true };
+      // Se o campo foi removido do DOM sem confirmação prévia, o Story pode ter fechado/mudado de slide
+      if (!inputEl.isConnected) {
+        await this.sleep(600);
+        if (!this.isStoryViewerOpen()) {
+          return { confirmed: false, message: 'O Story fechou antes de confirmar o envio.' };
+        }
+        return { confirmed: true };
+      }
       const remaining = ((inputEl.value !== undefined ? inputEl.value : inputEl.innerText) || '').trim();
       if (remaining.length === 0) return { confirmed: true };
 
