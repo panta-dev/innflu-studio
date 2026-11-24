@@ -128,7 +128,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.4</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.5</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +173,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.4</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.5</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -273,18 +273,43 @@
           </div>
 
           <!-- 3. MENSAGEM & INTERVALO -->
-          <div class="innflu-section-title" id="btnToggleMsgSection" style="cursor:pointer;margin-top:2px;display:flex;justify-content:space-between;align-items:center;" title="Clique para minimizar ou expandir a mensagem">
-            <span>3. Mensagem dos Stories</span>
+          <div class="innflu-section-title" id="btnToggleMsgSection" style="cursor:pointer;margin-top:2px;display:flex;justify-content:space-between;align-items:center;" title="Clique para minimizar ou expandir as mensagens">
+            <span>3. Mensagens Rotativas (3 Variações)</span>
             <span id="lblToggleMsgSection" style="font-size:9.5px;color:#58a6ff;font-weight:600;">Recolher ▴</span>
           </div>
 
           <div id="barMsgSummary" style="display:none;font-size:9.5px;color:#8b949e;cursor:pointer;margin-bottom:4px;background:#161b22;padding:4px 6px;border-radius:4px;border:1px solid #30363d;justify-content:space-between;align-items:center;">
-            <span id="txtMsgSummary" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px;">{Olá|Oi|Oie} {nome}! {Tudo bem...</span>
+            <span id="txtMsgSummary" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px;">3 mensagens intercaladas ativas...</span>
             <span style="color:#58a6ff;font-size:9px;">Editar ▾</span>
           </div>
 
           <div class="innflu-template-section" id="boxMsgSection">
-            <textarea class="innflu-template-textarea" id="hudAutoTemplateContent" rows="4" style="min-height:95px;height:auto;font-size:11px;line-height:1.45;padding:8px;resize:vertical;overflow-y:visible;">{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}</textarea>
+            <!-- Abas seletoras das 3 caixas -->
+            <div class="innflu-template-tabs">
+              <button class="innflu-template-tab active" id="tabMsg1" type="button" title="Editar Mensagem 1">✉️ Msg 1</button>
+              <button class="innflu-template-tab" id="tabMsg2" type="button" title="Editar Mensagem 2">✉️ Msg 2</button>
+              <button class="innflu-template-tab" id="tabMsg3" type="button" title="Editar Mensagem 3">✉️ Msg 3</button>
+            </div>
+
+            <div class="innflu-msg-rotation-badge">
+              <span>🔄</span>
+              <span id="txtMsgRotationStatus">Intercalando: Perfil 1 ➔ Msg 1 | Perfil 2 ➔ Msg 2 | Perfil 3 ➔ Msg 3</span>
+            </div>
+
+            <!-- Caixa 1 -->
+            <div id="wrapperMsg1">
+              <textarea class="innflu-template-textarea innflu-template-compact" id="hudAutoTemplate1" rows="4" placeholder="Mensagem 1 (com suporte a {nome} e Spintax)...">{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}</textarea>
+            </div>
+
+            <!-- Caixa 2 -->
+            <div id="wrapperMsg2" style="display:none;">
+              <textarea class="innflu-template-textarea innflu-template-compact" id="hudAutoTemplate2" rows="4" placeholder="Mensagem 2 (com suporte a {nome} e Spintax)...">{Olá|Oie|Oi} {nome}! {Amei seu conteúdo|Adorei seus stories|Seu perfil é incrível}! Aqui é da equipe da @fechoumidia. Temos uma oportunidade de parceria que tem tudo a ver com você. {Você tem interesse em saber mais?|Posso te enviar os detalhes por aqui?}</textarea>
+            </div>
+
+            <!-- Caixa 3 -->
+            <div id="wrapperMsg3" style="display:none;">
+              <textarea class="innflu-template-textarea innflu-template-compact" id="hudAutoTemplate3" rows="4" placeholder="Mensagem 3 (com suporte a {nome} e Spintax)...">{Oie|Oi} {nome}, {tudo certinho?|tudo bem com você?} Vimos suas postagens recentes e selecionamos seu perfil para uma campanha exclusiva da @fechoumidia. {Gostaria de fechar uma parceria conosco?|Topa bater um papo rápido sobre?} ✨</textarea>
+            </div>
             <div class="innflu-delay-row" style="margin-top:3px;align-items:center;">
               <div class="innflu-delay-inputs" style="flex-wrap:wrap;">
                 <span class="innflu-form-label" style="margin:0;">Limite diário:</span>
@@ -541,7 +566,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.4 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.5 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -614,7 +639,45 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
   const selAutoStories = $('selAutoStories');
   const selAutoContact = $('selAutoContact');
   const selAutoGender = $('selAutoGender');
-  const hudAutoTemplateContent = $('hudAutoTemplateContent');
+  const tabMsg1 = $('tabMsg1');
+  const tabMsg2 = $('tabMsg2');
+  const tabMsg3 = $('tabMsg3');
+  const wrapperMsg1 = $('wrapperMsg1');
+  const wrapperMsg2 = $('wrapperMsg2');
+  const wrapperMsg3 = $('wrapperMsg3');
+  const hudAutoTemplate1 = $('hudAutoTemplate1');
+  const hudAutoTemplate2 = $('hudAutoTemplate2');
+  const hudAutoTemplate3 = $('hudAutoTemplate3');
+  const txtMsgRotationStatus = $('txtMsgRotationStatus');
+
+  let activeMsgTabNum = 1;
+
+  function setActiveMsgTab(num) {
+    activeMsgTabNum = num;
+    if (tabMsg1) tabMsg1.className = num === 1 ? 'innflu-template-tab active' : 'innflu-template-tab';
+    if (tabMsg2) tabMsg2.className = num === 2 ? 'innflu-template-tab active' : 'innflu-template-tab';
+    if (tabMsg3) tabMsg3.className = num === 3 ? 'innflu-template-tab active' : 'innflu-template-tab';
+
+    if (wrapperMsg1) wrapperMsg1.style.display = num === 1 ? 'block' : 'none';
+    if (wrapperMsg2) wrapperMsg2.style.display = num === 2 ? 'block' : 'none';
+    if (wrapperMsg3) wrapperMsg3.style.display = num === 3 ? 'block' : 'none';
+  }
+
+  if (tabMsg1) tabMsg1.onclick = () => setActiveMsgTab(1);
+  if (tabMsg2) tabMsg2.onclick = () => setActiveMsgTab(2);
+  if (tabMsg3) tabMsg3.onclick = () => setActiveMsgTab(3);
+
+  // Getter para retrocompatibilidade
+  const hudAutoTemplateContent = {
+    get value() {
+      if (activeMsgTabNum === 1) return hudAutoTemplate1 ? hudAutoTemplate1.value : '';
+      if (activeMsgTabNum === 2) return hudAutoTemplate2 ? hudAutoTemplate2.value : '';
+      return hudAutoTemplate3 ? hudAutoTemplate3.value : '';
+    },
+    set value(v) {
+      if (hudAutoTemplate1) hudAutoTemplate1.value = v;
+    }
+  };
   const btnAutoTestSpintax = $('btnAutoTestSpintax');
   const btnAutoSaveTemplate = $('btnAutoSaveTemplate');
   const inputDailyLimit = $('inputDailyLimit');
@@ -794,6 +857,33 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
   let currentUserEmail = '';
   let currentUserPlan = '';
   let currentBearerToken = '';
+
+  // ===== 3 Templates de Mensagem Rotativos (Intercalação 1 -> 2 -> 3 -> 1...) =====
+  const DEFAULT_TEMPLATES = [
+    '{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil (@{username}) e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}',
+    '{Olá|Oie|Oi} {nome}! {Amei seu conteúdo|Adorei seus stories|Seu perfil é incrível}! Aqui é da equipe da @fechoumidia. Temos uma oportunidade de parceria que tem tudo a ver com você. {Você tem interesse em saber mais?|Posso te enviar os detalhes por aqui?}',
+    '{Oie|Oi} {nome}, {tudo certinho?|tudo bem com você?} Vimos suas postagens recentes e selecionamos seu perfil para uma campanha exclusiva da @fechoumidia. {Gostaria de fechar uma parceria conosco?|Topa bater um papo rápido sobre?} ✨'
+  ];
+
+  function getRotatedTemplate(bot) {
+    const t1 = (hudAutoTemplate1 && hudAutoTemplate1.value ? hudAutoTemplate1.value : (bot && bot.template1) || DEFAULT_TEMPLATES[0]).trim();
+    const t2 = (hudAutoTemplate2 && hudAutoTemplate2.value ? hudAutoTemplate2.value : (bot && bot.template2) || DEFAULT_TEMPLATES[1]).trim();
+    const t3 = (hudAutoTemplate3 && hudAutoTemplate3.value ? hudAutoTemplate3.value : (bot && bot.template3) || DEFAULT_TEMPLATES[2]).trim();
+
+    const pool = [t1, t2, t3].filter(Boolean);
+    if (pool.length === 0) pool.push(DEFAULT_TEMPLATES[0]);
+
+    const currentIndex = (bot && bot.templateRotationIndex) || 0;
+    const chosen = pool[currentIndex % pool.length];
+    const nextIdx = (currentIndex + 1) % pool.length;
+
+    return {
+      template: chosen,
+      variantNum: (currentIndex % pool.length) + 1,
+      totalVariants: pool.length,
+      nextRotationIndex: nextIdx
+    };
+  }
 
   // ===== Pausas anti-ban entre mensagens =====
   // Entre mensagens: 30s a 60s. A cada 10 envios: 3 min. A cada 50: 10 min. A cada 100: 15 min.
@@ -1734,24 +1824,46 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
 
   if (btnAutoTestSpintax) {
     btnAutoTestSpintax.onclick = () => {
-      const tpl = (hudAutoTemplateContent ? hudAutoTemplateContent.value : '') || '{Olá|Oi|Oie} {nome}! Adorei seu perfil!';
-      const text = window.InnfluSpintax.interpolate(tpl, { nome: 'Larissa', username: 'larifashion' });
-      showToast({ type: 'info', title: 'Variação Teste (Automação)', message: text, duration: 6000 });
+      let tpl = '';
+      if (activeMsgTabNum === 1) tpl = (hudAutoTemplate1 ? hudAutoTemplate1.value : '');
+      else if (activeMsgTabNum === 2) tpl = (hudAutoTemplate2 ? hudAutoTemplate2.value : '');
+      else if (activeMsgTabNum === 3) tpl = (hudAutoTemplate3 ? hudAutoTemplate3.value : '');
+      if (!tpl || !tpl.trim()) tpl = DEFAULT_TEMPLATES[activeMsgTabNum - 1] || DEFAULT_TEMPLATES[0];
+
+      const text = window.InnfluSpintax.interpolate(tpl, { nome: 'Amanda', username: 'amanda_influencer' });
+      showToast({ type: 'info', title: `Variação Teste (Mensagem ${activeMsgTabNum})`, message: text, duration: 6000 });
     };
   }
 
   if (btnAutoSaveTemplate) {
     btnAutoSaveTemplate.onclick = async () => {
-      const tpl = (hudAutoTemplateContent ? hudAutoTemplateContent.value : '').trim();
-      await chrome.storage.local.set({ activeTemplate: tpl });
-      if (hudTemplateContent) hudTemplateContent.value = tpl;
+      const t1 = (hudAutoTemplate1 ? hudAutoTemplate1.value : '').trim();
+      const t2 = (hudAutoTemplate2 ? hudAutoTemplate2.value : '').trim();
+      const t3 = (hudAutoTemplate3 ? hudAutoTemplate3.value : '').trim();
+
+      await chrome.storage.local.set({
+        template1: t1,
+        template2: t2,
+        template3: t3,
+        activeTemplate: t1
+      });
+
+      await saveBot({
+        template1: t1,
+        template2: t2,
+        template3: t3
+      });
+
+      if (hudTemplateContent) hudTemplateContent.value = t1;
+
       try {
         await innfluApiFetch('/api/templates', {
           method: 'POST',
-          body: JSON.stringify({ title: 'Template Automação', content: tpl })
+          body: JSON.stringify({ title: 'Template 1', content: t1 })
         });
       } catch (e) {}
-      showToast({ type: 'success', title: 'Mensagem Salva!', message: 'Template de automação atualizado com sucesso.' });
+
+      showToast({ type: 'success', title: 'Mensagens Salvas!', message: 'As 3 mensagens foram salvas e serão intercaladas (1 por influenciadora).' });
     };
   }
 
@@ -1974,9 +2086,8 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
   const txtMsgSummary = $('txtMsgSummary');
 
   function updateMsgSummaryText() {
-    if (txtMsgSummary && hudAutoTemplateContent) {
-      const val = (hudAutoTemplateContent.value || '').trim().replace(/\s+/g, ' ');
-      txtMsgSummary.innerText = val ? (val.substring(0, 34) + '...') : 'Sem mensagem configurada';
+    if (txtMsgSummary) {
+      txtMsgSummary.innerText = '3 mensagens intercaladas ativas ✓';
     }
   }
 
@@ -2124,7 +2235,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.4';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.5';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2160,7 +2271,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.5.4`,
+      `- Versão do Script: v1.5.5`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2417,11 +2528,16 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     const minDelayVal = Math.max(5, parseInt(inputAutoMinDelay ? inputAutoMinDelay.value : 60, 10) || 60);
     const maxDelayVal = Math.max(minDelayVal, parseInt(inputAutoMaxDelay ? inputAutoMaxDelay.value : 120, 10) || 120);
 
-    const autoTpl = (hudAutoTemplateContent ? hudAutoTemplateContent.value : '').trim();
-    if (autoTpl) {
-      await chrome.storage.local.set({ activeTemplate: autoTpl });
-      if (hudTemplateContent) hudTemplateContent.value = autoTpl;
-    }
+    const t1 = (hudAutoTemplate1 ? hudAutoTemplate1.value : '').trim();
+    const t2 = (hudAutoTemplate2 ? hudAutoTemplate2.value : '').trim();
+    const t3 = (hudAutoTemplate3 ? hudAutoTemplate3.value : '').trim();
+    await chrome.storage.local.set({
+      template1: t1,
+      template2: t2,
+      template3: t3,
+      activeTemplate: t1 || DEFAULT_TEMPLATES[0]
+    });
+    if (hudTemplateContent && t1) hudTemplateContent.value = t1;
 
     await syncKnownCRMUsers(apiBaseUrl);
 
@@ -2439,6 +2555,10 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       minDelaySec: minDelayVal,
       maxDelaySec: maxDelayVal,
       dailyLimit: readLimitFromUI(),
+      template1: t1,
+      template2: t2,
+      template3: t3,
+      templateRotationIndex: 0,
       queue: [],
       visited: [],
       openCounts: {},
@@ -2826,23 +2946,20 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     });
     hudMinedCount.innerText = newMined;
 
-    // Disparo de Mensagem no Story com Spintax
+    // Disparo de Mensagem no Story com Spintax e Rotação entre as 3 caixas
     try {
       window.InnfluIsSendingDM = true;
-      const fallbackTpl = '{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}';
-      const tplMessageTab = hudTemplateContent ? hudTemplateContent.value : '';
-      const tplAutoTab = hudAutoTemplateContent ? hudAutoTemplateContent.value : '';
-      // Mineração usa a mensagem de referência da aba "Mensagem"; Automação usa a da própria aba
-      const chosenTemplate = ((bot.activeMode === 'miner'
-        ? (tplMessageTab || activeTemplate || tplAutoTab)
-        : (tplAutoTab || activeTemplate || tplMessageTab)) || fallbackTpl).trim();
-      const msg = window.InnfluSpintax.interpolate(chosenTemplate, { 
+      const rot = getRotatedTemplate(bot);
+      await saveBot({ templateRotationIndex: rot.nextRotationIndex });
+
+      const msg = window.InnfluSpintax.interpolate(rot.template, { 
         username: cleanUser, 
         nome: profile.fullName || cleanUser,
         fullName: profile.fullName 
       });
 
-      hudCurrentAction.innerText = `[Automação] Digitando mensagem nos stories de @${cleanUser}...`;
+      hudCurrentAction.innerText = `[⚡ Automação] Enviando Mensagem ${rot.variantNum}/${rot.totalVariants} para @${cleanUser}...`;
+      addDiagLog('info', `Mensagem ${rot.variantNum} selecionada para @${cleanUser}`);
       const sendRes = await window.InnfluSender.sendDirectMessage(msg, { isRepeat: isRepeatContact });
       window.InnfluIsSendingDM = false;
 
@@ -4291,11 +4408,11 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       hudTemplateContent.scrollTop = 0;
       autoExpandTextarea(hudTemplateContent);
     }
-    if (hudAutoTemplateContent) {
-      hudAutoTemplateContent.value = activeTemplate;
-      hudAutoTemplateContent.scrollTop = 0;
-      autoExpandTextarea(hudAutoTemplateContent);
-    }
+    chrome.storage.local.get(['template1', 'template2', 'template3'], (res) => {
+      if (hudAutoTemplate1) hudAutoTemplate1.value = res?.template1 || bot.template1 || DEFAULT_TEMPLATES[0];
+      if (hudAutoTemplate2) hudAutoTemplate2.value = res?.template2 || bot.template2 || DEFAULT_TEMPLATES[1];
+      if (hudAutoTemplate3) hudAutoTemplate3.value = res?.template3 || bot.template3 || DEFAULT_TEMPLATES[2];
+    });
     if (bot.minDelaySec && inputAutoMinDelay) inputAutoMinDelay.value = bot.minDelaySec.toString();
     if (bot.maxDelaySec && inputAutoMaxDelay) inputAutoMaxDelay.value = bot.maxDelaySec.toString();
     if (savedLeads && savedLeads.length > 0) {

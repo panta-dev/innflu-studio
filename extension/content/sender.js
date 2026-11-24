@@ -233,63 +233,89 @@ window.InnfluSender = {
   },
 
   /**
-   * Digita a mensagem no editor do Instagram com suporte nativo ao Lexical
+   * Limpa rigorosamente qualquer rascunho ou texto residual antes de digitar
    */
-  async typeMessageIntoReact(inputEl, text) {
-    inputEl.focus();
-    await this.sleep(this.randomDelay(200, 350));
-
-    // 1. Colapsa seleção dentro do input
+  async clearInput(inputEl) {
+    if (!inputEl) return;
     try {
+      inputEl.focus();
+      if (inputEl.tagName === 'TEXTAREA' || inputEl.tagName === 'INPUT') {
+        inputEl.value = '';
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+
+      // Para editor contenteditable (Lexical / DraftJS)
       const sel = window.getSelection();
       const range = document.createRange();
       range.selectNodeContents(inputEl);
-      range.collapse(false);
       sel.removeAllRanges();
       sel.addRange(range);
-    } catch (e) {}
+      document.execCommand('delete', false, null);
 
-    // 2. Método primordial para Lexical/DraftJS: document.execCommand('insertText')
+      if ((inputEl.innerText || '').trim().length > 0) {
+        inputEl.innerHTML = '<p class="xat24cr xdj266r xdpxx8g" dir="ltr"><br></p>';
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    } catch (e) {
+      console.warn('[Innflu] Erro ao limpar campo:', e);
+    }
+    await this.sleep(150);
+  },
+
+  /**
+   * Digita a mensagem no editor do Instagram com suporte nativo ao Lexical
+   * Garante ESTRITAMENTE que a mensagem seja inserida UMA ÚNICA VEZ!
+   */
+  async typeMessageIntoReact(inputEl, text) {
+    if (!inputEl) return;
+    inputEl.focus();
+    await this.sleep(this.randomDelay(200, 300));
+
+    // 1. Limpa completamente qualquer texto anterior para NUNCA duplicar rascunhos
+    await this.clearInput(inputEl);
+
+    // 2. Tenta inserção via document.execCommand('insertText') com seleção limpa
     let inserted = false;
     try {
+      inputEl.focus();
+      document.execCommand('selectAll', false, null);
       inserted = document.execCommand('insertText', false, text);
     } catch (e) {
       inserted = false;
     }
 
-    // 3. Fallback estruturado para Lexical se execCommand falhar
-    if (!inserted || !(inputEl.innerText || '').trim()) {
-      console.log('[Innflu] Fallback para inserção estruturada no Lexical...');
+    // Checa se o texto foi realmente inserido
+    const textAfterExec = (inputEl.innerText || '').trim();
+    if (textAfterExec.length > 0) {
+      inserted = true;
+    }
+
+    // 3. Fallback estruturado para Lexical SE E SOMENTE SE o campo ainda estiver vazio
+    if (!inserted || textAfterExec.length === 0) {
+      console.log('[Innflu] Usando fallback estruturado para Lexical...');
       try {
         const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
         inputEl.innerHTML = `<p class="xat24cr xdj266r xdpxx8g" dir="ltr"><span data-lexical-text="true">${safeText}</span></p>`;
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
       } catch (e) {
         inputEl.innerText = text;
       }
-
-      try {
-        inputEl.dispatchEvent(new InputEvent('beforeinput', {
-          bubbles: true,
-          cancelable: true,
-          inputType: 'insertText',
-          data: text
-        }));
-        inputEl.dispatchEvent(new InputEvent('input', {
-          bubbles: true,
-          cancelable: true,
-          inputType: 'insertText',
-          data: text
-        }));
-      } catch (e) {}
+    } else {
+      inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+      inputEl.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-    await this.sleep(this.randomDelay(400, 600));
+    await this.sleep(this.randomDelay(300, 500));
 
-    if (!(inputEl.innerText || '').trim()) {
+    // 4. Verificação estrita anti-duplicação
+    const currentText = (inputEl.innerText || '').trim();
+    if (!currentText) {
       throw new Error('Falha ao inserir texto no campo de mensagem');
     }
+    console.log(`[Innflu] Mensagem única inserida com sucesso (${currentText.length} caracteres).`);
   },
 
   /**
@@ -625,6 +651,7 @@ window.InnfluSender = {
    * Insere o texto da mensagem no campo de resposta do Story de forma limpa (sem duplicar!)
    */
   async typeMessageIntoStoryInput(inputEl, text) {
+    if (!inputEl) return;
     inputEl.focus();
     await this.sleep(200);
 
@@ -635,21 +662,25 @@ window.InnfluSender = {
       // Resposta de Story é de linha única: junta as quebras de linha
       text = (text || '').replace(/\s*\n+\s*/g, ' ').trim();
 
-      // 1) Método preferido: inserção "real" (dispara os eventos nativos que o React escuta)
+      // Limpa rigorosamente antes de digitar
+      inputEl.value = '';
+      inputEl.focus();
+
       let typedOk = false;
       try {
-        inputEl.focus();
         inputEl.select();
         document.execCommand('insertText', false, text);
         typedOk = (inputEl.value || '').trim().length > 0;
       } catch (e) { typedOk = false; }
 
       if (typedOk) {
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
         await this.sleep(400);
         return;
       }
 
-      // 2) Fallback: setter nativo + eventos
+      // 2) Fallback: setter nativo + eventos (somente se execCommand falhar)
       inputEl.value = '';
       const proto = isTextarea ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
       const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
@@ -661,15 +692,6 @@ window.InnfluSender = {
 
       inputEl.dispatchEvent(new Event('input', { bubbles: true }));
       inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-
-      try {
-        inputEl.dispatchEvent(new InputEvent('input', {
-          bubbles: true,
-          cancelable: true,
-          inputType: 'insertText',
-          data: text
-        }));
-      } catch (e) {}
     } else {
       await this.typeMessageIntoReact(inputEl, text);
     }
