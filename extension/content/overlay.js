@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Innflu Floating HUD & Painel de Mineração Avançado — v3
  * Suporte a Mineração Multi-Fonte (Palavra-chave, Hashtag, Reels, Seguidores),
  * Extração de Contatos (WhatsApp & Email), Tabela de Leads em Tempo Real e Exportação CSV.
@@ -10,8 +10,10 @@
   root.id = 'innflu-hud-root';
   root.innerHTML = `
     <div class="innflu-hud" id="innfluHud">
-      <!-- Alça de Redimensionamento Superior (Puxar pra cima / baixo) -->
-      <div class="innflu-resize-handle-top" id="hudResizeHandleTop" title="Arraste para cima ou para baixo para aumentar/diminuir o tamanho"></div>
+      <!-- Alças de Redimensionamento Livre (Bordas e Cantos) -->
+      <div class="innflu-resize-handle-top" id="hudResizeHandleTop" title="Arraste para redimensionar altura"></div>
+      <div class="innflu-resize-handle-left" id="hudResizeHandleLeft" title="Arraste para redimensionar largura"></div>
+      <div class="innflu-resize-handle-right" id="hudResizeHandleRight" title="Arraste para redimensionar largura"></div>
 
       <!-- Header -->
       <div class="innflu-hud-header" id="innfluHudHeader">
@@ -128,7 +130,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.5</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.6</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -173,7 +175,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.5</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.6</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -182,11 +184,12 @@
         </div>
       </div>
 
-      <!-- Navegação de Abas (3 Abas Principais) -->
+      <!-- Navegação de Abas (4 Abas Principais) -->
       <div class="innflu-nav-tabs">
-        <button class="innflu-nav-btn active" id="tabBtnAuto">Automação</button>
-        <button class="innflu-nav-btn" id="tabBtnMine">Mineração</button>
-        <button class="innflu-nav-btn" id="tabBtnSender">Captação</button>
+        <button class="innflu-nav-btn active" id="tabBtnAuto">⚡ Automação</button>
+        <button class="innflu-nav-btn" id="tabBtnMsgs">💬 Mensagens</button>
+        <button class="innflu-nav-btn" id="tabBtnMine">⛏️ Mineração</button>
+        <button class="innflu-nav-btn" id="tabBtnSender">✉️ Captação</button>
       </div>
 
       <!-- Corpo do HUD -->
@@ -196,152 +199,174 @@
              ABA 1: AUTOMAÇÃO (MINERA -> QUALIFICA -> DM -> REPETE)
              ========================================== -->
         <div id="viewAuto" class="innflu-tab-content">
-          <div class="innflu-section-title">1. Onde Minerar</div>
-          <div class="innflu-sources-grid">
-            <button class="innflu-source-btn active" data-source="similar" id="srcBtnAutoSimilar" title="Semelhantes a @ (Recomendadas)">
-              <span class="innflu-source-name">Semelhantes</span>
+          <div class="innflu-section-card">
+            <div class="innflu-section-title">1. Onde Minerar</div>
+            <div class="innflu-sources-grid">
+              <button class="innflu-source-btn active" data-source="similar" id="srcBtnAutoSimilar" title="Semelhantes a @ (Recomendadas)">
+                <span class="innflu-source-name">Semelhantes</span>
+              </button>
+              <button class="innflu-source-btn" data-source="keyword" id="srcBtnAutoKeyword" title="Palavra-chave (Busca geral)">
+                <span class="innflu-source-name">Palavra</span>
+              </button>
+              <button class="innflu-source-btn" data-source="hashtag" id="srcBtnAutoHashtag" title="Hashtag (#)">
+                <span class="innflu-source-name">Hashtag</span>
+              </button>
+              <button class="innflu-source-btn" data-source="following" id="srcBtnAutoFollowing" title="Seguindo de @">
+                <span class="innflu-source-name">Seguindo</span>
+              </button>
+            </div>
+
+            <div class="innflu-form-group" style="margin-bottom:0;margin-top:6px;">
+              <label class="innflu-form-label" id="lblAutoTarget" style="margin-bottom:3px;">Alvo ou Nicho:</label>
+              <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: @perfil, moda, provador, beleza" value="" />
+            </div>
+          </div>
+
+          <!-- Filtros de Qualificação (Colapsável, mas inicia SEMPRE VISÍVEL) -->
+          <div class="innflu-section-card">
+            <div class="innflu-section-title" id="btnToggleAutoFilters" style="cursor:pointer;margin-bottom:4px;" title="Clique para recolher ou expandir os filtros">
+              <span>2. Filtros de Qualificação</span>
+              <span id="lblToggleAutoFilters" style="font-size:10px;color:#58a6ff;font-weight:600;">Recolher ▴</span>
+            </div>
+
+            <div id="barAutoFiltersSummary" style="display:none;font-size:10px;color:#8b949e;cursor:pointer;background:#0d1117;padding:5px 8px;border-radius:6px;border:1px solid #30363d;justify-content:space-between;align-items:center;">
+              <span id="txtAutoFiltersSummary">5k+ seg • Apenas c/ Stories • Feminino</span>
+              <span style="color:#58a6ff;font-size:9.5px;">Expandir ▾</span>
+            </div>
+
+            <div id="boxAutoFilters" style="display:block;">
+              <div class="innflu-filters-row">
+                <div class="innflu-form-group" style="margin-bottom:0;">
+                  <label class="innflu-form-label">Mín. Seguidores:</label>
+                  <select class="innflu-select" id="selAutoMinFollowers">
+                    <option value="0">Qualquer tamanho</option>
+                    <option value="1000">1.000+ seg.</option>
+                    <option value="2000">2.000+ seg.</option>
+                    <option value="3000">3.000+ seg.</option>
+                    <option value="5000" selected>5.000+ seg.</option>
+                    <option value="10000">10.000+ seg.</option>
+                    <option value="20000">20.000+ seg.</option>
+                    <option value="50000">50.000+ seg.</option>
+                    <option value="100000">100.000+ seg.</option>
+                  </select>
+                </div>
+                <div class="innflu-form-group" style="margin-bottom:0;">
+                  <label class="innflu-form-label">Stories Ativos (24h):</label>
+                  <select class="innflu-select" id="selAutoStories">
+                    <option value="true" selected>Apenas com Stories</option>
+                    <option value="false">Todos os perfis</option>
+                  </select>
+                </div>
+              </div>
+              <div class="innflu-filters-row" style="margin-top:6px;">
+                <div class="innflu-form-group" style="margin-bottom:0;">
+                  <label class="innflu-form-label">Filtro de Contato:</label>
+                  <select class="innflu-select" id="selAutoContact">
+                    <option value="all" selected>Todos os contatos</option>
+                    <option value="any_contact">WhatsApp ou E-mail</option>
+                    <option value="wa_only">Apenas WhatsApp</option>
+                    <option value="email_only">Apenas E-mail</option>
+                  </select>
+                </div>
+                <div class="innflu-form-group" style="margin-bottom:0;">
+                  <label class="innflu-form-label">Gênero Alvo:</label>
+                  <select class="innflu-select" id="selAutoGender">
+                    <option value="female" selected>Apenas Feminino</option>
+                    <option value="all">Todos os Gêneros</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Ritmo, Limite Diário & Link Rápido de Mensagens (Inicia SEMPRE VISÍVEL) -->
+          <div class="innflu-section-card">
+            <div class="innflu-section-title" id="btnToggleLimitsSection" style="cursor:pointer;margin-bottom:4px;" title="Clique para recolher ou expandir limites e delays">
+              <span>3. Ritmo & Limite Anti-Ban</span>
+              <span id="lblToggleLimitsSection" style="font-size:10px;color:#58a6ff;font-weight:600;">Recolher ▴</span>
+            </div>
+
+            <div id="boxLimitsSection" style="display:block;">
+              <div class="innflu-delay-row" style="align-items:center;gap:8px;flex-wrap:wrap;">
+                <div class="innflu-delay-inputs">
+                  <span class="innflu-form-label" style="margin:0;">Limite/dia:</span>
+                  <input type="number" class="innflu-input innflu-input-mini" id="inputDailyLimit" value="40" min="1" max="100000" title="Máximo de mensagens por dia" style="width:52px;" />
+                  <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:#8b949e;cursor:pointer;"><input type="checkbox" id="chkUnlimited" /> Ilimitado</label>
+                </div>
+                <div class="innflu-delay-inputs">
+                  <span class="innflu-form-label" style="margin:0;">Delay:</span>
+                  <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMinDelay" value="30" min="5" max="900" title="Mínimo em segundos" style="width:40px;" />
+                  <span>a</span>
+                  <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMaxDelay" value="60" min="10" max="1800" title="Máximo em segundos" style="width:40px;" />
+                  <span>s</span>
+                </div>
+              </div>
+              <div id="unlimitedWarn" style="display:none;margin-top:6px;font-size:10px;line-height:1.35;color:#fbbf24;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:6px;padding:5px 7px;">⚠️ Modo ilimitado: enviar muitas mensagens por dia pode fazer o Instagram bloquear ou derrubar sua conta. Use por sua conta e risco.</div>
+            </div>
+
+            <!-- Atalho para a aba de Mensagens -->
+            <button type="button" id="btnShortcutToMsgs" class="innflu-msgs-shortcut">
+              <span>💬 <strong>3 Mensagens Rotativas</strong> ativas (1 por perfil)</span>
+              <span class="innflu-shortcut-link">Editar ➔</span>
             </button>
-            <button class="innflu-source-btn" data-source="keyword" id="srcBtnAutoKeyword" title="Palavra-chave (Busca geral)">
-              <span class="innflu-source-name">Palavra</span>
-            </button>
-            <button class="innflu-source-btn" data-source="hashtag" id="srcBtnAutoHashtag" title="Hashtag (#)">
-              <span class="innflu-source-name">Hashtag</span>
-            </button>
-            <button class="innflu-source-btn" data-source="following" id="srcBtnAutoFollowing" title="Seguindo de @">
-              <span class="innflu-source-name">Seguindo</span>
-            </button>
           </div>
 
-          <div class="innflu-form-group" style="margin-bottom:4px;">
-            <label class="innflu-form-label" id="lblAutoTarget" style="margin-bottom:2px;">Alvo ou Nicho:</label>
-            <input type="text" class="innflu-input" id="inputAutoTarget" placeholder="ex: @perfil, moda, provador, beleza" value="" style="padding:5px 8px;font-size:11px;" />
-          </div>
-
-          <!-- Filtros de Qualificação (Acordeão Compacto) -->
-          <div class="innflu-section-title" id="btnToggleAutoFilters" style="cursor:pointer;margin-top:2px;" title="Clique para abrir/fechar filtros">
-            <span>2. Filtros de Qualificação</span>
-            <span id="lblToggleAutoFilters" style="font-size:9.5px;color:#58a6ff;font-weight:600;">⚙️ Configurar ▾</span>
-          </div>
-
-          <div id="barAutoFiltersSummary" style="font-size:9.5px;color:#8b949e;cursor:pointer;margin-bottom:4px;background:#161b22;padding:4px 6px;border-radius:4px;border:1px solid #30363d;display:flex;justify-content:space-between;align-items:center;">
-            <span id="txtAutoFiltersSummary">10k+ seg • Apenas c/ Stories • Feminino</span>
-            <span style="color:#58a6ff;font-size:9px;">Editar</span>
-          </div>
-
-          <div id="boxAutoFilters" style="display:none;background:#161b22;padding:6px;border-radius:6px;border:1px solid #30363d;margin-bottom:6px;">
-            <div class="innflu-filters-row">
-              <div class="innflu-form-group" style="margin-bottom:0;">
-                <label class="innflu-form-label">Mín. Seguidores:</label>
-                <select class="innflu-select" id="selAutoMinFollowers">
-                  <option value="0">Qualquer tamanho</option>
-                  <option value="1000">1.000+ seg.</option>
-                  <option value="2000">2.000+ seg.</option>
-                  <option value="3000">3.000+ seg.</option>
-                  <option value="5000" selected>5.000+ seg.</option>
-                  <option value="10000">10.000+ seg.</option>
-                  <option value="20000">20.000+ seg.</option>
-                  <option value="50000">50.000+ seg.</option>
-                  <option value="100000">100.000+ seg.</option>
-                </select>
-              </div>
-              <div class="innflu-form-group" style="margin-bottom:0;">
-                <label class="innflu-form-label">Stories Ativos (24h):</label>
-                <select class="innflu-select" id="selAutoStories">
-                  <option value="true" selected>Apenas com Stories</option>
-                  <option value="false">Todos os perfis</option>
-                </select>
-              </div>
-            </div>
-            <div class="innflu-filters-row" style="margin-top:4px;">
-              <div class="innflu-form-group" style="margin-bottom:0;">
-                <label class="innflu-form-label">Filtro de Contato:</label>
-                <select class="innflu-select" id="selAutoContact">
-                  <option value="all" selected>Todos os contatos</option>
-                  <option value="any_contact">WhatsApp ou E-mail</option>
-                  <option value="wa_only">Apenas WhatsApp</option>
-                  <option value="email_only">Apenas E-mail</option>
-                </select>
-              </div>
-              <div class="innflu-form-group" style="margin-bottom:0;">
-                <label class="innflu-form-label">Gênero Alvo:</label>
-                <select class="innflu-select" id="selAutoGender">
-                  <option value="female" selected>Apenas Feminino</option>
-                  <option value="all">Todos os Gêneros</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. MENSAGEM & INTERVALO -->
-          <div class="innflu-section-title" id="btnToggleMsgSection" style="cursor:pointer;margin-top:2px;display:flex;justify-content:space-between;align-items:center;" title="Clique para minimizar ou expandir as mensagens">
-            <span>3. Mensagens Rotativas (3 Variações)</span>
-            <span id="lblToggleMsgSection" style="font-size:9.5px;color:#58a6ff;font-weight:600;">Recolher ▴</span>
-          </div>
-
-          <div id="barMsgSummary" style="display:none;font-size:9.5px;color:#8b949e;cursor:pointer;margin-bottom:4px;background:#161b22;padding:4px 6px;border-radius:4px;border:1px solid #30363d;justify-content:space-between;align-items:center;">
-            <span id="txtMsgSummary" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px;">3 mensagens intercaladas ativas...</span>
-            <span style="color:#58a6ff;font-size:9px;">Editar ▾</span>
-          </div>
-
-          <div class="innflu-template-section" id="boxMsgSection">
-            <!-- Abas seletoras das 3 caixas -->
-            <div class="innflu-template-tabs">
-              <button class="innflu-template-tab active" id="tabMsg1" type="button" title="Editar Mensagem 1">✉️ Msg 1</button>
-              <button class="innflu-template-tab" id="tabMsg2" type="button" title="Editar Mensagem 2">✉️ Msg 2</button>
-              <button class="innflu-template-tab" id="tabMsg3" type="button" title="Editar Mensagem 3">✉️ Msg 3</button>
-            </div>
-
-            <div class="innflu-msg-rotation-badge">
-              <span>🔄</span>
-              <span id="txtMsgRotationStatus">Intercalando: Perfil 1 ➔ Msg 1 | Perfil 2 ➔ Msg 2 | Perfil 3 ➔ Msg 3</span>
-            </div>
-
-            <!-- Caixa 1 -->
-            <div id="wrapperMsg1">
-              <textarea class="innflu-template-textarea innflu-template-compact" id="hudAutoTemplate1" rows="4" placeholder="Mensagem 1 (com suporte a {nome} e Spintax)...">{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}</textarea>
-            </div>
-
-            <!-- Caixa 2 -->
-            <div id="wrapperMsg2" style="display:none;">
-              <textarea class="innflu-template-textarea innflu-template-compact" id="hudAutoTemplate2" rows="4" placeholder="Mensagem 2 (com suporte a {nome} e Spintax)...">{Olá|Oie|Oi} {nome}! {Amei seu conteúdo|Adorei seus stories|Seu perfil é incrível}! Aqui é da equipe da @fechoumidia. Temos uma oportunidade de parceria que tem tudo a ver com você. {Você tem interesse em saber mais?|Posso te enviar os detalhes por aqui?}</textarea>
-            </div>
-
-            <!-- Caixa 3 -->
-            <div id="wrapperMsg3" style="display:none;">
-              <textarea class="innflu-template-textarea innflu-template-compact" id="hudAutoTemplate3" rows="4" placeholder="Mensagem 3 (com suporte a {nome} e Spintax)...">{Oie|Oi} {nome}, {tudo certinho?|tudo bem com você?} Vimos suas postagens recentes e selecionamos seu perfil para uma campanha exclusiva da @fechoumidia. {Gostaria de fechar uma parceria conosco?|Topa bater um papo rápido sobre?} ✨</textarea>
-            </div>
-            <div class="innflu-delay-row" style="margin-top:3px;align-items:center;">
-              <div class="innflu-delay-inputs" style="flex-wrap:wrap;">
-                <span class="innflu-form-label" style="margin:0;">Limite diário:</span>
-                <input type="number" class="innflu-input innflu-input-mini" id="inputDailyLimit" value="40" min="1" max="100000" title="Máximo de mensagens por dia" style="width:50px;padding:2px 4px;font-size:10px;" />
-                <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:#8b949e;cursor:pointer;"><input type="checkbox" id="chkUnlimited" /> Ilimitado</label>
-              </div>
-            </div>
-            <div id="unlimitedWarn" style="display:none;margin-top:3px;font-size:10px;line-height:1.35;color:#fbbf24;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:4px;padding:4px 6px;">⚠️ Modo ilimitado: enviar muitas mensagens por dia pode fazer o Instagram bloquear ou derrubar sua conta. Use por sua conta e risco.</div>
-            <div class="innflu-delay-row" style="margin-top:3px;">
-              <div class="innflu-delay-inputs">
-                <span class="innflu-form-label" style="margin:0;">Delay:</span>
-                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMinDelay" value="30" min="5" max="900" title="Mínimo em segundos" style="width:34px;padding:2px 4px;font-size:10px;" />
-                <span>a</span>
-                <input type="number" class="innflu-input innflu-input-mini" id="inputAutoMaxDelay" value="60" min="10" max="1800" title="Máximo em segundos" style="width:34px;padding:2px 4px;font-size:10px;" />
-                <span>s</span>
-              </div>
-              <div class="innflu-template-actions">
-                <button class="innflu-btn-sub" id="btnAutoTestSpintax" title="Testar variação">🎲 Testar</button>
-                <button class="innflu-btn-sub save" id="btnAutoSaveTemplate" title="Salvar mensagem">💾 Salvar</button>
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top:4px;">
+          <div class="innflu-cta-dock">
             <div class="innflu-btn-group-actions">
-              <button class="innflu-cta-btn start" id="btnToggleAuto" style="flex:2;padding:8px 10px;font-size:12px;">
+              <button class="innflu-cta-btn start" id="btnToggleAuto" style="flex:2;">
                 <span id="btnAutoLabel">⚡ Iniciar Automação</span>
               </button>
               <button class="innflu-btn-pause" id="btnPauseAuto" style="display:none;" title="Pausar ou retomar automação">
                 <span id="btnPauseAutoIcon">⏸️</span>
                 <span id="btnPauseAutoLabel">Pausar</span>
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             ABA 2: MENSAGENS ROTATIVAS (3 CAIXAS INDEPENDENTES)
+             ========================================== -->
+        <div id="viewMsgs" class="innflu-tab-content" style="display:none;">
+          <div class="innflu-section-card">
+            <div class="innflu-section-title" style="margin-bottom:6px;">
+              <span>💬 Mensagens Rotativas (3 Variações)</span>
+            </div>
+
+            <div class="innflu-msg-rotation-badge" style="margin-bottom:8px;">
+              <span>🔄</span>
+              <span id="txtMsgRotationStatus">Intercalando: Perfil 1 ➔ Msg 1 | Perfil 2 ➔ Msg 2 | Perfil 3 ➔ Msg 3</span>
+            </div>
+
+            <!-- Abas seletoras das 3 caixas -->
+            <div class="innflu-template-tabs" style="margin-bottom:6px;">
+              <button class="innflu-template-tab active" id="tabMsg1" type="button" title="Editar Mensagem 1">✉️ Msg 1</button>
+              <button class="innflu-template-tab" id="tabMsg2" type="button" title="Editar Mensagem 2">✉️ Msg 2</button>
+              <button class="innflu-template-tab" id="tabMsg3" type="button" title="Editar Mensagem 3">✉️ Msg 3</button>
+            </div>
+
+            <!-- Caixa 1 -->
+            <div id="wrapperMsg1">
+              <textarea class="innflu-template-textarea" id="hudAutoTemplate1" rows="6" placeholder="Mensagem 1 (com suporte a {nome} e Spintax)...">{Oi|Olá}, {tudo bem|como vai}? Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu perfil e adoraríamos propor uma parceria. {Topa conversar?|Podemos conversar a respeito?}</textarea>
+            </div>
+
+            <!-- Caixa 2 -->
+            <div id="wrapperMsg2" style="display:none;">
+              <textarea class="innflu-template-textarea" id="hudAutoTemplate2" rows="6" placeholder="Mensagem 2 (com suporte a {nome} e Spintax)...">{Olá|Oie|Oi} {nome}! {Amei seu conteúdo|Adorei seus stories|Seu perfil é incrível}! Aqui é da equipe da @fechoumidia. Temos uma oportunidade de parceria que tem tudo a ver com você. {Você tem interesse em saber mais?|Posso te enviar os detalhes por aqui?}</textarea>
+            </div>
+
+            <!-- Caixa 3 -->
+            <div id="wrapperMsg3" style="display:none;">
+              <textarea class="innflu-template-textarea" id="hudAutoTemplate3" rows="6" placeholder="Mensagem 3 (com suporte a {nome} e Spintax)...">{Oie|Oi} {nome}, {tudo certinho?|tudo bem com você?} Vimos suas postagens recentes e selecionamos seu perfil para uma campanha exclusiva da @fechoumidia. {Gostaria de fechar uma parceria conosco?|Topa bater um papo rápido sobre?} ✨</textarea>
+            </div>
+
+            <div class="innflu-msg-tips">
+              Dica: Use <code>{nome}</code> para o nome da criadora e <code>{Oi|Olá}</code> para variar palavras automaticamente.
+            </div>
+
+            <div class="innflu-template-actions" style="margin-top:8px;justify-content:flex-end;">
+              <button class="innflu-btn-sub" id="btnAutoTestSpintax" title="Testar variação">🎲 Testar Variação</button>
+              <button class="innflu-btn-sub save" id="btnAutoSaveTemplate" title="Salvar todas as 3 mensagens">💾 Salvar 3 Mensagens</button>
             </div>
           </div>
         </div>
@@ -566,13 +591,14 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.5 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.6 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
-      <div class="innflu-resize-handle-bottom" id="hudResizeHandleBottom" title="Arraste para aumentar ou diminuir a altura do painel"></div>
-      <!-- Alça de Redimensionamento do Canto -->
-      <div class="innflu-resize-handle-corner" id="hudResizeHandleCorner" title="Arraste para redimensionar largura e altura livremente"></div>
+      <div class="innflu-resize-handle-bottom" id="hudResizeHandleBottom" title="Arraste para redimensionar altura"></div>
+      <!-- Alças de Redimensionamento dos Cantos -->
+      <div class="innflu-resize-handle-corner-left" id="hudResizeHandleCornerLeft" title="Arraste para redimensionar largura e altura"></div>
+      <div class="innflu-resize-handle-corner" id="hudResizeHandleCorner" title="Arraste para redimensionar largura e altura"></div>
     </div>
   `;
   document.body.appendChild(root);
@@ -1237,13 +1263,18 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       return false;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4500);
+
     try {
       const res = await fetch(`${baseUrl}/api/auth/me`, {
+        signal: controller.signal,
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'X-API-Key': authToken
         }
       });
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
@@ -1264,8 +1295,15 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
           syncKnownCRMUsers();
           return true;
         }
+      } else if (res.status === 401 || res.status === 403) {
+        await chrome.storage.local.set({ authToken: null, authUser: null });
+        showLoginGate(true, 'Sessão expirada. Faça login para continuar.');
+        showSubscriptionGate(false);
+        return false;
       }
     } catch (e) {
+      clearTimeout(timeoutId);
+      // Fallback seguro se o servidor estiver lento ou instável, mas o usuário já tem sessão válida em cache
       if (authUser) {
         showLoginGate(false);
         updateUserUI(authUser);
@@ -1275,6 +1313,12 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
         }
         return true;
       }
+    }
+
+    if (authUser) {
+      showLoginGate(false);
+      updateUserUI(authUser);
+      return authUser.can_use !== false;
     }
 
     await chrome.storage.local.set({ authToken: null, authUser: null });
@@ -1711,10 +1755,11 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
   }
 
   // ==========================================
-  // NAVEGAÇÃO ENTRE ABAS (3 ABAS: AUTOMAÇÃO, MINERAÇÃO E CAPTAÇÃO)
+  // NAVEGAÇÃO ENTRE ABAS (4 ABAS: AUTOMAÇÃO, MENSAGENS, MINERAÇÃO E CAPTAÇÃO)
   // ==========================================
   const tabs = {
     auto: [$('tabBtnAuto'), $('viewAuto')],
+    msgs: [$('tabBtnMsgs'), $('viewMsgs')],
     mine: [$('tabBtnMine'), $('viewMine')],
     sender: [$('tabBtnSender'), $('viewSender')]
   };
@@ -1728,10 +1773,14 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     });
     if (tabs[target]) {
       tabs[target][0].classList.add('active');
-      tabs[target][1].style.display = 'block';
+      tabs[target][1].style.display = 'flex';
     }
-    if (target === 'auto') {
-      setTimeout(() => autoExpandTextarea(hudAutoTemplateContent), 50);
+    if (target === 'msgs') {
+      setTimeout(() => {
+        if (hudAutoTemplate1) autoExpandTextarea(hudAutoTemplate1);
+        if (hudAutoTemplate2) autoExpandTextarea(hudAutoTemplate2);
+        if (hudAutoTemplate3) autoExpandTextarea(hudAutoTemplate3);
+      }, 50);
     } else if (target === 'sender') {
       setTimeout(() => autoExpandTextarea(hudTemplateContent), 50);
     } else if (target === 'mine') {
@@ -1741,6 +1790,8 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
   }
 
   $('tabBtnAuto').onclick = () => switchTab('auto');
+  if ($('tabBtnMsgs')) $('tabBtnMsgs').onclick = () => switchTab('msgs');
+  if ($('btnShortcutToMsgs')) $('btnShortcutToMsgs').onclick = () => switchTab('msgs');
   $('tabBtnMine').onclick = () => switchTab('mine');
   $('tabBtnSender').onclick = () => switchTab('sender');
 
@@ -1785,9 +1836,6 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
         hud.style.removeProperty('width');
         if (savedHudHeightBeforeMinimize) {
           hud.style.height = savedHudHeightBeforeMinimize;
-          const parsed = parseInt(savedHudHeightBeforeMinimize, 10);
-          const bodyEl = hud.querySelector('.innflu-hud-body');
-          if (bodyEl && parsed) bodyEl.style.maxHeight = `${parsed - 85}px`;
         }
         if (savedHudWidthBeforeMinimize) {
           hud.style.width = savedHudWidthBeforeMinimize;
@@ -1867,7 +1915,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     };
   }
 
-  // Acordeão de Filtros de Qualificação Compactos
+  // Acordeão de Filtros de Qualificação (inicia SEMPRE VISÍVEL, colapsável pelo usuário)
   const btnToggleAutoFilters = $('btnToggleAutoFilters');
   const boxAutoFilters = $('boxAutoFilters');
   const barAutoFiltersSummary = $('barAutoFiltersSummary');
@@ -1888,7 +1936,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       const isHidden = boxAutoFilters.style.display === 'none';
       boxAutoFilters.style.display = isHidden ? 'block' : 'none';
       if (barAutoFiltersSummary) barAutoFiltersSummary.style.display = isHidden ? 'none' : 'flex';
-      if (lblToggleAutoFilters) lblToggleAutoFilters.innerText = isHidden ? 'Fechar ▲' : '⚙️ Configurar ▾';
+      if (lblToggleAutoFilters) lblToggleAutoFilters.innerText = isHidden ? 'Recolher ▴' : 'Expandir ▾';
       updateAutoFiltersSummary();
     };
     btnToggleAutoFilters.onclick = toggleF;
@@ -1900,172 +1948,137 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     updateAutoFiltersSummary();
   }
 
-  // Auto-expansão do campo de mensagem para exibir TODO o texto completo sem cortes nem rolagem interna
+  // Acordeão de Limites & Delays (inicia SEMPRE VISÍVEL, colapsável pelo usuário)
+  const btnToggleLimitsSection = $('btnToggleLimitsSection');
+  const boxLimitsSection = $('boxLimitsSection');
+  const lblToggleLimitsSection = $('lblToggleLimitsSection');
+  if (btnToggleLimitsSection && boxLimitsSection) {
+    btnToggleLimitsSection.onclick = () => {
+      const isHidden = boxLimitsSection.style.display === 'none';
+      boxLimitsSection.style.display = isHidden ? 'block' : 'none';
+      if (lblToggleLimitsSection) lblToggleLimitsSection.innerText = isHidden ? 'Recolher ▴' : 'Expandir ▾';
+    };
+  }
+
+  // Auto-expansão dos campos de mensagem na aba Mensagens
   function autoExpandTextarea(ta) {
     if (!ta) return;
     ta.style.height = 'auto';
-    const computedH = Math.max(90, ta.scrollHeight + 6);
+    const computedH = Math.max(105, Math.min(260, ta.scrollHeight + 6));
     ta.style.height = computedH + 'px';
   }
 
-  if (hudAutoTemplateContent) {
-    hudAutoTemplateContent.addEventListener('input', () => autoExpandTextarea(hudAutoTemplateContent));
-    hudAutoTemplateContent.addEventListener('change', () => autoExpandTextarea(hudAutoTemplateContent));
-  }
-  if (hudTemplateContent) {
-    hudTemplateContent.addEventListener('input', () => autoExpandTextarea(hudTemplateContent));
-  }
+  [hudAutoTemplate1, hudAutoTemplate2, hudAutoTemplate3, hudTemplateContent].forEach(ta => {
+    if (ta) {
+      ta.addEventListener('input', () => autoExpandTextarea(ta));
+      ta.addEventListener('change', () => autoExpandTextarea(ta));
+    }
+  });
 
   // ==========================================
-  // REDIMENSIONAMENTO VERTICAL E LIVRE DO HUD (CIMA, BAIXO E CANTO)
+  // REDIMENSIONAMENTO FLUIDO LIVRE DO HUD (HORIZONTAL, VERTICAL & CANTOS)
   // ==========================================
   const hudResizeHandleTop = $('hudResizeHandleTop');
   const hudResizeHandleBottom = $('hudResizeHandleBottom');
+  const hudResizeHandleLeft = $('hudResizeHandleLeft');
+  const hudResizeHandleRight = $('hudResizeHandleRight');
   const hudResizeHandleCorner = $('hudResizeHandleCorner');
+  const hudResizeHandleCornerLeft = $('hudResizeHandleCornerLeft');
   const hudElement = $('innfluHud');
-  const hudBodyElement = hudElement ? hudElement.querySelector('.innflu-hud-body') : null;
+
+  function updateHudResponsiveClasses(width) {
+    if (!hudElement) return;
+    hudElement.classList.toggle('hud-compact', width < 340);
+    hudElement.classList.toggle('hud-wide', width >= 460);
+  }
 
   if (hudElement) {
+    const MIN_W = 300;
+    const MAX_W = () => Math.min(window.innerWidth - 24, 760);
+    const MIN_H = 280;
+    const MAX_H = () => Math.min(window.innerHeight - 20, 980);
+
     // Restaura dimensões salvas previamente
     chrome.storage.local.get(['hudHeight', 'hudWidth'], (data) => {
       if (data) {
         if (data.hudHeight) {
           const savedH = parseInt(data.hudHeight, 10);
-          if (savedH >= 160 && savedH <= window.innerHeight - 20) {
+          if (savedH >= MIN_H && savedH <= MAX_H()) {
             hudElement.style.height = `${savedH}px`;
-            if (hudBodyElement) hudBodyElement.style.maxHeight = `${savedH - 85}px`;
           }
         }
         if (data.hudWidth) {
           const savedW = parseInt(data.hudWidth, 10);
-          if (savedW >= 280 && savedW <= 600) {
+          if (savedW >= MIN_W && savedW <= MAX_W()) {
             hudElement.style.width = `${savedW}px`;
+            updateHudResponsiveClasses(savedW);
           }
         }
       }
     });
 
-    // 1. Alça Superior (Top) - Aumenta puxando pra cima, diminui puxando pra baixo
-    if (hudResizeHandleTop) {
-      let isResizingTop = false;
-      let startY = 0;
-      let startHeight = 0;
+    function attachResizer(handleEl, mode, cursorType) {
+      if (!handleEl) return;
+      let active = false;
+      let startX = 0, startY = 0, startW = 0, startH = 0, startLeft = 0, startTop = 0;
+      let usesLeftAnchor = false, usesTopAnchor = false;
 
-      hudResizeHandleTop.addEventListener('mousedown', (e) => {
+      handleEl.addEventListener('mousedown', (e) => {
         if (hudElement.classList.contains('minimized')) return;
-        isResizingTop = true;
-        startY = e.clientY;
-        startHeight = hudElement.offsetHeight;
-        hudResizeHandleTop.classList.add('active');
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'ns-resize';
-        e.preventDefault();
-        e.stopPropagation();
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isResizingTop) return;
-        const deltaY = startY - e.clientY;
-        const minHeight = 160;
-        const maxHeight = Math.min(window.innerHeight - 24, 980);
-        const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
-
-        hudElement.style.height = `${newHeight}px`;
-        if (hudBodyElement) hudBodyElement.style.maxHeight = `${newHeight - 85}px`;
-      });
-
-      window.addEventListener('mouseup', () => {
-        if (!isResizingTop) return;
-        isResizingTop = false;
-        hudResizeHandleTop.classList.remove('active');
-        document.body.style.userSelect = '';
-        document.body.style.cursor = '';
-        chrome.storage.local.set({ hudHeight: hudElement.offsetHeight });
-      });
-    }
-
-    // 2. Alça Inferior (Bottom) - Aumenta puxando pra baixo, diminui puxando pra cima
-    if (hudResizeHandleBottom) {
-      let isResizingBottom = false;
-      let startY = 0;
-      let startHeight = 0;
-
-      hudResizeHandleBottom.addEventListener('mousedown', (e) => {
-        if (hudElement.classList.contains('minimized')) return;
-        isResizingBottom = true;
-        startY = e.clientY;
-        startHeight = hudElement.offsetHeight;
-        hudResizeHandleBottom.classList.add('active');
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'ns-resize';
-        e.preventDefault();
-        e.stopPropagation();
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isResizingBottom) return;
-        const deltaY = e.clientY - startY; // Descer mouse = aumenta; subir mouse = diminui
-        const minHeight = 160;
-        const maxHeight = Math.min(window.innerHeight - 24, 980);
-        const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
-
-        hudElement.style.height = `${newHeight}px`;
-        if (hudBodyElement) hudBodyElement.style.maxHeight = `${newHeight - 85}px`;
-      });
-
-      window.addEventListener('mouseup', () => {
-        if (!isResizingBottom) return;
-        isResizingBottom = false;
-        hudResizeHandleBottom.classList.remove('active');
-        document.body.style.userSelect = '';
-        document.body.style.cursor = '';
-        chrome.storage.local.set({ hudHeight: hudElement.offsetHeight });
-      });
-    }
-
-    // 3. Alça do Canto (Corner) - Redimensiona altura e largura simultaneamente
-    if (hudResizeHandleCorner) {
-      let isResizingCorner = false;
-      let startY = 0;
-      let startX = 0;
-      let startHeight = 0;
-      let startWidth = 0;
-
-      hudResizeHandleCorner.addEventListener('mousedown', (e) => {
-        if (hudElement.classList.contains('minimized')) return;
-        isResizingCorner = true;
-        startY = e.clientY;
+        active = true;
         startX = e.clientX;
-        startHeight = hudElement.offsetHeight;
-        startWidth = hudElement.offsetWidth;
-        hudResizeHandleCorner.classList.add('active');
+        startY = e.clientY;
+        startW = hudElement.offsetWidth;
+        startH = hudElement.offsetHeight;
+        const rect = root.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        usesLeftAnchor = root.style.left && root.style.left !== 'auto';
+        usesTopAnchor = root.style.top && root.style.top !== 'auto';
+        handleEl.classList.add('active');
         document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'nwse-resize';
+        document.body.style.cursor = cursorType;
         e.preventDefault();
         e.stopPropagation();
       });
 
       window.addEventListener('mousemove', (e) => {
-        if (!isResizingCorner) return;
-        const deltaY = e.clientY - startY;
-        const deltaX = e.clientX - startX;
-        const minHeight = 160;
-        const maxHeight = Math.min(window.innerHeight - 24, 980);
-        const minWidth = 280;
-        const maxWidth = 550;
+        if (!active) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
 
-        const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
-        const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + deltaX));
-
-        hudElement.style.height = `${newHeight}px`;
-        hudElement.style.width = `${newWidth}px`;
-        if (hudBodyElement) hudBodyElement.style.maxHeight = `${newHeight - 85}px`;
+        if (mode.includes('top')) {
+          const newH = Math.max(MIN_H, Math.min(MAX_H(), startH - dy));
+          hudElement.style.height = `${newH}px`;
+          if (usesTopAnchor) {
+            const actualDelta = startH - newH;
+            root.style.top = `${Math.max(8, startTop + actualDelta)}px`;
+          }
+        }
+        if (mode.includes('bottom')) {
+          const newH = Math.max(MIN_H, Math.min(MAX_H(), startH + dy));
+          hudElement.style.height = `${newH}px`;
+        }
+        if (mode.includes('left')) {
+          const newW = Math.max(MIN_W, Math.min(MAX_W(), startW - dx));
+          hudElement.style.width = `${newW}px`;
+          updateHudResponsiveClasses(newW);
+          if (usesLeftAnchor) {
+            const actualDelta = startW - newW;
+            root.style.left = `${Math.max(8, startLeft + actualDelta)}px`;
+          }
+        }
+        if (mode.includes('right')) {
+          const newW = Math.max(MIN_W, Math.min(MAX_W(), startW + dx));
+          hudElement.style.width = `${newW}px`;
+          updateHudResponsiveClasses(newW);
+        }
       });
 
       window.addEventListener('mouseup', () => {
-        if (!isResizingCorner) return;
-        isResizingCorner = false;
-        hudResizeHandleCorner.classList.remove('active');
+        if (!active) return;
+        active = false;
+        handleEl.classList.remove('active');
         document.body.style.userSelect = '';
         document.body.style.cursor = '';
         chrome.storage.local.set({
@@ -2074,50 +2087,14 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
         });
       });
     }
+
+    attachResizer(hudResizeHandleTop, 'top', 'ns-resize');
+    attachResizer(hudResizeHandleBottom, 'bottom', 'ns-resize');
+    attachResizer(hudResizeHandleLeft, 'left', 'ew-resize');
+    attachResizer(hudResizeHandleRight, 'right', 'ew-resize');
+    attachResizer(hudResizeHandleCorner, 'bottom-right', 'nwse-resize');
+    attachResizer(hudResizeHandleCornerLeft, 'bottom-left', 'nesw-resize');
   }
-
-  // ==========================================
-  // MINIMIZAR / EXPANDIR MENSAGEM DOS STORIES
-  // ==========================================
-  const btnToggleMsgSection = $('btnToggleMsgSection');
-  const lblToggleMsgSection = $('lblToggleMsgSection');
-  const boxMsgSection = $('boxMsgSection');
-  const barMsgSummary = $('barMsgSummary');
-  const txtMsgSummary = $('txtMsgSummary');
-
-  function updateMsgSummaryText() {
-    if (txtMsgSummary) {
-      txtMsgSummary.innerText = '3 mensagens intercaladas ativas ✓';
-    }
-  }
-
-  function toggleMsgSection(collapse) {
-    if (!boxMsgSection) return;
-    const isCurrentlyHidden = boxMsgSection.style.display === 'none';
-    const shouldHide = collapse !== undefined ? collapse : !isCurrentlyHidden;
-
-    boxMsgSection.style.display = shouldHide ? 'none' : 'block';
-    if (barMsgSummary) barMsgSummary.style.display = shouldHide ? 'flex' : 'none';
-    if (lblToggleMsgSection) lblToggleMsgSection.innerText = shouldHide ? 'Expandir ▾' : 'Recolher ▴';
-    updateMsgSummaryText();
-    chrome.storage.local.set({ isMsgSectionCollapsed: shouldHide });
-  }
-
-  if (btnToggleMsgSection) {
-    btnToggleMsgSection.onclick = () => toggleMsgSection();
-  }
-  if (barMsgSummary) {
-    barMsgSummary.onclick = () => toggleMsgSection(false);
-  }
-
-  // Restaura estado salvo de minimização da mensagem
-  chrome.storage.local.get(['isMsgSectionCollapsed'], (data) => {
-    if (data && data.isMsgSectionCollapsed) {
-      toggleMsgSection(true);
-    } else {
-      updateMsgSummaryText();
-    }
-  });
 
   // ==========================================
   // TELEMETRIA & BUFFER DE LOGS DE DIAGNÓSTICO (BUG REPORT 🐛)
@@ -2235,7 +2212,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.5';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.6';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2271,7 +2248,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.5.5`,
+      `- Versão do Script: v1.5.6`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2494,19 +2471,13 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
   };
 
   btnToggleAuto.onclick = async () => {
-    const isAuth = await checkAndApplyAuth();
-    if (!isAuth) {
-      showLoginGate(true, 'Faça login na sua conta para iniciar a automação.');
-      return;
-    }
-
     const { bot, apiBaseUrl } = await getState();
     if (bot.isRunning && bot.activeMode === 'auto') {
       await stopAutomationGracefully('manual', 'Automação interrompida pelo usuário.');
       return;
     }
 
-    const rawInput = (inputAutoTarget.value || '').trim();
+    const rawInput = (inputAutoTarget ? inputAutoTarget.value : '').trim();
     let currentSource = autoSelectedSource || 'keyword';
     if (rawInput.startsWith('@')) {
       currentSource = 'similar';
@@ -2516,77 +2487,105 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
 
     const targetClean = rawInput.replace(/^[@#]/, '').trim().toLowerCase();
     if (!targetClean) {
-      showToast({ type: 'error', title: 'Alvo Vazio', message: 'Digite um nicho, hashtag ou perfil de referência.' });
+      if (inputAutoTarget) {
+        inputAutoTarget.classList.add('innflu-input-error');
+        inputAutoTarget.focus();
+        setTimeout(() => inputAutoTarget.classList.remove('innflu-input-error'), 1800);
+      }
+      showToast({ type: 'error', title: 'Alvo Vazio', message: 'Digite um nicho, hashtag ou @perfil de referência antes de iniciar.' });
       return;
     }
 
-    const minFollowersVal = parseInt(selAutoMinFollowers.value, 10) || 0;
-    const requireStoriesVal = selAutoStories.value === 'true';
-    const requireContactVal = selAutoContact ? selAutoContact.value : 'all';
-    const targetGenderVal = selAutoGender ? selAutoGender.value : 'female';
+    btnToggleAuto.disabled = true;
+    const prevLabel = btnAutoLabel ? btnAutoLabel.innerText : '⚡ Iniciar Automação';
+    if (btnAutoLabel) btnAutoLabel.innerText = '⏳ Iniciando...';
 
-    const minDelayVal = Math.max(5, parseInt(inputAutoMinDelay ? inputAutoMinDelay.value : 60, 10) || 60);
-    const maxDelayVal = Math.max(minDelayVal, parseInt(inputAutoMaxDelay ? inputAutoMaxDelay.value : 120, 10) || 120);
+    try {
+      const isAuth = await checkAndApplyAuth();
+      if (!isAuth) {
+        if (btnAutoLabel) btnAutoLabel.innerText = prevLabel;
+        showLoginGate(true, 'Faça login na sua conta para iniciar a automação.');
+        return;
+      }
 
-    const t1 = (hudAutoTemplate1 ? hudAutoTemplate1.value : '').trim();
-    const t2 = (hudAutoTemplate2 ? hudAutoTemplate2.value : '').trim();
-    const t3 = (hudAutoTemplate3 ? hudAutoTemplate3.value : '').trim();
-    await chrome.storage.local.set({
-      template1: t1,
-      template2: t2,
-      template3: t3,
-      activeTemplate: t1 || DEFAULT_TEMPLATES[0]
-    });
-    if (hudTemplateContent && t1) hudTemplateContent.value = t1;
+      // Garante que nenhuma trava residual de sessão anterior impeça o início
+      window.InnfluIsSendingDM = false;
 
-    await syncKnownCRMUsers(apiBaseUrl);
+      const minFollowersVal = parseInt(selAutoMinFollowers.value, 10) || 0;
+      const requireStoriesVal = selAutoStories.value === 'true';
+      const requireContactVal = selAutoContact ? selAutoContact.value : 'all';
+      const targetGenderVal = selAutoGender ? selAutoGender.value : 'female';
 
-    await saveBot({
-      isRunning: true,
-      isPaused: false,
-      activeMode: 'auto',
-      miningSource: currentSource,
-      miningTarget: targetClean,
-      keyword: targetClean,
-      minFollowers: minFollowersVal,
-      requireStories: requireStoriesVal,
-      requireContact: requireContactVal,
-      targetGender: targetGenderVal,
-      minDelaySec: minDelayVal,
-      maxDelaySec: maxDelayVal,
-      dailyLimit: readLimitFromUI(),
-      template1: t1,
-      template2: t2,
-      template3: t3,
-      templateRotationIndex: 0,
-      queue: [],
-      visited: [],
-      openCounts: {},
-      pivotsUsed: [],
-      emptyExtractCount: 0,
-      visitedPosts: [],
-      nextActionAt: 0,
-      searchStallCount: 0
-    });
+      const minDelayVal = Math.max(5, parseInt(inputAutoMinDelay ? inputAutoMinDelay.value : 60, 10) || 60);
+      const maxDelayVal = Math.max(minDelayVal, parseInt(inputAutoMaxDelay ? inputAutoMaxDelay.value : 120, 10) || 120);
 
-    const updated = await getState();
-    syncUI(updated.bot);
-    showToast({
-      type: 'success',
-      title: '⚡ Automação Iniciada!',
-      message: `Minerando "${targetClean}" e disparando DMs em loop contínuo.`
-    });
+      const t1 = (hudAutoTemplate1 ? hudAutoTemplate1.value : '').trim() || DEFAULT_TEMPLATES[0];
+      const t2 = (hudAutoTemplate2 ? hudAutoTemplate2.value : '').trim() || DEFAULT_TEMPLATES[1];
+      const t3 = (hudAutoTemplate3 ? hudAutoTemplate3.value : '').trim() || DEFAULT_TEMPLATES[2];
+      await chrome.storage.local.set({
+        template1: t1,
+        template2: t2,
+        template3: t3,
+        activeTemplate: t1
+      });
+      if (hudTemplateContent && t1) hudTemplateContent.value = t1;
 
-    const curPage = window.InnfluCrawler.detectCurrentPage();
-    if ((currentSource === 'keyword' || currentSource === 'hashtag') && curPage !== 'search') {
-      hudCurrentAction.innerText = `Navegando para busca de "${targetClean}"...`;
-      addDiagLog('info', `Iniciando automação. Redirecionando para busca: "${targetClean}"`);
-      await window.InnfluCrawler.sleep(800);
-      window.InnfluCrawler.navigateToSource(currentSource, targetClean);
-      return;
+      // Sincroniza CRM em background para não travar o início da automação
+      syncKnownCRMUsers(apiBaseUrl).catch(() => {});
+
+      await saveBot({
+        isRunning: true,
+        isPaused: false,
+        activeMode: 'auto',
+        miningSource: currentSource,
+        miningTarget: targetClean,
+        keyword: targetClean,
+        minFollowers: minFollowersVal,
+        requireStories: requireStoriesVal,
+        requireContact: requireContactVal,
+        targetGender: targetGenderVal,
+        minDelaySec: minDelayVal,
+        maxDelaySec: maxDelayVal,
+        dailyLimit: readLimitFromUI(),
+        template1: t1,
+        template2: t2,
+        template3: t3,
+        templateRotationIndex: 0,
+        queue: [],
+        visited: [],
+        openCounts: {},
+        pivotsUsed: [],
+        emptyExtractCount: 0,
+        visitedPosts: [],
+        nextActionAt: 0,
+        searchStallCount: 0
+      });
+
+      const updated = await getState();
+      syncUI(updated.bot);
+      showToast({
+        type: 'success',
+        title: '⚡ Automação Iniciada!',
+        message: `Minerando "${targetClean}" e disparando DMs em loop contínuo.`
+      });
+
+      const curPage = window.InnfluCrawler.detectCurrentPage();
+      if ((currentSource === 'keyword' || currentSource === 'hashtag') && curPage !== 'search') {
+        hudCurrentAction.innerText = `Navegando para busca de "${targetClean}"...`;
+        addDiagLog('info', `Iniciando automação. Redirecionando para busca: "${targetClean}"`);
+        await window.InnfluCrawler.sleep(600);
+        const navigated = window.InnfluCrawler.navigateToSource(currentSource, targetClean);
+        if (navigated) return;
+      }
+
+      runLoop();
+    } catch (err) {
+      console.error('[Innflu] Erro ao iniciar automação:', err);
+      if (btnAutoLabel) btnAutoLabel.innerText = prevLabel;
+      showToast({ type: 'error', title: 'Erro ao Iniciar', message: err.message || 'Tente novamente.' });
+    } finally {
+      btnToggleAuto.disabled = false;
     }
-
-    runLoop();
   };
 
   btnToggleSender.onclick = async () => {
@@ -2701,6 +2700,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       return;
     }
 
+    window.__innfluLastLoopAt = Date.now();
     const pageType = window.InnfluCrawler.detectCurrentPage();
     hudPageType.innerText = `Página: ${pageType} • Fila: ${(bot.queue || []).length} perfis`;
 
@@ -4432,15 +4432,12 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     }
   });
 
-  // Observador de navegação SPA do Instagram (re-engaja o loop em transições internas sem recarregar)
+  // Observador de navegação SPA + Watchdog anti-travamento (nunca deixa o robô parar do nada)
   let lastObservedUrl = window.location.href;
   setInterval(() => {
     if (window.location.href !== lastObservedUrl) {
       lastObservedUrl = window.location.href;
-      if (window.InnfluIsSendingDM) {
-        // Envio ativo no momento, não interfere com o loop
-        return;
-      }
+      if (window.InnfluIsSendingDM) return;
       if (localBotCache && localBotCache.isRunning && !localBotCache.isPaused) {
         if (!localBotCache.nextActionAt || localBotCache.nextActionAt <= Date.now()) {
           setTimeout(runLoop, 1800);
@@ -4448,5 +4445,17 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       }
     }
   }, 1000);
+
+  setInterval(() => {
+    if (!localBotCache || !localBotCache.isRunning || localBotCache.isPaused) return;
+    if (window.InnfluIsSendingDM) return;
+    if (localBotCache.nextActionAt && localBotCache.nextActionAt > Date.now()) return;
+    const lastAt = window.__innfluLastLoopAt || 0;
+    if (Date.now() - lastAt > 18000) {
+      console.log('[Innflu Watchdog] Loop ocioso detectado. Reativando prospecção...');
+      window.__innfluLastLoopAt = Date.now();
+      runLoop();
+    }
+  }, 12000);
 
 })();

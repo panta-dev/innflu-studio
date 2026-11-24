@@ -438,6 +438,19 @@ window.InnfluSender = {
    * REGRA CRÍTICA: Ignora terminantemente DESTAQUES (highlights) que ficam abaixo da bio.
    * Apenas seleciona o Avatar Principal do topo.
    */
+  _isInsideHighlights(el) {
+    if (!el) return false;
+    if (el.closest('a[href*="/stories/highlights/"]')) return true;
+    if (el.closest('ul, [role="list"]')) return true;
+    let cur = el;
+    for (let i = 0; i < 6 && cur; i++) {
+      const aria = (cur.getAttribute && cur.getAttribute('aria-label') || '').toLowerCase();
+      if (aria.includes('destaque') || aria.includes('highlight')) return true;
+      cur = cur.parentElement;
+    }
+    return false;
+  },
+
   findStoryAvatar(username = null) {
     const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
     const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main > div > header');
@@ -447,11 +460,12 @@ window.InnfluSender = {
     const validStoryLinks = Array.from(header.querySelectorAll('a[href*="/stories/"]')).filter(a => {
       const h = (a.getAttribute('href') || '').toLowerCase();
       if (h.includes('/highlights/')) return false; // Destaque excluído!
+      if (this._isInsideHighlights(a)) return false;
       return cleanUser ? h.includes(cleanUser) : true;
     });
 
     for (const a of validStoryLinks) {
-      if (!a.closest('ul') && !a.closest('div[role="menu"]')) {
+      if (!a.closest('div[role="menu"]')) {
         const rect = a.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) return a;
       }
@@ -459,7 +473,7 @@ window.InnfluSender = {
 
     // 2. Elemento clicável que contém o canvas do anel de stories (sobre o avatar grande)
     const canvases = Array.from(header.querySelectorAll('canvas')).filter(cv => {
-      if (cv.closest('a[href*="/stories/highlights/"]')) return false;
+      if (this._isInsideHighlights(cv)) return false;
       const rect = cv.getBoundingClientRect();
       return rect.width >= 55 && rect.height >= 55;
     });
@@ -467,7 +481,7 @@ window.InnfluSender = {
     if (canvases.length > 0) {
       const cv = canvases[0];
       const btn = cv.closest('div[role="button"]') || cv.closest('div[tabindex="0"]') || cv.closest('a') || cv.parentElement;
-      if (btn && !btn.closest('a[href*="/stories/highlights/"]')) {
+      if (btn && !this._isInsideHighlights(btn)) {
         const rect = btn.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) return btn;
       }
@@ -485,22 +499,12 @@ window.InnfluSender = {
     ].join(','))).filter(b => {
       const aria = (b.getAttribute('aria-label') || '').toLowerCase();
       if (aria.includes('destaque') || aria.includes('highlight')) return false;
-      if (b.closest('a[href*="/stories/highlights/"]')) return false;
+      if (this._isInsideHighlights(b)) return false;
       const rect = b.getBoundingClientRect();
       return rect.width >= 55 && rect.height >= 55;
     });
 
     if (storyButtons.length > 0) return storyButtons[0];
-
-    // 4. Imagem do avatar principal no cabeçalho
-    const avatarImg = header.querySelector('img[alt*="foto" i], img[alt*="profile" i], img');
-    if (avatarImg && !avatarImg.closest('a[href*="/stories/highlights/"]')) {
-      const btn = avatarImg.closest('div[role="button"]') || avatarImg.closest('a') || avatarImg.parentElement;
-      if (btn && !btn.closest('a[href*="/stories/highlights/"]')) {
-        const rect = btn.getBoundingClientRect();
-        if (rect.width >= 55 && rect.height >= 55) return btn;
-      }
-    }
 
     return null;
   },
@@ -511,6 +515,12 @@ window.InnfluSender = {
    */
   async openStoryViewer(username) {
     const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
+    if (window.InnfluInspector && typeof window.InnfluInspector.hasActiveStories === 'function') {
+      if (!window.InnfluInspector.hasActiveStories(cleanUser)) {
+        console.log(`[Innflu] @${cleanUser} sem Stories ativos de 24h. Ignorando para evitar Destaques.`);
+        return false;
+      }
+    }
     const header = document.querySelector('main header') || document.querySelector('header') || document.querySelector('main > div > header');
 
     console.log(`[Innflu] Tentando abrir Stories de 24h de @${cleanUser}...`);
@@ -519,7 +529,7 @@ window.InnfluSender = {
     if (header) {
       const validLinks = Array.from(header.querySelectorAll('a[href*="/stories/"]')).filter(a => {
         const h = (a.getAttribute('href') || '').toLowerCase();
-        return !h.includes('/highlights/') && (cleanUser ? h.includes(cleanUser) : true);
+        return !h.includes('/highlights/') && !this._isInsideHighlights(a) && (cleanUser ? h.includes(cleanUser) : true);
       });
 
       if (validLinks.length > 0) {
@@ -538,7 +548,7 @@ window.InnfluSender = {
     }
 
     // 3. Se houver canvas no avatar do header, clica nele diretamente
-    const canvases = header ? Array.from(header.querySelectorAll('canvas')).filter(cv => !cv.closest('a[href*="/stories/highlights/"]')) : [];
+    const canvases = header ? Array.from(header.querySelectorAll('canvas')).filter(cv => !this._isInsideHighlights(cv)) : [];
     if (canvases.length > 0) {
       const canvas = canvases[0];
       this.simulateClick(canvas);

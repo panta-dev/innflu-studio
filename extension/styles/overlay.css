@@ -24,16 +24,26 @@
 }
 
 .innflu-hud {
-  width: 330px;
+  position: relative;
+  width: 370px;
+  min-width: 300px;
+  max-width: calc(100vw - 24px);
+  min-height: 280px;
   max-height: calc(100vh - 24px);
   background: #0d1117;
   border: 1px solid #30363d;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: width 0.2s ease, transform 0.2s ease;
+  box-sizing: border-box;
+}
+
+.innflu-hud *,
+.innflu-hud *::before,
+.innflu-hud *::after {
+  box-sizing: border-box;
 }
 
 .innflu-hud.minimized {
@@ -302,14 +312,16 @@
   border: 1px solid #30363d;
 }
 
-/* Corpo Principal com Rolagem Suave Inteligente */
+/* Corpo Principal com Rolagem Suave Inteligente via Flexbox */
 .innflu-hud-body {
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
   overflow-y: auto !important;
-  max-height: calc(100vh - 170px);
   scrollbar-width: thin !important;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
 }
@@ -1187,6 +1199,69 @@
   width: 56px;
 }
 
+.innflu-resize-handle-left {
+  width: 6px;
+  height: calc(100% - 20px);
+  cursor: ew-resize;
+  position: absolute;
+  top: 10px;
+  left: 0;
+  z-index: 1000;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.innflu-resize-handle-left:hover,
+.innflu-resize-handle-left.active {
+  background: rgba(56, 189, 248, 0.35);
+}
+
+.innflu-resize-handle-right {
+  width: 6px;
+  height: calc(100% - 20px);
+  cursor: ew-resize;
+  position: absolute;
+  top: 10px;
+  right: 0;
+  z-index: 1000;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.innflu-resize-handle-right:hover,
+.innflu-resize-handle-right.active {
+  background: rgba(56, 189, 248, 0.35);
+}
+
+.innflu-resize-handle-corner-left {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nesw-resize;
+  z-index: 1001;
+  background: transparent;
+}
+
+.innflu-resize-handle-corner-left::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  border-left: 2px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 1px;
+  transition: border-color 0.2s ease;
+}
+
+.innflu-resize-handle-corner-left:hover::after,
+.innflu-resize-handle-corner-left.active::after {
+  border-color: #38bdf8;
+}
+
 .innflu-resize-handle-corner {
   position: absolute;
   bottom: 0;
@@ -1520,6 +1595,134 @@
 
 .innflu-btn-logout:hover {
   background: rgba(248, 81, 73, 0.15);
+}
+
+/* ==========================================================
+   REDESIGN HARMÔNICO & RESPONSIVIDADE DO HUD (v1.5.6)
+   ========================================================== */
+.innflu-section-card {
+  background: #131720;
+  border: 1px solid #21262d;
+  border-radius: 10px;
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: border-color 0.2s ease;
+}
+
+.innflu-section-card:hover {
+  border-color: #30363d;
+}
+
+.innflu-filters-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: 8px;
+}
+
+.innflu-msgs-shortcut {
+  margin-top: 6px;
+  width: 100%;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #e6edf3;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.innflu-msgs-shortcut:hover {
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.innflu-shortcut-link {
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.innflu-msg-tips {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #8b949e;
+  line-height: 1.4;
+}
+
+.innflu-msg-tips code {
+  background: #21262d;
+  color: #79c0ff;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.innflu-cta-dock {
+  margin-top: 2px;
+}
+
+.innflu-cta-btn {
+  padding: 10px 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  border-radius: 9px !important;
+  letter-spacing: 0.2px;
+}
+
+.innflu-cta-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.innflu-input-error {
+  border-color: #f85149 !important;
+  box-shadow: 0 0 0 2px rgba(248, 81, 73, 0.25) !important;
+  animation: innfluShake 0.35s ease;
+}
+
+@keyframes innfluShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Adaptação automática para larguras compactas (< 340px) */
+.innflu-hud.hud-compact .innflu-nav-btn {
+  font-size: 10px;
+  padding: 5px 2px;
+}
+
+.innflu-hud.hud-compact .innflu-sources-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Adaptação automática para larguras amplas (>= 460px) */
+.innflu-hud.hud-wide .innflu-hud-body {
+  padding: 12px 16px;
+  gap: 10px;
+}
+
+.innflu-hud.hud-wide .innflu-section-card {
+  padding: 12px 14px;
+}
+
+.innflu-hud.hud-wide .innflu-nav-btn {
+  font-size: 12px;
+  padding: 7px 8px;
+}
+
+/* Ocultar novas alças quando minimizado */
+.innflu-hud.minimized .innflu-resize-handle-left,
+.innflu-hud.minimized .innflu-resize-handle-right,
+.innflu-hud.minimized .innflu-resize-handle-corner-left {
+  display: none !important;
 }
 
 
