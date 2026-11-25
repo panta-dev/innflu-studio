@@ -270,7 +270,7 @@ window.InnfluSender = {
 
   /**
    * Digita a mensagem no editor do Instagram com suporte nativo ao Lexical
-   * Garante ESTRITAMENTE que a mensagem seja inserida UMA ÚNICA VEZ e reconhecida pelo EditorState!
+   * Usa document.execCommand('insertText') linha a linha (tratado nativamente pelo browser no Lexical).
    */
   async typeMessageIntoReact(inputEl, text) {
     if (!inputEl) return;
@@ -280,10 +280,10 @@ window.InnfluSender = {
     // 1. Limpa completamente qualquer texto anterior para NUNCA duplicar rascunhos
     await this.clearInput(inputEl);
     inputEl.focus();
-    await this.sleep(100);
+    await this.sleep(120);
 
-    // 2. Prioriza ClipboardEvent('paste') nativo (o Lexical processa e atualiza EditorState + botão Enviar)
-    let textNow = '';
+    // 2. Insere via document.execCommand('insertText') linha por linha (browser dispara beforeinput confiável para o Lexical)
+    let inserted = false;
     try {
       const sel = window.getSelection();
       const range = document.createRange();
@@ -292,24 +292,35 @@ window.InnfluSender = {
       sel.removeAllRanges();
       sel.addRange(range);
 
-      const dt = new DataTransfer();
-      dt.setData('text/plain', text);
-      const pasteEv = new ClipboardEvent('paste', {
-        clipboardData: dt,
-        bubbles: true,
-        cancelable: true
-      });
-      inputEl.dispatchEvent(pasteEv);
-      await this.sleep(250);
-      textNow = (inputEl.innerText || '').trim();
-    } catch (e) {}
+      const lines = String(text || '').split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].length > 0) {
+          const ok = document.execCommand('insertText', false, lines[i]);
+          if (ok) inserted = true;
+        }
+        if (i < lines.length - 1) {
+          document.execCommand('insertLineBreak', false, null);
+        }
+      }
+    } catch (e) {
+      inserted = false;
+    }
 
-    // 3. Fallback: execCommand('insertText') se paste não preencheu
-    if (textNow.length === 0) {
+    let textNow = (inputEl.innerText || '').trim();
+
+    // 3. Fallback: ClipboardEvent('paste') caso execCommand não tenha preenchido
+    if (!inserted || textNow.length === 0) {
       try {
         inputEl.focus();
-        document.execCommand('insertText', false, text);
-        await this.sleep(200);
+        const dt = new DataTransfer();
+        dt.setData('text/plain', text);
+        const pasteEv = new ClipboardEvent('paste', {
+          clipboardData: dt,
+          bubbles: true,
+          cancelable: true
+        });
+        inputEl.dispatchEvent(pasteEv);
+        await this.sleep(250);
         textNow = (inputEl.innerText || '').trim();
       } catch (e) {}
     }
@@ -742,21 +753,21 @@ window.InnfluSender = {
   },
 
   /**
-   * Submete a resposta do Story com botão Enviar e tecla Enter
+   * Submete a resposta do Story com botão Enviar (dentro do container do input) e tecla Enter
    */
   async submitStoryReply(inputEl) {
     inputEl.focus();
     await this.sleep(250);
 
-    // 1. Procura botão Enviar / Send ou ícone de envio próximo ao input do Story
-    const sendBtn = Array.from(document.querySelectorAll('button, div[role="button"]')).find(b => {
-      if (b.closest('#innflu-hud-root') || b === inputEl) return false;
+    // 1. Procura botão Enviar / Send exclusivamente próximo ao input do Story (nunca no perfil de fundo)
+    const container = inputEl.closest('form') || inputEl.parentElement?.parentElement?.parentElement || document;
+    const sendBtn = Array.from(container.querySelectorAll('button, div[role="button"]')).find(b => {
+      if (b.closest('#innflu-hud-root') || b === inputEl || b.contains(inputEl)) return false;
       const t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
       const rect = b.getBoundingClientRect();
       const isVisible = rect.width > 0 && rect.height > 0 && rect.bottom > window.innerHeight * 0.3;
-      const isSendText = t === 'enviar' || t === 'send' || t.includes('enviar') || t.includes('send');
-      const hasSendSvg = !!b.querySelector('svg[aria-label*="Enviar" i], svg[aria-label*="Send" i]');
-      return (isSendText || hasSendSvg) && isVisible;
+      const isSendText = t === 'enviar' || t === 'send';
+      return isSendText && isVisible;
     });
 
     if (sendBtn) {
@@ -766,19 +777,21 @@ window.InnfluSender = {
     }
 
     // 2. Dispara tecla Enter como garantia com sequência completa de eventos
-    const enterProps = {
-      key: 'Enter',
-      code: 'Enter',
-      keyCode: 13,
-      which: 13,
-      charCode: 13,
-      bubbles: true,
-      cancelable: true,
-      view: window
-    };
-    inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
-    inputEl.dispatchEvent(new KeyboardEvent('keypress', enterProps));
-    inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
+    if (inputEl && inputEl.isConnected && ((inputEl.value !== undefined ? inputEl.value : inputEl.innerText) || '').trim().length > 0) {
+      const enterProps = {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        which: 13,
+        charCode: 13,
+        bubbles: true,
+        cancelable: true,
+        view: window
+      };
+      inputEl.dispatchEvent(new KeyboardEvent('keydown', enterProps));
+      inputEl.dispatchEvent(new KeyboardEvent('keypress', enterProps));
+      inputEl.dispatchEvent(new KeyboardEvent('keyup', enterProps));
+    }
     await this.sleep(1200);
   },
 
@@ -843,11 +856,17 @@ window.InnfluSender = {
     try { claim = sessionStorage.getItem('www-claim-v2') || '0'; } catch (e) { /* ignora */ }
     const headers = { 'x-ig-app-id': '936619743392459', 'x-csrftoken': csrf, 'x-requested-with': 'XMLHttpRequest', 'x-asbd-id': '129477', 'x-ig-www-claim': claim, 'accept': '*/*' };
     let apiWorked = false;
-    for (let attempt = 0; attempt < 4; attempt++) {
-      if (attempt) await this.sleep(2500);
+    let got404 = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await this.sleep(2000);
       for (const path of ['inbox/?limit=20', 'pending_inbox/?limit=20']) {
         try {
           const r = await fetch(`/api/v1/direct_v2/${path}`, { credentials: 'include', headers });
+          if (r.status === 404) {
+            console.warn(`[Innflu] API ${path} respondeu 404 (endpoint indisponível). Saindo sem esperar.`);
+            got404 = true;
+            break;
+          }
           if (!r.ok) { console.warn(`[Innflu] API ${path} respondeu ${r.status}`); continue; }
           const j = await r.json();
           const threads = (j.inbox && j.inbox.threads) || [];
@@ -864,6 +883,7 @@ window.InnfluSender = {
           }
         } catch (e) { /* tenta o próximo */ }
       }
+      if (got404) break;
     }
     return apiWorked ? false : null;
   },
@@ -1208,12 +1228,27 @@ window.InnfluSender = {
   },
 
   /**
-   * Sai da conversa do Direct e volta ao perfil
+   * Sai da conversa do Direct (ou fecha janelinha flutuante de chat) e volta ao perfil
    */
   async leaveThread() {
     if (window.location.pathname.toLowerCase().startsWith('/direct/')) {
       window.history.back();
       await this.sleep(1500);
+      return;
+    }
+    // Se estiver na janelinha flutuante no canto inferior direito, fecha pelo botão X
+    const closeBtns = Array.from(document.querySelectorAll('div[role="button"], button')).filter(b => {
+      if (b.closest('#innflu-hud-root')) return false;
+      const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+      const svgAria = (b.querySelector('svg')?.getAttribute('aria-label') || '').toLowerCase();
+      const isClose = aria.includes('fechar') || aria.includes('close') || svgAria.includes('fechar') || svgAria.includes('close');
+      if (!isClose) return false;
+      const r = b.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && r.right > window.innerWidth * 0.5 && r.top > window.innerHeight * 0.35;
+    });
+    if (closeBtns.length > 0) {
+      this.simulateClick(closeBtns[0]);
+      await this.sleep(400);
     }
   },
 

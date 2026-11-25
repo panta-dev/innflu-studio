@@ -130,7 +130,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.8</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.9</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -175,7 +175,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.8</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.9</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -591,7 +591,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.8 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.9 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -2212,7 +2212,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.8';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.9';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2248,7 +2248,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.5.8`,
+      `- Versão do Script: v1.5.9`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2879,33 +2879,55 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     // Regra de reenvio: quem já recebeu mensagem só recebe de novo após 24h (blacklist nunca)
     const check7d = await check7DayRule(apiBaseUrl, cleanUser);
     const isRepeatContact = wasKnown || !!(check7d && check7d.previouslyContacted);
+    let inspectedThread = null;
     if (check7d && check7d.eligible === false) {
-      const why = check7d.reason === 'blacklisted' ? 'blacklist' : `enviada há ${Math.floor(check7d.hoursAgo || 0)}h (<24h)`;
-      hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada (${why}). Próxima...`;
-      addDiagLog('info', `@${cleanUser} pulada: ${why}.`);
-      await logActivity({ username: cleanUser, status: check7d.reason === 'blacklisted' ? 'Pulada (blacklist)' : 'Pulada (<24h)' });
-      // Persiste: sem isso o mesmo perfil voltava para a fila e o agente ficava em loop
-      await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
-      await window.InnfluCrawler.sleep(1000);
-      if (remainingQueue.length > 0) {
-        openProfileSafe(remainingQueue[0]);
-      } else {
-        window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
+      let skipThisUser = check7d.reason === 'blacklisted';
+      if (!skipThisUser) {
+        // Confere a conversa real antes de pular (evita falsos bloqueios de tentativas antigas que falharam)
+        try {
+          window.InnfluIsSendingDM = true;
+          inspectedThread = await window.InnfluSender.inspectThread(cleanUser);
+        } catch (e) {
+          inspectedThread = null;
+        } finally {
+          window.InnfluIsSendingDM = false;
+        }
+        if (!inspectedThread || !inspectedThread.opened || inspectedThread.hasOutgoing || inspectedThread.hasIncoming) {
+          skipThisUser = true;
+        } else {
+          addDiagLog('info', `@${cleanUser} constava no banco (<24h), mas a conversa está vazia (0 msgs). Enviando agora!`);
+        }
       }
-      return;
+
+      if (skipThisUser) {
+        const why = check7d.reason === 'blacklisted' ? 'blacklist' : `enviada há ${Math.floor(check7d.hoursAgo || 0)}h (<24h)`;
+        hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} pulada (${why}). Próxima...`;
+        addDiagLog('info', `@${cleanUser} pulada: ${why}.`);
+        await logActivity({ username: cleanUser, status: check7d.reason === 'blacklisted' ? 'Pulada (blacklist)' : 'Pulada (<24h)' });
+        await saveBot({ queue: remainingQueue, visited: Array.from(visitedSet).slice(-1000) });
+        await window.InnfluCrawler.sleep(1000);
+        if (remainingQueue.length > 0) {
+          openProfileSafe(remainingQueue[0]);
+        } else {
+          window.InnfluCrawler.navigateToSource(bot.miningSource || 'hashtag', bot.miningTarget || 'provador');
+        }
+        return;
+      }
     }
 
     // Já está no banco? Confere a conversa: se ela respondeu, descarta; se não respondeu, envia nova mensagem
     if (isRepeatContact) {
       hudCurrentAction.innerText = `[⚡ Automação] @${cleanUser} já foi contatada. Conferindo a conversa...`;
-      let thread = null;
-      try {
-        window.InnfluIsSendingDM = true;
-        thread = await window.InnfluSender.inspectThread(cleanUser);
-      } catch (e) {
-        thread = null;
-      } finally {
-        window.InnfluIsSendingDM = false;
+      let thread = inspectedThread;
+      if (!thread) {
+        try {
+          window.InnfluIsSendingDM = true;
+          thread = await window.InnfluSender.inspectThread(cleanUser);
+        } catch (e) {
+          thread = null;
+        } finally {
+          window.InnfluIsSendingDM = false;
+        }
       }
 
       if (thread && thread.opened && thread.hasIncoming) {
