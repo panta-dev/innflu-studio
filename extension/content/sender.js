@@ -834,12 +834,15 @@ window.InnfluSender = {
    */
   findSendErrorToast() {
     const re = /ocorreu um erro|tente novamente|algo deu errado|n[ãa]o foi poss[ií]vel enviar|something went wrong|an error occurred|couldn.t send|failed to send|try again/i;
-    const nodes = document.querySelectorAll('div, span');
-    for (const el of nodes) {
-      if (el.closest('#innflu-hud-root')) continue;
-      if (el.children.length > 2) continue;
-      const t = (el.innerText || '').trim();
-      if (t && t.length < 90 && re.test(t)) return t;
+    // TreeWalker em nós de texto: não força layout (sem innerText), leve o bastante para rodar a cada poucos ms
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const t = node.nodeValue;
+      if (!t || t.length > 90 || t.length < 8) continue;
+      const p = node.parentElement;
+      if (!p || p.closest('#innflu-hud-root') || p.closest('textarea') || p.closest('[contenteditable="true"]') || p.closest('script,style,noscript')) continue;
+      if (re.test(t)) return t.trim();
     }
     return '';
   },
@@ -848,7 +851,7 @@ window.InnfluSender = {
    * Confere via API interna do Instagram se a mensagem chegou ao Direct (inbox e solicitações).
    * Retorna true (achou), false (API ok mas não achou) ou null (API indisponível).
    */
-  async verifySentViaApi(messageText, username, sinceMs) {
+  async checkDeliveryOnce(messageText, username, sinceMs) {
     const needle = this.normalizeNeedle(messageText);
     const user = (username || '').toLowerCase();
     const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
@@ -857,7 +860,7 @@ window.InnfluSender = {
     const headers = { 'x-ig-app-id': '936619743392459', 'x-csrftoken': csrf, 'x-requested-with': 'XMLHttpRequest', 'x-asbd-id': '129477', 'x-ig-www-claim': claim, 'accept': '*/*' };
     let apiWorked = false;
     let got404 = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 1; attempt++) {
       if (attempt) await this.sleep(2000);
       for (const path of ['inbox/?limit=20', 'pending_inbox/?limit=20']) {
         try {
@@ -889,11 +892,30 @@ window.InnfluSender = {
   },
 
   /**
+   * Confirma a entrega assim que ela aparece no Direct (sai no 1º acerto, sem espera fixa).
+   * Retorna { state: 'delivered' | 'error' | 'missing' | 'unknown', error? }
+   */
+  async confirmDelivery(messageText, username, sinceMs, timeoutMs = 9000) {
+    const deadline = Date.now() + timeoutMs;
+    let apiWorked = false;
+    while (Date.now() < deadline) {
+      const err = this.findSendErrorToast();
+      if (err) return { state: 'error', error: err };
+      const r = await this.checkDeliveryOnce(messageText, username, sinceMs);
+      if (r === true) return { state: 'delivered' };
+      if (r === false) apiWorked = true;
+      await this.sleep(500);
+    }
+    return { state: apiWorked ? 'missing' : 'unknown' };
+  },
+
+  /**
    * Abre o Story ativo da criadora e responde diretamente com a mensagem de captação
    */
   async replyToActiveStory(messageText, username, baseline = 0) {
     const cleanUser = (username || window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase().replace('@', '');
 
+    this._phase(`Abrindo stories de @${cleanUser}...`);
     console.log(`[Innflu] Abrindo Stories de @${cleanUser} para envio de mensagem...`);
     const opened = await this.openStoryViewer(cleanUser);
 
@@ -923,6 +945,7 @@ window.InnfluSender = {
     }
     const sentAfterMs = Date.now() - 60000;
 
+    this._phase(`Enviando mensagem para @${cleanUser}...`);
     console.log(`[Innflu] Enviando resposta do Story para @${cleanUser}...`);
     await this.submitStoryReply(inputEl);
 
@@ -935,37 +958,25 @@ window.InnfluSender = {
       throw new Error(confirm.message);
     }
 
-    // Aviso de erro do Instagram logo após enviar = não enviou
-    for (let i = 0; i < 6; i++) {
-      const errToast = this.findSendErrorToast();
-      if (errToast) {
-        this.closeStoryViewer();
-        await this.sleep(800);
-        throw new Error(`Instagram recusou a resposta do Story: ${errToast}`);
-      }
-      await this.sleep(500);
-    }
+    // Confirmação orientada ao resultado real: sai assim que a mensagem aparece no Direct,
+    // ou assim que o Instagram mostra erro. Sem esperas fixas.
+    this._phase(`Confirmando entrega para @${cleanUser}...`);
+    const delivery = await this.confirmDelivery(messageText, cleanUser, sentAfterMs, 9000);
+    console.log(`[Innflu] Conferência de entrega: ${delivery.state}`);
 
-    // Campo esvaziado NÃO prova envio. Confere pela API do Instagram (sem sair do perfil).
-    const api = await this.verifySentViaApi(messageText, cleanUser, sentAfterMs);
-    console.log(`[Innflu] Conferência via API: ${api}`);
-    const lateErr = this.findSendErrorToast();
-    if (lateErr) {
+    if (delivery.state === 'error') {
       this.closeStoryViewer();
-      await this.sleep(800);
-      throw new Error(`Instagram recusou a resposta do Story: ${lateErr}`);
+      throw new Error(`Instagram recusou a resposta do Story: ${delivery.error}`);
     }
-    if (api === false) {
-      // A API respondeu e NÃO há mensagem sua recente nessa conversa: não foi entregue.
+    if (delivery.state === 'missing') {
       this.closeStoryViewer();
-      await this.sleep(800);
       throw new Error('o Instagram não entregou a resposta do Story (não aparece no seu Direct)');
     }
-    if (api === null) {
+    if (delivery.state === 'unknown') {
       // Não foi possível consultar a API: confere abrindo a conversa
       console.log('[Innflu] API indisponível; conferindo na conversa...');
       this.closeStoryViewer();
-      await this.sleep(1200);
+      await this.sleep(600);
       const check = await this.verifyStoryReplyInThread(messageText, cleanUser, baseline);
       if (check.verified !== true) {
         throw new Error('não foi possível confirmar o envio do Story (não contado como enviado)');
@@ -973,13 +984,10 @@ window.InnfluSender = {
       await this.leaveThread();
       return { ok: true, confirmed: true };
     }
-    console.log(`[Innflu] Resposta do Story confirmada. Fechando visualizador...`);
+
     this.closeStoryViewer();
-    for (let i = 0; i < 5; i++) {
-      await this.sleep(600);
-      const closeErr = this.findSendErrorToast();
-      if (closeErr) throw new Error(`Instagram recusou a resposta do Story: ${closeErr}`);
-    }
+    const lateErr = this.findSendErrorToast();
+    if (lateErr) throw new Error(`Instagram recusou a resposta do Story: ${lateErr}`);
     return { ok: true, confirmed: true };
   },
 
@@ -987,6 +995,31 @@ window.InnfluSender = {
    * Executa o fluxo completo de envio de DM para o perfil atual com confirmação estrita
    */
   async sendDirectMessage(messageText, opts = {}) {
+    const curUser = (window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
+    this._inflight = this._inflight || new Set();
+    this._recentSent = this._recentSent || new Map();
+    const lastTs = this._recentSent.get(curUser);
+    if (this._inflight.has(curUser) || (lastTs && Date.now() - lastTs < 120000)) {
+      const dup = new Error(`envio duplicado evitado para @${curUser} (já enviado ou em andamento)`);
+      dup.code = 'DUPLICATE';
+      throw dup;
+    }
+    this._inflight.add(curUser);
+    try {
+      const res = await this._sendDirectMessageInner(messageText, opts);
+      if (res && res.success) this._recentSent.set(curUser, Date.now());
+      return res;
+    } finally {
+      this._inflight.delete(curUser);
+    }
+  },
+
+  /** Informa a fase atual ao HUD (indicador visual, não bloqueia a interface). */
+  _phase(text) {
+    try { window.dispatchEvent(new CustomEvent('innflu:send-phase', { detail: { text } })); } catch (e) { /* ignora */ }
+  },
+
+  async _sendDirectMessageInner(messageText, opts = {}) {
     const preCheck = this.checkActionBlock();
     if (preCheck.blocked) {
       throw new Error(`Instagram bloqueou a ação: ${preCheck.message}`);
