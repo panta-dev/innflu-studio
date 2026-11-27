@@ -388,6 +388,24 @@ window.InnfluInspector = {
   },
 
   /**
+   * Categoria do perfil exibida pelo Instagram (ex.: "Criador de conteúdo digital", "Loja de roupas")
+   */
+  getCategoryText() {
+    const header = document.querySelector('header');
+    if (!header || !window.InnfluGenderDetector) return '';
+    const gd = window.InnfluGenderDetector;
+    const known = [...gd.corporateCategories, ...gd.creatorCategories].map(c => gd._norm(c));
+    const leaves = Array.from(header.querySelectorAll('div, span')).filter(el => el.children.length === 0);
+    for (const el of leaves) {
+      const t = (el.innerText || '').trim();
+      if (t.length < 3 || t.length > 60) continue;
+      const n = gd._norm(t);
+      if (known.some(k => n === k || n.startsWith(k))) return t;
+    }
+    return '';
+  },
+
+  /**
    * Extrai dados completos do perfil atual no DOM do Instagram
    */
   extractCurrentProfileData(targetNiche = '') {
@@ -424,9 +442,10 @@ window.InnfluInspector = {
     const nicheEval = this.calculateNicheRelevance(bio, fullName, targetNiche);
 
     // 9. Gênero via Heurística
+    const category = this.getCategoryText();
     const genderEval = window.InnfluGenderDetector ? 
-      window.InnfluGenderDetector.classify(fullName, bio, username) : 
-      { isFemale: true, isBrand: false, reason: 'Padrão' };
+      window.InnfluGenderDetector.classify(fullName, bio, username, category) : 
+      { gender: 'unknown', isFemale: false, isMale: false, isBrand: false, isUncertain: true, reason: 'Classificador indisponível' };
 
     // 10. Contatos (WhatsApp & Email)
     const contacts = window.InnfluContactExtractor ? 
@@ -442,8 +461,12 @@ window.InnfluInspector = {
       isVerified,
       postsCount,
       bio,
-      isFemale: genderEval.isFemale,
-      isBrand: genderEval.isBrand,
+      gender: genderEval.gender || 'unknown',
+      isFemale: !!genderEval.isFemale,
+      isMale: !!genderEval.isMale,
+      isBrand: !!genderEval.isBrand,
+      isUncertainProfile: !!genderEval.isUncertain,
+      category,
       genderReason: genderEval.reason,
       whatsapp: contacts.whatsapp,
       email: contacts.email,
@@ -458,7 +481,7 @@ window.InnfluInspector = {
     const minFollowers = campaignCriteria.minFollowers !== undefined ? campaignCriteria.minFollowers : 5000;
     const maxFollowers = campaignCriteria.maxFollowers !== undefined ? campaignCriteria.maxFollowers : 10000000;
     const requireStories = campaignCriteria.requireActiveStories !== false;
-    const targetGender = campaignCriteria.targetGender || 'female';
+    const targetGender = ['female', 'male', 'all'].includes(campaignCriteria.targetGender) ? campaignCriteria.targetGender : 'female';
     const requireContact = campaignCriteria.requireContact || 'all';
 
     const reasons = [];
@@ -520,14 +543,21 @@ window.InnfluInspector = {
       reasons.push('Sem WhatsApp nem E-mail');
     }
 
-    // Checagem de marca / empresa corporativa
+    // Lojas, achadinhos, catálogos e perfis comerciais: descartados em TODAS as opções de gênero
     if (profileData.isBrand) {
       reasons.push(profileData.genderReason || 'Empresa / Loja comercial (não é influenciador)');
-    }
-
-    // Checagem de gênero
-    if (targetGender === 'female' && !profileData.isFemale) {
-      reasons.push('Perfil não identificado como feminino');
+    } else if (profileData.isUncertainProfile) {
+      reasons.push(profileData.genderReason || 'Perfil não validado (dúvida na classificação)');
+    } else {
+      // Gênero: "Todos" = somente mulheres OU homens identificados. Sem evidência = ignorado.
+      const g = profileData.gender || (profileData.isFemale ? 'female' : profileData.isMale ? 'male' : 'unknown');
+      if (g !== 'female' && g !== 'male') {
+        reasons.push('Gênero não identificado com segurança');
+      } else if (targetGender === 'female' && g !== 'female') {
+        reasons.push('Perfil não é feminino');
+      } else if (targetGender === 'male' && g !== 'male') {
+        reasons.push('Perfil não é masculino');
+      }
     }
 
     return {
