@@ -130,7 +130,7 @@
         </div>
         <div class="innflu-diag-body">
           <div class="innflu-diag-metrics">
-            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.5.9</strong></div>
+            <div class="innflu-diag-metrics-item">Versão: <strong id="diagMetricVersion">v1.6.0</strong></div>
             <div class="innflu-diag-metrics-item">Página: <strong id="diagMetricPage">profile</strong></div>
             <div class="innflu-diag-metrics-item">Status: <strong id="diagMetricStatus">Parado</strong></div>
             <div class="innflu-diag-metrics-item">Alvo: <strong id="diagMetricTarget">provador</strong></div>
@@ -175,7 +175,7 @@
       <div class="innflu-ota-banner" id="hudOtaBanner" style="display:none;">
         <div class="innflu-ota-content">
           <div class="innflu-ota-title">
-            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.5.9</span>)</span>
+            <span>🚀 Nova Atualização Disponível (<span id="hudOtaVersion">1.6.0</span>)</span>
           </div>
           <div class="innflu-ota-desc" id="hudOtaNotes">Novas regras e melhorias anti-ban disponíveis.</div>
         </div>
@@ -272,7 +272,8 @@
                   <label class="innflu-form-label">Gênero Alvo:</label>
                   <select class="innflu-select" id="selAutoGender">
                     <option value="female" selected>Apenas Feminino</option>
-                    <option value="all">Todos os Gêneros</option>
+                    <option value="male">Apenas Masculino</option>
+                    <option value="all">Todos (homens e mulheres)</option>
                   </select>
                 </div>
               </div>
@@ -364,6 +365,18 @@
               Dica: Use <code>{nome}</code> para o nome da criadora e <code>{Oi|Olá}</code> para variar palavras automaticamente.
             </div>
 
+            <div id="boxMsgBank" style="margin-top:8px;border:1px solid #30363d;border-radius:6px;padding:6px;background:#0d1117;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span class="innflu-form-label" style="margin:0;">Banco de mensagens (<span id="msgBankCount">0</span> ativas)</span>
+                <span>
+                  <button type="button" id="btnMsgBankFromMain" class="innflu-btn-secondary" style="padding:2px 6px;font-size:10px;width:auto;" title="Copiar a mensagem da aba atual para o banco">+ Da aba atual</button>
+                  <button type="button" id="btnMsgBankAdd" class="innflu-btn-secondary" style="padding:2px 6px;font-size:10px;width:auto;">+ Nova</button>
+                </span>
+              </div>
+              <div id="msgBankList" style="display:flex;flex-direction:column;gap:5px;max-height:260px;overflow-y:auto;"></div>
+              <div id="msgBankHint" style="margin-top:4px;font-size:9.5px;color:#8b949e;line-height:1.35;">Com mensagens no banco, cada novo contato recebe uma mensagem ativa sorteada (a mensagem é enviada inteira). Banco vazio: usa as 3 mensagens rotativas acima.</div>
+            </div>
+
             <div class="innflu-template-actions" style="margin-top:8px;justify-content:flex-end;">
               <button class="innflu-btn-sub" id="btnAutoTestSpintax" title="Testar variação">🎲 Testar Variação</button>
               <button class="innflu-btn-sub save" id="btnAutoSaveTemplate" title="Salvar todas as 3 mensagens">💾 Salvar 3 Mensagens</button>
@@ -434,7 +447,8 @@
               <label class="innflu-form-label">Gênero Alvo:</label>
               <select class="innflu-select" id="selTargetGender">
                 <option value="female" selected>Apenas Feminino</option>
-                <option value="all">Todos os Gêneros</option>
+                <option value="male">Apenas Masculino</option>
+                <option value="all">Todos (homens e mulheres)</option>
               </select>
             </div>
           </div>
@@ -591,7 +605,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       <div class="innflu-hud-footer">
         <button class="innflu-btn-secondary" id="btnQuickInspect">Analisar Perfil Aberto</button>
         <button class="innflu-btn-secondary" id="btnOpenDashboard" style="color:#38bdf8;border-color:#1e3a5f;" title="Abrir Painel Web">Painel Web</button>
-        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.5.9 🔄</button>
+        <button class="innflu-btn-secondary" id="btnCheckOtaUpdates" style="flex:0.7;font-size:10px;" title="Verificar atualizações">v1.6.0 🔄</button>
       </div>
 
       <!-- Alça de Redimensionamento Inferior (Puxar pra baixo / cima) -->
@@ -1038,6 +1052,8 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
           requireStories: true,
           requireContact: 'all',
           targetGender: 'female',
+          messageBank: [],
+          msgBag: [],
           queue: [],
           visited: [],
           visitedPosts: [],
@@ -1388,6 +1404,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     if (bot.targetGender && selAutoGender) {
       selAutoGender.value = bot.targetGender;
     }
+    try { renderMessageBank(false); } catch (e) {}
     if (bot.minDelaySec !== undefined && inputAutoMinDelay) {
       inputAutoMinDelay.value = bot.minDelaySec.toString();
     }
@@ -1927,7 +1944,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     const minF = $('selAutoMinFollowers')?.value || '5000';
     const minStr = minF === '0' ? 'Sem mín.' : `${parseInt(minF, 10) >= 1000 ? parseInt(minF, 10) / 1000 + 'k+' : minF} seg`;
     const stVal = $('selAutoStories')?.value === 'true' ? 'Apenas c/ Stories' : 'Todos perfis';
-    const genVal = $('selAutoGender')?.value === 'female' ? 'Feminino' : 'Geral';
+    const gv = $('selAutoGender')?.value; const genVal = gv === 'female' ? 'Feminino' : gv === 'male' ? 'Masculino' : 'Homens e mulheres';
     txtAutoFiltersSummary.innerText = `${minStr} • ${stVal} • ${genVal}`;
   }
 
@@ -1966,6 +1983,110 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     ta.style.height = 'auto';
     const computedH = Math.max(105, Math.min(260, ta.scrollHeight + 6));
     ta.style.height = computedH + 'px';
+  }
+
+  // ===== Banco de mensagens de captação =====
+  const msgBankList = $('msgBankList');
+  const msgBankCount = $('msgBankCount');
+  let msgBankRenderedKey = '';
+
+  function currentBank() {
+    return window.InnfluMessageBank.normalize((localBotCache && localBotCache.messageBank) || []);
+  }
+
+  async function commitBank(newBank) {
+    const bank = window.InnfluMessageBank.normalize(newBank);
+    await saveBot({ messageBank: bank, msgBag: [] });
+    renderMessageBank(true);
+  }
+
+  function renderMessageBank(force) {
+    if (!msgBankList) return;
+    const bank = currentBank();
+    const key = JSON.stringify(bank.map(m => [m.id, m.active]));
+    if (msgBankCount) msgBankCount.innerText = String(bank.filter(m => m.active && m.text.trim()).length);
+    // Não redesenha enquanto o usuário digita (só quando a estrutura muda)
+    if (!force && key === msgBankRenderedKey) return;
+    msgBankRenderedKey = key;
+    msgBankList.innerHTML = '';
+    if (bank.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:10px;color:#8b949e;';
+      empty.innerText = 'Nenhuma mensagem no banco. Usando a mensagem acima.';
+      msgBankList.appendChild(empty);
+      return;
+    }
+    bank.forEach((m, idx) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:5px;align-items:flex-start;';
+      row.dataset.id = m.id;
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = m.active;
+      chk.title = 'Ativar/desativar esta mensagem';
+      chk.style.marginTop = '4px';
+      chk.addEventListener('change', async () => {
+        await commitBank(window.InnfluMessageBank.update(currentBank(), m.id, { active: chk.checked }));
+      });
+      const ta = document.createElement('textarea');
+      ta.className = 'innflu-template-textarea';
+      ta.value = m.text;
+      ta.rows = 3;
+      ta.placeholder = `Mensagem ${idx + 1} (aceita {nome} e {opção1|opção2})`;
+      ta.style.cssText = 'flex:1;min-height:56px;font-size:11px;line-height:1.4;padding:6px;resize:vertical;';
+      let t = null;
+      ta.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(async () => {
+          await saveBot({ messageBank: window.InnfluMessageBank.update(currentBank(), m.id, { text: ta.value }), msgBag: [] });
+          renderMessageBank(false);
+        }, 400);
+      });
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'innflu-btn-secondary';
+      del.innerText = '🗑';
+      del.title = 'Excluir mensagem';
+      del.style.cssText = 'padding:2px 6px;font-size:11px;width:auto;';
+      del.addEventListener('click', async () => {
+        await commitBank(window.InnfluMessageBank.remove(currentBank(), m.id));
+      });
+      row.appendChild(chk);
+      row.appendChild(ta);
+      row.appendChild(del);
+      msgBankList.appendChild(row);
+    });
+  }
+
+  const btnMsgBankAdd = $('btnMsgBankAdd');
+  const btnMsgBankFromMain = $('btnMsgBankFromMain');
+  if (btnMsgBankAdd) {
+    btnMsgBankAdd.addEventListener('click', async () => {
+      await commitBank(window.InnfluMessageBank.add(currentBank(), '', true));
+    });
+  }
+  if (btnMsgBankFromMain) {
+    btnMsgBankFromMain.addEventListener('click', async () => {
+      const txt = (hudAutoTemplateContent ? hudAutoTemplateContent.value : '').trim();
+      if (!txt) { showToast({ type: 'warning', title: 'Mensagem vazia', message: 'Digite a mensagem acima primeiro.' }); return; }
+      await commitBank(window.InnfluMessageBank.add(currentBank(), txt, true));
+    });
+  }
+
+  /**
+   * Escolhe a mensagem da vez: sorteia entre as ATIVAS do banco (ou usa o texto padrão se o banco está vazio).
+   * Retorna { template } ou { error } quando há mensagens cadastradas mas nenhuma ativa.
+   */
+  async function chooseOutgoingTemplate(bot, legacyTemplate) {
+    const bank = window.InnfluMessageBank.normalize(bot && bot.messageBank);
+    if (bank.length === 0) return { template: legacyTemplate };
+    const pick = window.InnfluMessageBank.pickNext(bank, bot.msgBag, Math.random, bot.lastMsgId || null);
+    if (pick.status === 'none_active') {
+      return { error: 'Todas as mensagens do banco estão desativadas. Ative ao menos uma para continuar.' };
+    }
+    await saveBot({ msgBag: pick.bag, lastMsgId: pick.message.id });
+    addDiagLog('info', `Mensagem sorteada do banco: #${bank.findIndex(m => m.id === pick.message.id) + 1} de ${bank.length}`);
+    return { template: pick.message.text.trim() };
   }
 
   [hudAutoTemplate1, hudAutoTemplate2, hudAutoTemplate3, hudTemplateContent].forEach(ta => {
@@ -2212,7 +2333,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     const diagMetricQueue = $('diagMetricQueue');
     const diagMetricVisited = $('diagMetricVisited');
 
-    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.5.9';
+    if (diagMetricVersion) diagMetricVersion.innerText = 'v1.6.0';
     if (diagMetricPage) diagMetricPage.innerText = `${pageType}${curUser !== 'Nenhum' ? ' (@' + curUser + ')' : ''}`;
     if (diagMetricStatus) diagMetricStatus.innerText = localBotCache?.isRunning ? (localBotCache.isPaused ? 'Pausado' : 'Rodando') : 'Parado';
     if (diagMetricTarget) diagMetricTarget.innerText = `${localBotCache?.miningSource || 'alvo'}: "${localBotCache?.miningTarget || 'geral'}"`;
@@ -2248,7 +2369,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       `================================================================================`,
       `[METADADOS DO SISTEMA]`,
       `- Data/Hora: ${new Date().toLocaleString('pt-BR')} (Timestamp: ${Date.now()})`,
-      `- Versão do Script: v1.5.9`,
+      `- Versão do Script: v1.6.0`,
       `- URL Atual: ${window.location.href}`,
       `- Título da Página: ${document.title}`,
       `- Página Detectada: ${pageType}`,
@@ -2854,7 +2975,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
       evaluatedAt: new Date().toISOString()
     };
 
-    addDiagLog('info', `Avaliação de @${cleanUser}: Seg=${profile.followersCount}, Stories=${profile.hasActiveStories}, Gênero=${profile.isFemale ? 'F' : 'M/Marca'}, Aprovada=${evalResult.approved}`);
+    addDiagLog('info', `Avaliação de @${cleanUser}: Seg=${profile.followersCount}, Stories=${profile.hasActiveStories}, Gênero=${profile.gender || 'unknown'}${profile.isBrand ? ' (comercial)' : profile.isUncertainProfile ? ' (não validado)' : ''}, Aprovada=${evalResult.approved}`);
 
     if (!evalResult.approved) {
       const rejectReason = evalResult.reasons.join(', ');
@@ -2972,9 +3093,18 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     try {
       window.InnfluIsSendingDM = true;
       const rot = getRotatedTemplate(bot);
-      await saveBot({ templateRotationIndex: rot.nextRotationIndex });
-
-      const msg = window.InnfluSpintax.interpolate(rot.template, { 
+      const { bot: bankBot } = await getState();
+      const choice = await chooseOutgoingTemplate(bankBot || bot, rot.template);
+      if (choice.error) {
+        window.InnfluIsSendingDM = false;
+        showToast({ type: 'warning', title: 'Sem mensagem ativa', message: choice.error });
+        await stopAutomationGracefully('no_message', choice.error);
+        return;
+      }
+      if (!(bankBot && Array.isArray(bankBot.messageBank) && bankBot.messageBank.length)) {
+        await saveBot({ templateRotationIndex: rot.nextRotationIndex });
+      }
+      const msg = window.InnfluSpintax.interpolate(choice.template, { 
         username: cleanUser, 
         nome: profile.fullName || cleanUser,
         fullName: profile.fullName 
@@ -3032,6 +3162,13 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
         showSafetyBanner('Bloqueio Detectado', err.message);
         addDiagLog('error', `Bloqueio detectado no Instagram: ${err.message}`);
         await stopAutomationGracefully('blocked', 'Ação bloqueada temporariamente pelo Instagram.');
+        return;
+      }
+
+      if (err && err.code === 'DUPLICATE') {
+        // Duplicidade evitada: não é falha do perfil, apenas segue sem contar nem marcar erro
+        addDiagLog('warn', err.message);
+        scheduleNext(1500);
         return;
       }
 
@@ -3659,11 +3796,66 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
     await dispatchDM(target.username, apiBaseUrl, activeTemplate);
   }
 
+  // Indicador de fase do envio (a interface continua livre durante o processamento)
+  window.addEventListener('innflu:send-phase', (ev) => {
+    if (window.InnfluIsSendingDM && hudCurrentAction && ev && ev.detail && ev.detail.text) {
+      hudCurrentAction.innerText = `⏳ ${ev.detail.text}`;
+    }
+  });
+
+  /**
+   * Trava de elegibilidade ANTES de qualquer envio (modo Captação/Sender incluso):
+   * reavalia o perfil aberto com os mesmos critérios (gênero, comercial, seguidores, stories).
+   */
+  async function checkEligibleBeforeSend(username) {
+    try {
+      const { bot } = await getState();
+      const profile = window.InnfluInspector.extractCurrentProfileData();
+      if (!profile) return { ok: false, reasons: ['Não foi possível ler o perfil para validar'] };
+      const res = window.InnfluInspector.evaluateCandidate(profile, {
+        minFollowers: bot.minFollowers !== undefined ? bot.minFollowers : 10000,
+        maxFollowers: bot.maxFollowers || 10000000,
+        requireActiveStories: bot.requireStories !== false,
+        targetGender: bot.targetGender || 'female',
+        requireContact: 'all'
+      });
+      return { ok: res.approved, reasons: res.reasons };
+    } catch (e) {
+      return { ok: false, reasons: ['Falha ao validar elegibilidade: ' + e.message] };
+    }
+  }
+
   async function dispatchDM(username, apiBaseUrl, template) {
+    {
+      const elig = await checkEligibleBeforeSend(username);
+      if (!elig.ok) {
+        const why = elig.reasons.join(', ');
+        hudCurrentAction.innerText = `@${username} não elegível: ${why}. Pulando...`;
+        addDiagLog('warn', `@${username} bloqueada antes do envio: ${why}`);
+        await logActivity({ username, status: `Pulada (${why})` });
+        await addRejected((username || '').toLowerCase(), why);
+        try { await innfluApiFetch('/api/leads', { method: 'POST', body: JSON.stringify({ username, status: 'skipped' }) }); } catch (e) {}
+        scheduleNext(1500);
+        return;
+      }
+    }
     try {
       window.InnfluIsSendingDM = true;
       let chosenTemplate = template;
+      let usedBank = false;
       try {
+        const { bot: dBot } = await getState();
+        const dChoice = await chooseOutgoingTemplate(dBot, null);
+        if (dChoice.error) {
+          window.InnfluIsSendingDM = false;
+          showToast({ type: 'warning', title: 'Sem mensagem ativa', message: dChoice.error });
+          await stopAutomationGracefully('no_message', dChoice.error);
+          return;
+        }
+        if (dChoice.template) { chosenTemplate = dChoice.template; usedBank = true; }
+      } catch (e) {}
+      try {
+        if (usedBank) throw new Error('banco de mensagens em uso');
         const tmplRes = await innfluApiFetch('/api/templates');
         if (tmplRes.ok) {
           const tmplData = await tmplRes.json();
@@ -4256,7 +4448,7 @@ Oi! Sou da @fechoumidia, agência de parcerias com influenciadores. Vimos seu pe
         full_name: profile.fullName || profile.full_name || '',
         followers_count: profile.followersCount || profile.followers_count || 0,
         has_active_stories: (profile.hasActiveStories || profile.has_active_stories) ? 1 : 0,
-        detected_gender: profile.isFemale ? 'female' : (profile.detected_gender || 'unknown'),
+        detected_gender: profile.gender || (profile.isFemale ? 'female' : (profile.detected_gender || 'unknown')),
         whatsapp: profile.whatsapp || null,
         email: profile.email || null,
         bio: profile.bio || '',
