@@ -45,10 +45,61 @@ window.InnfluGenderDetector = {
     'igor', 'arthur', 'artur', 'bernardo', 'heitor', 'davi', 'david', 'samuel', 'renan', 
     'leandro', 'carlos', 'antonio', 'antônio', 'francisco', 'paulo', 'sergio', 'sérgio',
     'fabio', 'fábio', 'marcio', 'márcio', 'roberto', 'ronaldo', 'claudio', 'cláudio',
-    'julio', 'júlio', 'cesar', 'césar', 'otavio', 'otávio', 'murilo', 'breno', 'cauã', 'caua'
+    'julio', 'júlio', 'cesar', 'césar', 'otavio', 'otávio', 'murilo', 'breno', 'cauã', 'caua',
+    'luan', 'kaique', 'wesley', 'alan', 'allan', 'alex', 'alisson', 'anderson', 'bryan', 'cristiano',
+    'denis', 'douglas', 'edson', 'elias', 'emerson', 'enzo', 'erick', 'fabricio', 'fabrício', 'flavio',
+    'flávio', 'geraldo', 'gilberto', 'hugo', 'ian', 'isaac', 'jean', 'jefferson', 'jonas', 'jorge',
+    'jose', 'josé', 'juan', 'kevin', 'leo', 'lorenzo', 'luciano', 'luiz', 'luis', 'manoel', 'mario',
+    'mário', 'mauricio', 'maurício', 'miguel', 'nathan', 'nicolas', 'nelson', 'pablo', 'patrick',
+    'raul', 'renato', 'rubens', 'ruan', 'sandro', 'silvio', 'tales', 'theo', 'teo', 'wagner',
+    'walter', 'wilson', 'yago', 'yuri', 'jeferson', 'junior', 'júnior', 'neto', 'wellington'
   ]),
 
-  // Termos na bio característicos de criadoras femininas / mães / influenciadoras / provador
+  // Termos na bio característicos de homens (evidência de gênero masculino)
+  maleBioKeywords: [
+    'pai', 'papai', 'paizão', 'pai de', 'ele/dele', 'he/him', 'marido', 'empresário', 'empresario',
+    'advogado', 'médico', 'medico', 'psicólogo', 'psicologo', 'fotógrafo', 'fotografo', 'arquiteto',
+    'ator', 'blogueiro', 'maquiador', 'professor', 'treinador', 'barbeiro', 'jogador', 'cantor'
+  ],
+
+  // Evidências fortes de gênero feminino na bio (flexão feminina explícita)
+  femaleStrongBioKeywords: [
+    'mãe', 'mae', 'mamãe', 'mamae', 'mãe de', 'gestante', 'gravidinha', 'tentante', 'ela/dela', 'she/her',
+    'esposa', 'advogada', 'psicóloga', 'psicologa', 'fotógrafa', 'fotografa', 'arquiteta', 'médica',
+    'medica', 'empresária', 'empresaria', 'atriz', 'blogueira', 'maquiadora', 'professora', 'criadora',
+    'nutricionista e mãe', 'dona de casa', 'puerpério', 'puerperio', 'maternando', 'mamãe de'
+  ],
+
+  // Categorias do Instagram que indicam criador / pessoa (evidência a favor de ser influenciador)
+  creatorCategories: [
+    'criador de conteúdo digital', 'criadora de conteúdo digital', 'criador(a) de conteúdo digital',
+    'blogueiro', 'blogueira', 'blogueiro(a)', 'figura pública', 'pessoa pública', 'influenciador',
+    'influenciadora', 'influenciador digital', 'jornalista', 'artista digital', 'criador de conteúdo'
+  ],
+
+  // Termos de achadinhos / afiliados / vitrines de produtos (nome de usuário)
+  commerceUsernameTokens: [
+    'achadinho', 'achadinhos', 'achados', 'achadosdodia', 'ofertas', 'oferta', 'promo', 'promocao',
+    'promocoes', 'cupom', 'cupons', 'descontos', 'desconto', 'catalogo', 'revenda', 'importados',
+    'brecho', 'bazar', 'garimpo', 'garimpos', 'vitrine', 'dicasdecompras', 'comprinhas', 'compras'
+  ],
+
+  // Termos de achadinhos / afiliados / vitrines na bio (fortes)
+  commerceBioStrong: [
+    'achadinhos', 'achadinho', 'achados da shopee', 'achados shopee', 'ofertas do dia', 'melhores ofertas',
+    'cupom de desconto', 'cupons de desconto', 'todos os links', 'link dos produtos', 'links dos produtos',
+    'produtos que indico', 'compre pelo link', 'compre pelo nosso link', 'catálogo', 'catalogo',
+    'grupo de ofertas', 'grupo de promoções', 'grupo de promocoes', 'canal de ofertas', 'garimpando ofertas',
+    'garimpo de ofertas', 'vitrine', 'preço baixo', 'preços baixos', 'revendedora', 'revendedor'
+  ],
+
+  // Termos fracos (sozinhos não bastam)
+  commerceBioWeak: [
+    'cupom', 'cupons', 'desconto', 'descontos', 'oferta', 'ofertas', 'promoção', 'promoções', 'promocao',
+    'promocoes', 'shopee', 'amazon', 'mercado livre', 'mercadolivre', 'aliexpress', 'temu', 'magalu', 'shein'
+  ],
+
+  // Termos femininos fracos / contextuais (sozinhos não definem gênero)
   femaleBioKeywords: [
     'mãe', 'mae', 'mamãe', 'mamae', 'materno', 'maternidade', 'ela/dela', 'she/her',
     'gestante', 'gravidinha', 'nutricionista', 'advogada', 'psicóloga', 'psicologa', 'criadora', 
@@ -117,114 +168,156 @@ window.InnfluGenderDetector = {
     'produtos/serviços', 'atacadista', 'distribuidora'
   ],
 
-  /**
-   * Verifica se o perfil é uma empresa, marca corporativa ou loja comercial
-   */
-  isCorporateBrand(username = '', fullName = '', bio = '') {
-    const u = (username || '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
-    const fn = (fullName || '').toLowerCase().trim();
-    const b = (bio || '').toLowerCase();
+  // ===== Utilitários =====
+  _norm(str) {
+    return (str || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  },
 
-    // 1. Checa marcas corporativas conhecidas diretamente no username ou nome
-    if (this.knownCorporateBrands.has(u)) return true;
-    for (const brand of this.knownCorporateBrands) {
-      if (u === brand || u.startsWith(brand + '_') || u.endsWith('_' + brand) || u.startsWith(brand + '.') || u.endsWith('.' + brand)) {
-        return true;
-      }
-      if (fn.includes(brand)) return true;
-    }
+  _normSet(name, list) {
+    if (!this._sets) this._sets = {};
+    if (!this._sets[name]) this._sets[name] = new Set(list.map(x => this._norm(x)));
+    return this._sets[name];
+  },
 
-    // 2. Tokens comerciais no username
-    for (const token of this.brandUsernameTokens) {
-      if (
-        u.startsWith(token + '_') || u.endsWith('_' + token) ||
-        u.startsWith(token + '.') || u.endsWith('.' + token) ||
-        u === token || u.startsWith(token + 's_') ||
-        (token.length >= 6 && u.includes(token))
-      ) {
-        return true;
-      }
-    }
-
-    // 3. Nome de exibição com marcas ou termos de loja
-    const commercialNameTokens = [
-      'c&a', 'renner', 'magalu', 'magazine luiza', 'avon', 'boticário', 'boticario',
-      'natura', 'zara', 'shein', 'shopee', 'riachuelo', 'marisa', 'casas bahia',
-      'sephora', 'eudora', 'quem disse berenice', 'mary kay', 'arezzo', 'schutz',
-      'melissa', 'vivara', 'pandora', 'loja ', 'lojas ', 'store', 'boutique ',
-      'outlet ', 'atacado', 'multimarcas', 'confeccoes', 'calcados', 'semijoias'
-    ];
-    if (commercialNameTokens.some(t => fn.includes(t))) {
-      return true;
-    }
-
-    // 4. Bio ou categoria com termos de e-commerce e varejo
-    const extraBrandKeywords = window.__innfluDynamicRules?.blacklistBioKeywords || [];
-    const allKeywords = [...this.brandBioKeywords, ...this.corporateCategories, ...extraBrandKeywords];
-    if (allKeywords.some(kw => kw && (b.includes(kw) || fn.includes(kw)))) {
-      return true;
-    }
-
-    return false;
+  _hasTerm(textNorm, term) {
+    const t = this._norm(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(^|[^a-z0-9])' + t + '([^a-z0-9]|$)', 'i').test(textNorm);
   },
 
   /**
-   * Avalia se um perfil é feminino / criadora de conteúdo
-   * @param {string} fullName 
-   * @param {string} bio 
-   * @param {string} username
-   * @returns {{ isFemale: boolean, isBrand: boolean, reason: string }}
+   * Análise combinada (usuário + nome + bio + categoria) de perfil comercial.
+   * level: 'brand' (loja/achadinhos/catálogo), 'uncertain' (dúvida: não enviar) ou 'ok'.
    */
-  classify(fullName, bio, username = '') {
-    const nameClean = (fullName || '').trim().toLowerCase();
-    const bioClean = (bio || '').toLowerCase();
-    const userClean = (username || '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
+  commercialAnalysis(username = '', fullName = '', bio = '', category = '') {
+    const u = this._norm(username).replace(/[^a-z0-9_.]/g, '');
+    const fn = this._norm(fullName).trim();
+    const b = this._norm(bio);
+    const cat = this._norm(category);
+    const reasons = [];
+    let score = 0;
+    const add = (pts, why) => { score += pts; reasons.push(why); };
 
-    // 1. Checar se é empresa corporativa, grande marca ou loja comercial (Elimina C&A, Renner, Magalu, Avon, Boticário...)
-    if (this.isCorporateBrand(username, fullName, bio)) {
-      return { isFemale: false, isBrand: true, reason: 'Identificado como empresa / loja comercial (não é influenciador)' };
-    }
-
-    // 2. Checar se o primeiro nome é explicitamente MASCULINO
-    const nameWords = nameClean.split(/\s+/).map(w => w.replace(/[^a-zà-ú]/gi, '')).filter(Boolean);
-    const firstName = nameWords[0] || '';
-    if (firstName && this.maleFirstNames.has(firstName)) {
-      return { isFemale: false, isBrand: false, reason: `Nome masculino identificado (${firstName})` };
-    }
-
-    // 3. Checar palavras do nome de exibição para nome feminino
-    for (const word of nameWords) {
-      if (this.femaleFirstNames.has(word)) {
-        return { isFemale: true, isBrand: false, reason: `Nome feminino identificado (${word})` };
+    // 1. Marcas conhecidas
+    for (const brand of this.knownCorporateBrands) {
+      if (u === brand || u.startsWith(brand + '_') || u.endsWith('_' + brand) || u.startsWith(brand + '.') || u.endsWith('.' + brand) || (fn.length > 3 && fn === brand)) {
+        add(5, `marca conhecida (${brand})`);
+        break;
       }
     }
 
-    // 4. Checar prefixo ou conteúdo do @username
-    for (const femaleName of this.femaleFirstNames) {
-      if (femaleName.length >= 3 && userClean.includes(femaleName)) {
-        return { isFemale: true, isBrand: false, reason: `Username contém nome feminino (${femaleName})` };
+    // 2. Tokens comerciais no @username
+    const userTokens = [...this.brandUsernameTokens, ...this.commerceUsernameTokens];
+    for (const token of userTokens) {
+      if (
+        u === token || u.startsWith(token + '_') || u.endsWith('_' + token) ||
+        u.startsWith(token + '.') || u.endsWith('.' + token) || u.startsWith(token + 's_') ||
+        (token.length >= 6 && u.includes(token))
+      ) {
+        add(3, `@usuário comercial (${token})`);
+        break;
       }
     }
 
-    // 5. Checar termos femininos e de maternidade/moda na bio
-    const femaleMatch = this.femaleBioKeywords.find(kw => {
-      const regex = new RegExp(`\\b${kw}\\b`, 'i');
-      return regex.test(bioClean);
-    });
-    if (femaleMatch) {
-      return { isFemale: true, isBrand: false, reason: `Termo feminino na bio (${femaleMatch})` };
+    // 3. Nome de exibição com termos de loja
+    const commercialNameTokens = ['loja', 'lojas', 'store', 'boutique', 'outlet', 'atacado', 'multimarcas',
+      'confeccoes', 'calcados', 'semijoias', 'achadinhos', 'achados', 'ofertas', 'promo', 'cupons', 'catalogo', 'brecho', 'bazar'];
+    const nameHit = commercialNameTokens.find(t => this._hasTerm(fn, t));
+    if (nameHit) add(2, `nome com termo comercial (${nameHit})`);
+    const brandInName = ['c&a', 'renner', 'magalu', 'magazine luiza', 'avon', 'boticario', 'natura', 'zara', 'shein', 'shopee',
+      'riachuelo', 'casas bahia', 'sephora', 'eudora', 'mary kay'].find(t => fn.includes(t));
+    if (brandInName) add(3, `nome de marca (${brandInName})`);
+
+    // 4. Categoria do Instagram
+    const catHit = this.corporateCategories.find(c => cat && cat.includes(this._norm(c)));
+    if (catHit) add(3, `categoria comercial (${catHit})`);
+
+    // 5. Bio: e-commerce / achadinhos (fortes) e fracos
+    const extra = (window.__innfluDynamicRules && window.__innfluDynamicRules.blacklistBioKeywords) || [];
+    const strongTerms = [...this.brandBioKeywords, ...this.commerceBioStrong, ...extra].filter(Boolean);
+    const strongHits = strongTerms.filter(kw => b.includes(this._norm(kw)));
+    if (strongHits.length) add(Math.min(6, strongHits.length * 2), `bio comercial (${strongHits.slice(0, 3).join(', ')})`);
+    const weakHits = this.commerceBioWeak.filter(kw => this._hasTerm(b, kw));
+    if (weakHits.length) add(Math.min(2, weakHits.length), `bio com termos de oferta (${weakHits.slice(0, 3).join(', ')})`);
+
+    // 6. Evidência a favor de criador de conteúdo reduz a suspeita (nunca anula marca conhecida)
+    const creatorHit = this.creatorCategories.find(c => (cat + ' ' + b).includes(this._norm(c)));
+    if (creatorHit && score > 0 && score < 5) {
+      score = Math.max(0, score - 1);
+      reasons.push(`categoria de criador (${creatorHit})`);
     }
 
-    // 6. Sufixo gramatical em língua portuguesa: primeiro nome terminando em 'a' (ex: Nayara, Larissa, Alana)
-    if (firstName.length >= 4 && firstName.endsWith('a') && !this.maleFirstNames.has(firstName)) {
-      return { isFemale: true, isBrand: false, reason: `Desinência nominal feminina (${firstName})` };
+    const level = score >= 3 ? 'brand' : (score === 2 ? 'uncertain' : 'ok');
+    return { score, level, reasons };
+  },
+
+  /**
+   * Verifica se o perfil é uma empresa, loja, achadinhos ou catálogo.
+   */
+  isCorporateBrand(username = '', fullName = '', bio = '', category = '') {
+    return this.commercialAnalysis(username, fullName, bio, category).level === 'brand';
+  },
+
+  /**
+   * Gênero com evidência suficiente: 'female' | 'male' | 'unknown'.
+   * Nunca assume gênero por padrão.
+   */
+  detectGender(fullName = '', bio = '', username = '') {
+    const femSet = this._normSet('fem', Array.from(this.femaleFirstNames));
+    const maleSet = this._normSet('male', Array.from(this.maleFirstNames));
+    const bioN = this._norm(bio);
+    const userN = this._norm(username).replace(/[^a-z0-9_.]/g, '');
+    const titles = new Set(['dra', 'dr', 'prof', 'profa', 'mc', 'dj', 'sra', 'sr']);
+    const words = this._norm(fullName).split(/\s+/).map(w => w.replace(/[^a-z]/g, '')).filter(w => w && !titles.has(w));
+    const first = words[0] || '';
+    let f = 0, m = 0;
+    const evid = [];
+
+    if (first) {
+      if (femSet.has(first) && !maleSet.has(first)) { f += 3; evid.push(`nome ${first}`); }
+      else if (maleSet.has(first) && !femSet.has(first)) { m += 3; evid.push(`nome ${first}`); }
+      else if (first.length >= 4 && first.endsWith('a') && !maleSet.has(first)) { f += 1; evid.push(`final -a em ${first}`); }
     }
 
-    // 7. Soft-approval inteligente: se não é loja e não tem indicativo masculino, aprova para não perder criadoras válidas
+    const tokens = userN.split(/[_.]+/).filter(Boolean);
+    const userHit = (set) => Array.from(set).find(n => n.length >= 4 && (tokens.includes(n) || userN.startsWith(n)));
+    const uf = userHit(femSet); if (uf && f < 3) { f += 1; evid.push(`@ com ${uf}`); }
+    const um = userHit(maleSet); if (um && m < 3) { m += 1; evid.push(`@ com ${um}`); }
+
+    const strongF = this.femaleStrongBioKeywords.filter(k => this._hasTerm(bioN, k));
+    if (strongF.length) { f += Math.min(4, strongF.length * 2); evid.push(`bio (${strongF.slice(0, 2).join(', ')})`); }
+    const weakF = this.femaleBioKeywords.filter(k => !this.femaleStrongBioKeywords.includes(k) && this._hasTerm(bioN, k));
+    if (weakF.length) f += 1;
+    const maleB = this.maleBioKeywords.filter(k => this._hasTerm(bioN, k));
+    if (maleB.length) { m += Math.min(4, maleB.length * 2); evid.push(`bio (${maleB.slice(0, 2).join(', ')})`); }
+
+    let gender = 'unknown';
+    if (f >= 3 && f >= m + 2) gender = 'female';
+    else if (m >= 3 && m >= f + 2) gender = 'male';
+    return { gender, femaleScore: f, maleScore: m, evidence: evid };
+  },
+
+  /**
+   * Classificação completa de um perfil.
+   * @returns {{ gender, isFemale, isMale, isBrand, isUncertain, brandLevel, reason }}
+   */
+  classify(fullName, bio, username = '', category = '') {
+    const com = this.commercialAnalysis(username, fullName, bio, category);
+    if (com.level === 'brand') {
+      return { gender: 'unknown', isFemale: false, isMale: false, isBrand: true, isUncertain: false, brandLevel: 'brand', reason: `Loja/comercial/achadinhos: ${com.reasons.join('; ')}` };
+    }
+    if (com.level === 'uncertain') {
+      return { gender: 'unknown', isFemale: false, isMale: false, isBrand: false, isUncertain: true, brandLevel: 'uncertain', reason: `Perfil não validado (indício comercial): ${com.reasons.join('; ')}` };
+    }
+    const g = this.detectGender(fullName, bio, username);
+    const label = g.gender === 'female' ? 'feminino' : g.gender === 'male' ? 'masculino' : 'não identificado';
     return {
-      isFemale: true,
+      gender: g.gender,
+      isFemale: g.gender === 'female',
+      isMale: g.gender === 'male',
       isBrand: false,
-      reason: 'Perfil individual qualificado (sem indicativo masculino ou comercial)'
+      isUncertain: false,
+      brandLevel: 'ok',
+      reason: `Gênero ${label}${g.evidence.length ? ' (' + g.evidence.join('; ') + ')' : ' (sem evidência suficiente)'}`
     };
   }
 };
